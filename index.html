@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FutboleroMX — Fútbol en vivo, gratis y sin límites</title>
+  <meta name="description" content="Mira todos los partidos en vivo gratis. Telemundo, FOX Sports, DSports, BBC, Claro Sports, TyC Sports y más. Juega la quiniela y compite con miles de fanáticos." />
+  <meta property="og:title" content="FutboleroMX — Fútbol en vivo" />
+  <meta property="og:description" content="La cancha de todos. Fútbol en vivo, gratis, con todas las emisoras." />
+  <meta property="og:type" content="website" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ═══════════════════════ NAV ═══════════════════════ -->
+<nav class="nav">
+  <a href="index.html" class="nav-logo">
+    <span class="ball">⚽</span> Futbolero<span class="mx">MX</span>
+  </a>
+
+  <div class="nav-links">
+    <button class="nav-link active">Inicio</button>
+    <button class="nav-link"><span class="live-dot-nav"></span>&nbsp;En vivo</button>
+    <button class="nav-link" onclick="scrollToQuiniela()">Mi quiniela</button>
+    <button class="nav-link" onclick="document.getElementById('sidebar-oracle').scrollIntoView({behavior:'smooth'})">Oráculo</button>
+    <button class="nav-link" onclick="switchTab('results'); document.getElementById('tab-results').scrollIntoView({behavior:'smooth'})">Marcadores</button>
+  </div>
+
+  <div class="nav-right">
+    <div id="nav-guest" style="display:flex;gap:8px">
+      <button class="btn-nav-login" onclick="openLogin()">Entrar</button>
+      <button class="btn-nav-register" onclick="openRegister()">Registrarse</button>
+    </div>
+    <div id="nav-user" class="nav-user">
+      <div class="nav-avatar" id="nav-avatar">--</div>
+      <span class="nav-username" id="nav-username"></span>
+      <button class="btn-logout" onclick="logout()">Salir</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════════════ MODAL: LOGIN ═══════════════════════ -->
+<div id="modal-login" class="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeAll()">✕</button>
+    <div class="modal-logo">
+      <div class="logo-text">⚽ Futbolero<span class="mx">MX</span></div>
+    </div>
+    <div class="modal-title">Bienvenido de nuevo</div>
+    <div class="modal-sub">Inicia sesión para ver tu quiniela y ranking</div>
+    <div id="login-error" class="form-error"></div>
+    <form onsubmit="doLogin(event)">
+      <div class="form-group">
+        <label class="form-label">Correo electrónico</label>
+        <input id="login-email" class="form-input" type="email" placeholder="tu@correo.com" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contraseña</label>
+        <input id="login-password" class="form-input" type="password" placeholder="••••••••" required />
+      </div>
+      <button type="submit" class="btn-form">Iniciar sesión</button>
+    </form>
+    <div class="form-switch">
+      ¿No tienes cuenta? <button onclick="openRegister()">Regístrate gratis</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ MODAL: REGISTER ═══════════════════════ -->
+<div id="modal-register" class="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeAll()">✕</button>
+    <div class="modal-logo">
+      <div class="logo-text">⚽ Futbolero<span class="mx">MX</span></div>
+    </div>
+    <div class="modal-title">Crea tu cuenta gratis</div>
+    <div class="modal-sub">Juega la quiniela, acumula puntos y compite</div>
+    <div id="reg-error" class="form-error"></div>
+    <form onsubmit="doRegister(event)">
+      <div class="form-group">
+        <label class="form-label">Tu nombre</label>
+        <input id="reg-name" class="form-input" type="text" placeholder="Nombre de usuario" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Correo electrónico</label>
+        <input id="reg-email" class="form-input" type="email" placeholder="tu@correo.com" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contraseña</label>
+        <input id="reg-password" class="form-input" type="password" placeholder="Mínimo 6 caracteres" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirmar contraseña</label>
+        <input id="reg-confirm" class="form-input" type="password" placeholder="Repite tu contraseña" required />
+      </div>
+      <button type="submit" class="btn-form">Crear cuenta</button>
+    </form>
+    <div class="form-switch">
+      ¿Ya tienes cuenta? <button onclick="openLogin()">Inicia sesión</button>
+    </div>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:1rem;line-height:1.6">
+      Al registrarte aceptas nuestros
+      <a href="pages/terminos.html" style="color:var(--red)">Términos y Condiciones</a> y
+      <a href="pages/privacidad.html" style="color:var(--red)">Política de Privacidad</a>.
+    </p>
+  </div>
+</div>
+
+<!-- ═══════════════════════ MODAL: CANAL SELECTOR ═══════════════════════ -->
+<div id="ch-modal" class="modal-overlay">
+  <div class="modal" style="max-width:400px">
+    <button class="modal-close" onclick="closeChModal()">✕</button>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">VER PARTIDO</div>
+    <div id="ch-modal-match" style="font-size:16px;font-weight:700;color:#fff;margin-bottom:.25rem"></div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:.75rem">Selecciona tu emisora:</div>
+    <div id="ch-modal-list" class="ch-modal-list"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ MAIN ═══════════════════════ -->
+<main class="layout">
+
+  <!-- COLUMNA PRINCIPAL -->
+  <div>
+
+    <!-- HERO -->
+    <div id="hero-card" class="hero-card"></div>
+
+    <!-- PLAYER -->
+    <div id="player" class="player-wrap">
+      <div class="player-top">
+        <span id="player-label" class="player-label">
+          <span style="width:7px;height:7px;border-radius:50%;background:var(--red);display:inline-block;animation:blink 1.2s ease-in-out infinite"></span>
+          EN VIVO
+        </span>
+        <button class="player-close" onclick="closePlayer()">✕</button>
+      </div>
+      <iframe id="player-frame" src="" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+    </div>
+
+    <!-- EMISORAS -->
+    <div class="channels-section">
+      <div class="section-header">
+        <span class="section-title">📡 Emisoras disponibles</span>
+        <span style="font-size:12px;color:var(--text-muted)">Haz clic para ver en vivo</span>
+      </div>
+      <div id="channels-grid" class="channels-grid"></div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab active" data-tab="upcoming" onclick="switchTab('upcoming')">Próximos partidos</button>
+      <button class="tab" data-tab="results" onclick="switchTab('results')">Resultados</button>
+    </div>
+
+    <div id="tab-upcoming">
+      <div id="matches-list" class="match-list"></div>
+    </div>
+    <div id="tab-results" style="display:none">
+      <div id="results-grid" class="results-grid"></div>
+    </div>
+
+    <!-- QUINIELA -->
+    <div id="quiniela-section" style="margin-top:1.25rem"></div>
+
+    <!-- CTA -->
+    <div class="cta-card">
+      <h3>🔥 La cancha de todos</h3>
+      <p>Regístrate gratis, predice resultados y compite con miles de futboleros en el ranking semanal.</p>
+      <button class="btn-cta-main" onclick="openRegister()">Unirme gratis</button>
+    </div>
+
+  </div>
+
+  <!-- SIDEBAR -->
+  <aside>
+
+    <div class="sidebar-card">
+      <div class="section-header">
+        <span class="section-title">En vivo ahora</span>
+        <span class="badge-live" style="font-size:10px"><span class="pulse"></span>LIVE</span>
+      </div>
+      <div id="live-sidebar" class="match-list"></div>
+    </div>
+
+    <div class="sidebar-card">
+      <div class="section-header">
+        <span class="section-title">Ranking semanal</span>
+        <button class="section-more">Ver todo</button>
+      </div>
+      <div id="ranking-list" class="rank-list"></div>
+    </div>
+
+    <div class="sidebar-card" id="sidebar-oracle">
+      <div class="section-header">
+        <span class="section-title">El Oráculo</span>
+      </div>
+      <div id="oracle-box"></div>
+    </div>
+
+    <div class="sidebar-card">
+      <div class="section-header">
+        <span class="section-title">¿Sabías que…?</span>
+        <button class="section-more" onclick="nextTrivia()">Siguiente →</button>
+      </div>
+      <div class="trivia-box" id="trivia-text"></div>
+    </div>
+
+  </aside>
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="logo">⚽ Futbolero<span class="mx">MX</span></div>
+        <p>La cancha de todos. Fútbol en vivo, quinielas y marcadores. Un proyecto independiente hecho por fanáticos para fanáticos.</p>
+      </div>
+      <div class="footer-links-col">
+        <h4>Navegación</h4>
+        <a href="index.html">Inicio</a>
+        <a href="#" onclick="switchTab('upcoming')">En vivo</a>
+        <a href="#" onclick="scrollToQuiniela()">Mi Quiniela</a>
+        <a href="#" onclick="switchTab('results')">Marcadores</a>
+      </div>
+      <div class="footer-links-col">
+        <h4>Legal</h4>
+        <a href="pages/terminos.html">Términos y Condiciones</a>
+        <a href="pages/privacidad.html">Política de Privacidad</a>
+        <a href="pages/cookies.html">Política de Cookies</a>
+        <a href="pages/dmca.html">DMCA y Terceros</a>
+      </div>
+      <div class="footer-links-col">
+        <h4>Contacto</h4>
+        <a href="mailto:contacto@futbolerомx.com">contacto@futbolerомx.com</a>
+        <a href="https://github.com" target="_blank">GitHub</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 FutboleroMX. Todos los derechos reservados.</p>
+      <p class="disclaimer">FutboleroMX es un proyecto independiente. No aloja ni transmite directamente señales de terceros. No tiene afiliación con FIFA, UEFA, CONCACAF ni ningún organismo oficial.</p>
+    </div>
+  </div>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script>
+  // init quiniela on load
+  document.addEventListener('DOMContentLoaded', renderQuinielaLock);
+</script>
+</body>
+</html>
