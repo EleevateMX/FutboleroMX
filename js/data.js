@@ -2,21 +2,23 @@
 // Última sincronización: 2026-06-16
 
 // Slug del partido EN VIVO en embed.st — actualizar cuando cambie el partido
-const LIVE_SLUG = 'ppv-argentina-vs-algeria';
+const LIVE_SLUG = 'ppv-austria-vs-jordan';
 const ES = (n) => `https://embed.st/embed/admin/${LIVE_SLUG}/${n}`;
 
 // Canales reales actuales (mapeo de números de canal embed.st)
 const CHANNELS = [
-  { id: 'telemundo-1', name: 'TELEMUNDO',          option: 'OPCIÓN 1', tag: 'PARTIDO', url: ES(5),  live: true },
-  { id: 'telemundo-2', name: 'TELEMUNDO',          option: 'OPCIÓN 2', tag: 'PARTIDO', url: ES(6),  live: true },
-  { id: 'fox-1',       name: 'FOX',                option: 'OPCIÓN 1', tag: '',        url: ES(1),  live: true },
-  { id: 'fox-2',       name: 'FOX',                option: 'OPCIÓN 2', tag: '',        url: ES(2),  live: true },
-  { id: 'itv-1',       name: 'ITV1',               option: 'OPCIÓN 1', tag: '',        url: ES(3),  live: true },
-  { id: 'itv-2',       name: 'ITV1',               option: 'OPCIÓN 2', tag: '',        url: ES(4),  live: true },
-  { id: 'tsn-1',       name: 'TSN',                option: 'OPCIÓN 1', tag: '',        url: ES(7),  live: true },
-  { id: 'tsn-2',       name: 'TSN',                option: 'OPCIÓN 2', tag: '',        url: ES(8),  live: true },
-  { id: 'das-1',       name: 'DAS ERSTE',          option: 'OPCIÓN 1', tag: '',        url: ES(9),  live: true },
-  { id: 'das-2',       name: 'DAS ERSTE',          option: 'OPCIÓN 2', tag: '',        url: ES(10), live: true },
+  { id: 'telemundo-1', name: 'TELEMUNDO', option: 'OPCIÓN 1', tag: 'PARTIDO', url: ES(7),  live: true },
+  { id: 'telemundo-2', name: 'TELEMUNDO', option: 'OPCIÓN 2', tag: 'PARTIDO', url: ES(8),  live: true },
+  { id: 'tsn-1',       name: 'TSN',       option: 'OPCIÓN 1', tag: '',        url: ES(1),  live: true },
+  { id: 'tsn-2',       name: 'TSN',       option: 'OPCIÓN 2', tag: '',        url: ES(2),  live: true },
+  { id: 'fs1-1',       name: 'FS1',       option: 'OPCIÓN 1', tag: '',        url: ES(3),  live: true },
+  { id: 'fs1-2',       name: 'FS1',       option: 'OPCIÓN 2', tag: '',        url: ES(4),  live: true },
+  { id: 'bbc-1',       name: 'BBC ONE',   option: 'OPCIÓN 1', tag: '',        url: ES(5),  live: true },
+  { id: 'bbc-2',       name: 'BBC ONE',   option: 'OPCIÓN 2', tag: '',        url: ES(6),  live: true },
+  { id: 'zdf-1',       name: 'ZDF',       option: 'OPCIÓN 1', tag: '',        url: ES(9),  live: true },
+  { id: 'zdf-2',       name: 'ZDF',       option: 'OPCIÓN 2', tag: '',        url: ES(10), live: true },
+  { id: 'orf-1',       name: 'ORF 1',     option: 'OPCIÓN 1', tag: '',        url: ES(11), live: true },
+  { id: 'orf-2',       name: 'ORF 1',     option: 'OPCIÓN 2', tag: '',        url: ES(12), live: true },
 ];
 
 // Todos los partidos del Mundial 2026 (datos reales lacancha.tv)
@@ -39,8 +41,8 @@ const MATCHES = [
   { id:'m15', home:{name:'Irán',flag:'🇮🇷'}, away:{name:'Nueva Zelanda',flag:'🇳🇿'}, kickoff:'2026-06-16T01:00:00+00:00', status:'finished', hs:2, as:2, venue:'', city:'', comp:'Jornada 1' },
   { id:'m16', home:{name:'Francia',flag:'🇫🇷'}, away:{name:'Senegal',flag:'🇸🇳'}, kickoff:'2026-06-16T19:00:00+00:00', status:'finished', hs:3, as:1, venue:'', city:'', comp:'Jornada 1' },
   { id:'m17', home:{name:'Irak',flag:'🇮🇶'}, away:{name:'Noruega',flag:'🇳🇴'}, kickoff:'2026-06-16T22:00:00+00:00', status:'finished', hs:1, as:4, venue:'', city:'', comp:'Jornada 1' },
-  { id:'m18', home:{name:'Argentina',flag:'🇦🇷'}, away:{name:'Argelia',flag:'🇩🇿'}, kickoff:'2026-06-17T01:00:00+00:00', status:'live', hs:2, as:0, venue:'Arrowhead Stadium', city:'Kansas City', comp:'Jornada 1', defaultChannel:'telemundo-1' },
-  { id:'m19', home:{name:'Austria',flag:'🇦🇹'}, away:{name:'Jordania',flag:'🇯🇴'}, kickoff:'2026-06-17T04:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 1' },
+  { id:'m18', home:{name:'Argentina',flag:'🇦🇷'}, away:{name:'Argelia',flag:'🇩🇿'}, kickoff:'2026-06-17T01:00:00+00:00', status:'finished', hs:3, as:0, venue:'Arrowhead Stadium', city:'Kansas City', comp:'Jornada 1' },
+  { id:'m19', home:{name:'Austria',flag:'🇦🇹'}, away:{name:'Jordania',flag:'🇯🇴'}, kickoff:'2026-06-17T04:00:00+00:00', status:'live', hs:0, as:0, venue:'', city:'', comp:'Jornada 1', defaultChannel:'telemundo-1' },
   { id:'m20', home:{name:'Portugal',flag:'🇵🇹'}, away:{name:'RD Congo',flag:'🇨🇩'}, kickoff:'2026-06-17T17:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 1' },
   { id:'m21', home:{name:'Inglaterra',flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'}, away:{name:'Croacia',flag:'🇭🇷'}, kickoff:'2026-06-17T20:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 1' },
   { id:'m22', home:{name:'Ghana',flag:'🇬🇭'}, away:{name:'Panamá',flag:'🇵🇦'}, kickoff:'2026-06-17T23:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 1' },
