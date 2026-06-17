@@ -1,25 +1,31 @@
 {
+  "id": "/",
   "name": "TVContigo — Fútbol en Vivo",
   "short_name": "TVContigo",
-  "description": "Mira el fútbol en vivo gratis. Mundial 2026 sin suscripción.",
-  "start_url": "/",
+  "description": "Mira el fútbol en vivo gratis. Mundial 2026, canales HD y quiniela. Sin suscripción.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#07070f",
   "theme_color": "#0ea5e9",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "icons": [
     { "src": "icons/icon-72.png",  "sizes": "72x72",   "type": "image/png" },
     { "src": "icons/icon-96.png",  "sizes": "96x96",   "type": "image/png" },
     { "src": "icons/icon-128.png", "sizes": "128x128", "type": "image/png" },
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable any" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable any" },
-    { "src": "icons/icon.svg",     "sizes": "any",     "type": "image/svg+xml" }
+    { "src": "icons/icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
     { "name": "En Vivo", "short_name": "Live", "url": "/#hero-section", "icons": [{ "src": "icons/icon-96.png", "sizes": "96x96" }] },
     { "name": "Canales", "short_name": "Canales", "url": "/#all-channels", "icons": [{ "src": "icons/icon-96.png", "sizes": "96x96" }] },
-    { "name": "Quiniela", "short_name": "Quiniela", "url": "/#quiniela-section", "icons": [{ "src": "icons/icon-96.png", "sizes": "96x96" }] }
+    { "name": "Quiniela", "short_name": "Quiniela", "url": "/quiniela.html", "icons": [{ "src": "icons/icon-96.png", "sizes": "96x96" }] }
   ],
   "categories": ["sports", "entertainment"],
-  "lang": "es"
+  "lang": "es",
+  "dir": "ltr"
 }

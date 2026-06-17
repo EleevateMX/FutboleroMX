@@ -11,7 +11,13 @@
   <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <!-- PWA iOS / móvil -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="TVContigo">
+  <meta name="application-name" content="TVContigo">
   <!-- Open Graph -->
   <meta property="og:title" content="TVContigo — Fútbol en Vivo">
   <meta property="og:description" content="El Mundial 2026 en tu pantalla. Gratis, sin suscripción.">
@@ -255,6 +261,25 @@
 <!-- Toast -->
 <div id="toast"></div>
 
+<!-- Botón flotante: Instalar app -->
+<button id="install-btn" style="display:none;position:fixed;right:14px;bottom:calc(var(--nav-h) + var(--ad-h) + 14px);z-index:300;background:var(--orange);color:#fff;border:none;border-radius:24px;padding:10px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 8px 24px rgba(249,115,22,.4);display:none;align-items:center;gap:6px;">
+  ⬇️ Instalar app
+</button>
+
+<!-- Modal instrucciones iOS -->
+<div class="modal-backdrop" id="ios-install-modal">
+  <div class="modal" style="text-align:center;">
+    <button class="modal-close" onclick="closeModal('ios-install-modal')">×</button>
+    <div class="modal-title">Instala <span>TVContigo</span></div>
+    <p style="color:var(--text-dim);font-size:14px;line-height:1.8;">
+      1. Toca el botón <strong>Compartir</strong> <span style="font-size:18px;">􀈂</span> abajo en Safari<br>
+      2. Elige <strong>"Agregar a inicio"</strong> ➕<br>
+      3. Toca <strong>Agregar</strong>
+    </p>
+    <p style="font-size:12px;color:var(--text-muted);margin-top:12px;">Tendrás TVContigo como app en tu pantalla de inicio.</p>
+  </div>
+</div>
+
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/data.js"></script>
@@ -268,6 +293,35 @@
   // Track page view
   const pv = parseInt(localStorage.getItem('tvc_pv') || '0') + 1;
   localStorage.setItem('tvc_pv', pv);
+
+  // ── Instalación PWA (PC + Android) ──────────────────────────────────────
+  let _deferredPrompt = null;
+  const installBtn = document.getElementById('install-btn');
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    _deferredPrompt = e;
+    if (!isStandalone) { installBtn.style.display = 'flex'; }
+  });
+
+  installBtn.addEventListener('click', async () => {
+    if (_deferredPrompt) {
+      _deferredPrompt.prompt();
+      const { outcome } = await _deferredPrompt.userChoice;
+      _deferredPrompt = null;
+      if (outcome === 'accepted') installBtn.style.display = 'none';
+    }
+  });
+
+  window.addEventListener('appinstalled', () => { installBtn.style.display = 'none'; });
+
+  // iOS: no soporta beforeinstallprompt → mostrar instrucciones
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  if (isIOS && !isStandalone) {
+    installBtn.style.display = 'flex';
+    installBtn.addEventListener('click', () => openModal('ios-install-modal'));
+  }
 </script>
 </body>
 </html>

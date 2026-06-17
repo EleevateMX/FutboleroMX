@@ -197,72 +197,93 @@
       </p>
     </div>
 
-    <!-- Quiniela Mundialista -->
+    <!-- Datos de pago globales -->
     <div class="section-card">
-      <h3><span class="dot"></span> 🏆 Quiniela Mundialista (dinero real)</h3>
-
+      <h3><span class="dot"></span> 💳 Datos de pago (Revolut)</h3>
       <div style="background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--dim);margin-bottom:16px;">
-        <strong style="color:var(--orange);">Clave de operación</strong> — necesaria para verificar pagos y liquidar. No se guarda en el sitio; tú la conservas en privado.
+        <strong style="color:var(--orange);">Clave de operación</strong> — necesaria para todas las acciones de la quiniela. No se guarda en el sitio.
       </div>
       <label>Clave de operación</label>
       <input type="password" id="q-op-key" placeholder="Clave secreta de la quiniela">
 
-      <!-- Stats pozo -->
+      <div style="font-size:13px;font-weight:700;margin:14px 0 10px;">Transferencia nacional (SPEI)</div>
+      <div class="form-row">
+        <div><label>Banco</label><input type="text" id="p-nat-bank"></div>
+        <div><label>Beneficiario</label><input type="text" id="p-nat-holder"></div>
+      </div>
+      <label>CLABE</label><input type="text" id="p-nat-clabe">
+
+      <div style="font-size:13px;font-weight:700;margin:14px 0 10px;">Transferencia internacional (SWIFT)</div>
+      <div class="form-row">
+        <div><label>Banco</label><input type="text" id="p-intl-bank"></div>
+        <div><label>Beneficiario</label><input type="text" id="p-intl-holder"></div>
+      </div>
+      <div class="form-row">
+        <div><label>N.º de cuenta</label><input type="text" id="p-intl-account"></div>
+        <div><label>BIC / SWIFT</label><input type="text" id="p-intl-swift"></div>
+      </div>
+      <label>Dirección de la entidad</label><input type="text" id="p-intl-address">
+      <label>Link de referido Revolut</label><input type="url" id="p-referral">
+      <button class="btn-save" onclick="savePayConfig()">Guardar datos de pago</button>
+      <div class="success-msg" id="p-ok" style="display:none;">✓ Datos de pago guardados</div>
+      <div class="err" id="p-err" style="display:none;"></div>
+    </div>
+
+    <!-- Quiniela Mundialista (multi-pool) -->
+    <div class="section-card">
+      <h3><span class="dot"></span> 🏆 Quinielas</h3>
+
+      <label>Selecciona la quiniela a gestionar</label>
+      <select id="q-pool-select" onchange="onPoolChange()"></select>
+
       <div class="stats-grid" style="margin:16px 0;">
-        <div class="stat-card orange"><div class="stat-label">POZO ACTUAL</div><div class="stat-value" id="q-pot">—</div></div>
+        <div class="stat-card orange"><div class="stat-label">BOTE</div><div class="stat-value" id="q-pot">—</div></div>
         <div class="stat-card green"><div class="stat-label">VERIFICADOS</div><div class="stat-value" id="q-verified">—</div></div>
         <div class="stat-card blue"><div class="stat-label">PENDIENTES</div><div class="stat-value" id="q-pending">—</div></div>
       </div>
 
-      <!-- Config del pozo -->
-      <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px;">
-        <div style="font-size:13px;font-weight:700;margin-bottom:12px;">Configuración del pozo</div>
+      <!-- Config del pool seleccionado -->
+      <div style="border-top:1px solid var(--border);padding-top:16px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;">Configuración de esta quiniela</div>
         <div class="form-row">
           <div><label>Nombre</label><input type="text" id="q-name"></div>
           <div><label>Moneda</label><input type="text" id="q-currency" placeholder="MXN"></div>
         </div>
         <div class="form-row">
-          <div><label>Boleto total</label><input type="text" id="q-entry" placeholder="100"></div>
-          <div><label>Comisión app</label><input type="text" id="q-fee" placeholder="20"></div>
+          <div><label>Boleto total</label><input type="text" id="q-entry"></div>
+          <div><label>Comisión app</label><input type="text" id="q-fee"></div>
         </div>
         <div class="form-row">
-          <div><label>Bote base (semilla para incentivar)</label><input type="text" id="q-base" placeholder="1000"></div>
-          <div></div>
-        </div>
-        <div class="form-row">
+          <div><label>Bote base (semilla)</label><input type="text" id="q-base"></div>
           <div><label>Estado</label>
             <select id="q-status">
-              <option value="open">🟢 Abierta (acepta boletos)</option>
-              <option value="closed">🔒 Cerrada (sin nuevos boletos)</option>
+              <option value="open">🟢 Abierta</option>
+              <option value="closed">🔒 Cerrada</option>
               <option value="settled">🏆 Liquidada</option>
             </select>
           </div>
-          <div><label>Banco</label><input type="text" id="q-bank" placeholder="BBVA"></div>
         </div>
-        <div class="form-row">
-          <div><label>Titular de la cuenta</label><input type="text" id="q-holder" placeholder="Nombre completo"></div>
-          <div><label>CLABE (18 dígitos)</label><input type="text" id="q-clabe" placeholder="012345678901234567"></div>
-        </div>
-        <label>Link de pago opcional (MercadoPago / Stripe Payment Link / PayPal.me)</label>
-        <input type="url" id="q-link" placeholder="https://mpago.la/...">
-        <button class="btn-save" onclick="saveQuinielaPool()">Guardar configuración del pozo</button>
-        <div class="success-msg" id="q-pool-ok" style="display:none;">✓ Pozo actualizado</div>
+        <label>Equipos semilla (JSON, ej. {"Noruega":1,"España":1,"México":1})</label>
+        <input type="text" id="q-seed" placeholder='{"Noruega":1,"España":1,"México":1}'>
+        <button class="btn-save" onclick="saveQuinielaPool()">Guardar esta quiniela</button>
+        <div class="success-msg" id="q-pool-ok" style="display:none;">✓ Quiniela actualizada</div>
         <div class="err" id="q-pool-err" style="display:none;"></div>
       </div>
 
-      <!-- Boletos / verificación de pagos -->
+      <!-- Participantes -->
       <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:16px;">
-        <div style="font-size:13px;font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;">
-          <span>Boletos y verificación de pagos</span>
+        <div style="font-size:13px;font-weight:700;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+          <span>Participantes y verificación</span>
           <button class="btn-out" onclick="loadQuinielaAdmin()">↻ Recargar</button>
         </div>
-        <div id="q-entries-list"><p style="font-size:12px;color:var(--muted);">Ingresa la clave y recarga para ver boletos.</p></div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Verifica el pago tras corroborar el folio/captura. Usa "✉ Correo" para escribirle al participante.</div>
+        <div id="q-entries-list"><p style="font-size:12px;color:var(--muted);">Ingresa la clave y recarga.</p></div>
       </div>
 
       <!-- Liquidación -->
       <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:16px;">
-        <div style="font-size:13px;font-weight:700;margin-bottom:12px;">Liquidar quiniela (al terminar el Mundial)</div>
-        <label>Campeón real (nombre exacto, ej. Argentina)</label>
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;">Liquidar esta quiniela</div>
+        <label>Campeón real (nombre exacto)</label>
         <input type="text" id="q-champion" placeholder="Argentina">
         <button class="btn-save" onclick="settleQuiniela()" style="background:var(--orange);">Liquidar y calcular ganadores</button>
         <div class="err" id="q-settle-err" style="display:none;"></div>
@@ -270,40 +291,37 @@
       </div>
     </div>
 
-    <!-- Ad Settings -->
+    <!-- Ad Settings (global, PC + móvil) -->
     <div class="section-card">
-      <h3><span class="dot"></span> Gestión de Publicidad</h3>
+      <h3><span class="dot"></span> 📢 Publicidad (PC y móvil)</h3>
+      <div style="background:rgba(14,165,233,.08);border:1px solid rgba(14,165,233,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--dim);margin-bottom:16px;">
+        Estos anuncios se muestran a <strong>todos los visitantes</strong> en el banner inferior. El sitio elige automáticamente la versión PC o móvil según la pantalla. Requiere la clave de operación.
+      </div>
 
       <div class="toggle-row">
         <div>
-          <div class="toggle-label">Banner inferior activo</div>
-          <div class="toggle-desc">Muestra el espacio publicitario al pie de la página</div>
+          <div class="toggle-label">Banner de anuncios activo</div>
+          <div class="toggle-desc">Muestra/oculta el banner inferior en todo el sitio</div>
         </div>
-        <button class="toggle on" id="toggle-ads" onclick="toggleSetting('ads')"></button>
-      </div>
-      <div class="toggle-row">
-        <div>
-          <div class="toggle-label">Google AdSense activo</div>
-          <div class="toggle-desc">Usa el código de AdSense en el banner</div>
-        </div>
-        <button class="toggle" id="toggle-adsense" onclick="toggleSetting('adsense')"></button>
+        <button class="toggle on" id="toggle-ads" onclick="document.getElementById('toggle-ads').classList.toggle('on')"></button>
       </div>
 
-      <div style="margin-top:18px;">
-        <label>Publisher ID de AdSense (ej: ca-pub-1234567890)</label>
-        <input type="text" id="adsense-pub" placeholder="ca-pub-XXXXXXXXXX">
-        <label>Ad Slot ID</label>
-        <input type="text" id="adsense-slot" placeholder="1234567890">
-        <label>O pega código HTML personalizado para el banner</label>
-        <textarea id="ad-code" placeholder="<script async src=&quot;...&quot;></script>&#10;<!-- o cualquier HTML para el banner -->"></textarea>
-        <button class="btn-save" onclick="saveAdSettings()">Guardar publicidad</button>
-        <div class="success-msg" id="ad-ok" style="display:none;">✓ Configuración de ads guardada</div>
-      </div>
+      <label style="margin-top:14px;">Anuncio para PC / escritorio (recomendado 728×90 — leaderboard)</label>
+      <textarea id="ad-desktop" placeholder="<!-- Código AdSense o HTML del banner para PC -->" style="min-height:90px;font-family:monospace;font-size:12px;"></textarea>
+
+      <label>Anuncio para móvil (recomendado 320×50 — banner móvil)</label>
+      <textarea id="ad-mobile" placeholder="<!-- Código AdSense o HTML del banner para móvil -->" style="min-height:90px;font-family:monospace;font-size:12px;"></textarea>
+
+      <button class="btn-save" onclick="saveAdSettings()">Guardar publicidad</button>
+      <div class="success-msg" id="ad-ok" style="display:none;">✓ Publicidad guardada (visible para todos)</div>
+      <div class="err" id="ad-err" style="display:none;"></div>
 
       <div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--border);">
-        <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Vista previa del banner:</div>
-        <div id="ad-preview" style="background:var(--s2);border:1px dashed var(--border-hi);border-radius:8px;height:72px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;">
-          📢 Espacio publicitario — tvcontigo.site
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Tip de tamaños AdSense:</div>
+        <div style="font-size:12px;color:var(--dim);line-height:1.8;">
+          • PC: <strong>728×90</strong> (leaderboard) o 970×90<br>
+          • Móvil: <strong>320×50</strong> (banner) o 300×100<br>
+          • Pega el código que te da Google AdSense o cualquier HTML/imagen con enlace.
         </div>
       </div>
     </div>
@@ -385,18 +403,35 @@ function initDashboard() {
   const imp = parseInt(localStorage.getItem('tvc_pv') || 0) * 3;
   document.getElementById('stat-imp').textContent = imp;
 
-  // Load saved settings
-  const s = JSON.parse(localStorage.getItem('tvc_ad_settings') || '{}');
-  if (s.adsEnabled === false) toggleOff('toggle-ads');
-  if (s.adsensetEnabled) toggleOn('toggle-adsense');
-  if (s.pubId) document.getElementById('adsense-pub').value = s.pubId;
-  if (s.slotId) document.getElementById('adsense-slot').value = s.slotId;
-  if (s.adCode) document.getElementById('ad-code').value = s.adCode;
-
+  loadAds();
   loadLiveConfigAdmin();
   loadQuinielaAdmin();
   renderChart();
   fetchUserCount();
+}
+
+async function loadAds() {
+  try {
+    const { data } = await sb.from('ad_config').select('*').eq('id', 1).single();
+    if (!data) return;
+    document.getElementById('toggle-ads').classList.toggle('on', data.enabled !== false);
+    document.getElementById('ad-desktop').value = data.desktop_code || '';
+    document.getElementById('ad-mobile').value = data.mobile_code || '';
+  } catch (e) { /* ignora */ }
+}
+
+async function saveAdSettings() {
+  const ok = document.getElementById('ad-ok'); const err = document.getElementById('ad-err');
+  ok.style.display = 'none'; err.style.display = 'none';
+  if (!qKey()) { err.textContent = 'Ingresa la clave de operación (arriba, en la sección de pago).'; err.style.display = 'block'; return; }
+  const { error } = await sb.rpc('qadmin_update_ads', {
+    p_pass: qKey(),
+    p_enabled: document.getElementById('toggle-ads').classList.contains('on'),
+    p_desktop: document.getElementById('ad-desktop').value,
+    p_mobile: document.getElementById('ad-mobile').value,
+  });
+  if (error) { err.textContent = 'Error: ' + error.message; err.style.display = 'block'; return; }
+  ok.style.display = 'block'; setTimeout(() => ok.style.display = 'none', 4000);
 }
 
 async function loadLiveConfigAdmin() {
@@ -459,61 +494,89 @@ function fetchUserCount() {
   document.getElementById('stat-users').textContent = '—';
 }
 
-// ── Quiniela Mundialista (admin) ──────────────────────────────────────────
-let _qPool = null, _qEntries = [];
+// ── Quiniela Mundialista (admin, multi-pool) ──────────────────────────────
+let _qPools = [], _qPay = {}, _qAllEntries = [], _qPoolId = null;
 
 function qKey() { return document.getElementById('q-op-key').value.trim(); }
-function qMoney(n) { return '$' + Number(n).toLocaleString('es-MX') + ' ' + (_qPool?.currency || 'MXN'); }
+function curPool() { return _qPools.find(p => p.id === _qPoolId) || {}; }
+function qMoney(n) { return '$' + Number(Math.round(n)).toLocaleString('es-MX') + ' ' + (curPool().currency || 'MXN'); }
+function mailHref(to, subj, body) { return `mailto:${to}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`; }
 
 async function loadQuinielaAdmin() {
-  const [{ data: pool }, { data: entries }] = await Promise.all([
-    sb.from('quiniela_pool').select('*').eq('id', 1).single(),
-    sb.from('quiniela_entries').select('*').order('created_at', { ascending: false }),
+  const [{ data: pools }, { data: pay }] = await Promise.all([
+    sb.from('quiniela_pool').select('*').order('entry_amount'),
+    sb.from('pay_config').select('*').eq('id', 1).single(),
   ]);
-  _qPool = pool || {};
-  _qEntries = entries || [];
+  _qPools = pools || [];
+  _qPay = pay || {};
+  // Boletos: requieren la clave (incluyen correo/folio). Si no hay clave, vacío.
+  if (qKey()) {
+    const { data: entries, error } = await sb.rpc('qadmin_entries', { p_pass: qKey() });
+    _qAllEntries = error ? [] : (entries || []);
+  } else {
+    _qAllEntries = [];
+  }
 
-  // Config
-  document.getElementById('q-name').value = _qPool.name || '';
-  document.getElementById('q-currency').value = _qPool.currency || 'MXN';
-  document.getElementById('q-entry').value = _qPool.entry_amount ?? 100;
-  document.getElementById('q-fee').value = _qPool.service_fee ?? 20;
-  document.getElementById('q-status').value = _qPool.status || 'open';
-  document.getElementById('q-bank').value = _qPool.bank_name || '';
-  document.getElementById('q-holder').value = _qPool.bank_holder || '';
-  document.getElementById('q-clabe').value = _qPool.bank_clabe || '';
-  document.getElementById('q-link').value = _qPool.payment_link || '';
-  document.getElementById('q-base').value = _qPool.base_pot ?? 1000;
+  // Datos de pago
+  setVal('p-nat-bank', _qPay.nat_bank); setVal('p-nat-holder', _qPay.nat_holder); setVal('p-nat-clabe', _qPay.nat_clabe);
+  setVal('p-intl-bank', _qPay.intl_bank); setVal('p-intl-holder', _qPay.intl_holder);
+  setVal('p-intl-account', _qPay.intl_account); setVal('p-intl-swift', _qPay.intl_swift);
+  setVal('p-intl-address', _qPay.intl_address); setVal('p-referral', _qPay.revolut_referral);
 
-  // Stats
-  const verified = _qEntries.filter(e => e.payment_status === 'verified');
-  const pending = _qEntries.filter(e => e.payment_status === 'pending');
-  const poolPer = (_qPool.entry_amount ?? 100) - (_qPool.service_fee ?? 20);
-  const base = _qPool.base_pot ?? 1000;
-  document.getElementById('q-pot').textContent = qMoney(base + verified.length * poolPer);
+  // Selector de pools
+  const sel = document.getElementById('q-pool-select');
+  if (_qPoolId === null && _qPools.length) _qPoolId = _qPools[0].id;
+  sel.innerHTML = _qPools.map(p => `<option value="${p.id}" ${p.id===_qPoolId?'selected':''}>${p.name} (${p.currency})</option>`).join('');
+
+  renderPoolAdmin();
+}
+function setVal(id, v) { const el = document.getElementById(id); if (el) el.value = v || ''; }
+
+function onPoolChange() { _qPoolId = parseInt(document.getElementById('q-pool-select').value); renderPoolAdmin(); }
+
+function renderPoolAdmin() {
+  const p = curPool();
+  setVal('q-name', p.name); setVal('q-currency', p.currency || 'MXN');
+  document.getElementById('q-entry').value = p.entry_amount ?? '';
+  document.getElementById('q-fee').value = p.service_fee ?? '';
+  document.getElementById('q-base').value = p.base_pot ?? '';
+  document.getElementById('q-status').value = p.status || 'open';
+  setVal('q-seed', JSON.stringify(p.seed_picks || {}));
+
+  const entries = _qAllEntries.filter(e => e.pool_id === p.id);
+  const verified = entries.filter(e => e.payment_status === 'verified');
+  const pending = entries.filter(e => e.payment_status === 'pending');
+  const per = (p.entry_amount || 0) - (p.service_fee || 0);
+  document.getElementById('q-pot').textContent = qMoney((p.base_pot || 0) + verified.length * per);
   document.getElementById('q-verified').textContent = verified.length;
   document.getElementById('q-pending').textContent = pending.length;
-
-  renderEntriesList();
+  renderEntriesList(entries);
+  document.getElementById('q-winners').innerHTML = '';
 }
 
-function renderEntriesList() {
+function renderEntriesList(entries) {
   const el = document.getElementById('q-entries-list');
-  if (!_qEntries.length) { el.innerHTML = '<p style="font-size:12px;color:var(--muted);">No hay boletos todavía.</p>'; return; }
+  if (!entries.length) { el.innerHTML = '<p style="font-size:12px;color:var(--muted);">No hay boletos en esta quiniela.</p>'; return; }
   const badge = { pending:'#f97316', verified:'#22c55e', rejected:'#ef4444' };
-  el.innerHTML = _qEntries.map(e => `
+  const p = curPool();
+  el.innerHTML = entries.map(e => {
+    const okMail = mailHref(e.email || '', `Quiniela ${p.name} — Pago confirmado`,
+      `Hola ${e.user_name},\n\nConfirmamos tu pago para "${p.name}". Tu boleto con ${e.champion_pick} como campeón ya está participando. ¡Mucha suerte!\n\nTVContigo`);
+    return `
     <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
         <div>
           <div style="font-weight:700;font-size:13px;">${e.user_name || 'Usuario'} — ${e.champion_pick}</div>
-          <div style="font-size:11px;color:var(--dim);">Folio: ${e.payment_ref || '—'} · ${e.payment_method} · <span style="color:${badge[e.payment_status]}">${e.payment_status}</span></div>
+          <div style="font-size:11px;color:var(--dim);">${e.email || 'sin correo'} · Folio: ${e.payment_ref || '—'} · ${e.payment_method === 'transfer_intl' ? 'Internacional' : 'Nacional'} · <span style="color:${badge[e.payment_status]}">${e.payment_status}</span></div>
         </div>
-        <div style="display:flex;gap:6px;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${e.email ? `<a class="btn-out" style="padding:6px 10px;font-size:12px;text-decoration:none;" href="${okMail}">✉ Correo</a>` : ''}
           ${e.payment_status !== 'verified' ? `<button class="btn-save" style="padding:6px 12px;font-size:12px;" onclick="qVerify('${e.id}')">✓ Verificar</button>` : ''}
           ${e.payment_status !== 'rejected' ? `<button class="btn-danger" style="padding:6px 12px;font-size:12px;" onclick="qReject('${e.id}')">✕ Rechazar</button>` : ''}
         </div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 async function qVerify(id) {
@@ -522,7 +585,6 @@ async function qVerify(id) {
   if (error) { alert('Error: ' + error.message); return; }
   await loadQuinielaAdmin();
 }
-
 async function qReject(id) {
   if (!qKey()) { alert('Ingresa la clave de operación primero.'); return; }
   const { error } = await sb.rpc('qadmin_reject', { p_entry: id, p_pass: qKey() });
@@ -534,22 +596,42 @@ async function saveQuinielaPool() {
   const err = document.getElementById('q-pool-err'); const ok = document.getElementById('q-pool-ok');
   err.style.display = 'none'; ok.style.display = 'none';
   if (!qKey()) { err.textContent = 'Ingresa la clave de operación.'; err.style.display = 'block'; return; }
+  let seed;
+  try { seed = JSON.parse(document.getElementById('q-seed').value || '{}'); }
+  catch (e) { err.textContent = 'El JSON de equipos semilla no es válido.'; err.style.display = 'block'; return; }
   const { error } = await sb.rpc('qadmin_update_pool', {
-    p_pass: qKey(),
+    p_pass: qKey(), p_pool_id: _qPoolId,
     p_name: document.getElementById('q-name').value.trim(),
-    p_entry: parseFloat(document.getElementById('q-entry').value) || 100,
-    p_fee: parseFloat(document.getElementById('q-fee').value) || 20,
+    p_entry: parseFloat(document.getElementById('q-entry').value) || 0,
+    p_fee: parseFloat(document.getElementById('q-fee').value) || 0,
     p_currency: document.getElementById('q-currency').value.trim() || 'MXN',
     p_status: document.getElementById('q-status').value,
-    p_bank_name: document.getElementById('q-bank').value.trim(),
-    p_clabe: document.getElementById('q-clabe').value.trim(),
-    p_holder: document.getElementById('q-holder').value.trim(),
-    p_link: document.getElementById('q-link').value.trim(),
     p_base: parseFloat(document.getElementById('q-base').value) || 0,
+    p_seed: seed,
   });
   if (error) { err.textContent = 'Error: ' + error.message; err.style.display = 'block'; return; }
   ok.style.display = 'block'; setTimeout(() => ok.style.display = 'none', 4000);
   loadQuinielaAdmin();
+}
+
+async function savePayConfig() {
+  const err = document.getElementById('p-err'); const ok = document.getElementById('p-ok');
+  err.style.display = 'none'; ok.style.display = 'none';
+  if (!qKey()) { err.textContent = 'Ingresa la clave de operación.'; err.style.display = 'block'; return; }
+  const { error } = await sb.rpc('qadmin_update_pay', {
+    p_pass: qKey(),
+    p_nat_bank: document.getElementById('p-nat-bank').value.trim(),
+    p_nat_holder: document.getElementById('p-nat-holder').value.trim(),
+    p_nat_clabe: document.getElementById('p-nat-clabe').value.trim(),
+    p_intl_bank: document.getElementById('p-intl-bank').value.trim(),
+    p_intl_holder: document.getElementById('p-intl-holder').value.trim(),
+    p_intl_account: document.getElementById('p-intl-account').value.trim(),
+    p_intl_swift: document.getElementById('p-intl-swift').value.trim(),
+    p_intl_address: document.getElementById('p-intl-address').value.trim(),
+    p_referral: document.getElementById('p-referral').value.trim(),
+  });
+  if (error) { err.textContent = 'Error: ' + error.message; err.style.display = 'block'; return; }
+  ok.style.display = 'block'; setTimeout(() => ok.style.display = 'none', 4000);
 }
 
 async function settleQuiniela() {
@@ -557,28 +639,31 @@ async function settleQuiniela() {
   const champ = document.getElementById('q-champion').value.trim();
   if (!qKey()) { err.textContent = 'Ingresa la clave de operación.'; err.style.display = 'block'; return; }
   if (!champ) { err.textContent = 'Escribe el nombre del campeón.'; err.style.display = 'block'; return; }
-  if (!confirm(`¿Liquidar la quiniela con ${champ} como campeón? Esto cierra la quiniela.`)) return;
-  const { error } = await sb.rpc('qadmin_settle', { p_champion: champ, p_pass: qKey() });
+  if (!confirm(`¿Liquidar "${curPool().name}" con ${champ} como campeón?`)) return;
+  const { error } = await sb.rpc('qadmin_settle', { p_pool_id: _qPoolId, p_champion: champ, p_pass: qKey() });
   if (error) { err.textContent = 'Error: ' + error.message; err.style.display = 'block'; return; }
   await loadQuinielaAdmin();
   renderWinners(champ);
 }
 
 function renderWinners(champ) {
-  const verified = _qEntries.filter(e => e.payment_status === 'verified');
+  const p = curPool();
+  const entries = _qAllEntries.filter(e => e.pool_id === p.id);
+  const verified = entries.filter(e => e.payment_status === 'verified');
   const winners = verified.filter(e => e.champion_pick === champ);
-  const poolPer = (_qPool.entry_amount ?? 100) - (_qPool.service_fee ?? 20);
-  const base = _qPool.base_pot ?? 1000;
-  const total = base + verified.length * poolPer;
-  const per = winners.length ? total / winners.length : 0;
-  const el = document.getElementById('q-winners');
-  el.innerHTML = `
+  const per = (p.entry_amount || 0) - (p.service_fee || 0);
+  const total = (p.base_pot || 0) + verified.length * per;
+  const each = winners.length ? total / winners.length : 0;
+  document.getElementById('q-winners').innerHTML = `
     <div style="background:var(--s2);border-radius:10px;padding:14px;">
-      <div style="font-size:13px;color:var(--dim);">Pozo total: <strong>${qMoney(total)}</strong> · Ganadores: <strong>${winners.length}</strong></div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--green);margin:6px 0;">${qMoney(per)} por ganador</div>
+      <div style="font-size:13px;color:var(--dim);">Bote: <strong>${qMoney(total)}</strong> · Ganadores: <strong>${winners.length}</strong></div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--green);margin:6px 0;">${qMoney(each)} por ganador</div>
       ${winners.length ? '<div style="font-size:12px;color:var(--dim);margin-top:8px;">Pagar a:</div>' + winners.map(w =>
-        `<div style="font-size:13px;padding:4px 0;border-bottom:1px solid var(--border);">${w.user_name} — folio ${w.payment_ref || '—'}</div>`).join('')
-        : '<div style="font-size:13px;color:var(--orange);">Nadie acertó al campeón. Revisa el reglamento para el reparto alternativo.</div>'}
+        `<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border);">
+          <span>${w.user_name} — ${w.email || 'sin correo'}</span>
+          ${w.email ? `<a class="btn-out" style="padding:4px 10px;font-size:11px;text-decoration:none;" href="${mailHref(w.email, `¡Ganaste la ${p.name}!`, `Hola ${w.user_name},\n\n¡Felicidades! Acertaste el campeón (${champ}) y ganaste ${qMoney(each)} en la quiniela "${p.name}". Te contactaremos para coordinar tu pago.\n\nTVContigo`)}">✉ Avisar</a>` : ''}
+        </div>`).join('')
+        : '<div style="font-size:13px;color:var(--orange);">Nadie acertó. Revisa el reglamento para el reparto alternativo.</div>'}
     </div>`;
 }
 
@@ -595,45 +680,6 @@ function renderChart() {
       <div class="bar-label">${d}</div>
     </div>`;
   }).join('');
-}
-
-// Toggles
-const _states = {};
-function toggleSetting(key) {
-  const el = document.getElementById(`toggle-${key}`);
-  el.classList.toggle('on');
-  _states[key] = el.classList.contains('on');
-}
-function toggleOff(id) { document.getElementById(id).classList.remove('on'); }
-function toggleOn(id) { document.getElementById(id).classList.add('on'); }
-
-function saveAdSettings() {
-  const adsEnabled = document.getElementById('toggle-ads').classList.contains('on');
-  const adsensetEnabled = document.getElementById('toggle-adsense').classList.contains('on');
-  const pubId = document.getElementById('adsense-pub').value.trim();
-  const slotId = document.getElementById('adsense-slot').value.trim();
-  const adCode = document.getElementById('ad-code').value.trim();
-
-  let finalCode = adCode;
-  if (!finalCode && pubId && slotId) {
-    finalCode = `<ins class="adsbygoogle" style="display:inline-block;width:728px;height:60px" data-ad-client="${pubId}" data-ad-slot="${slotId}"></ins><script>(adsbygoogle = window.adsbygoogle || []).push({});<\/script>`;
-  }
-
-  localStorage.setItem('tvc_ad_settings', JSON.stringify({ adsEnabled, adsensetEnabled, pubId, slotId, adCode: finalCode }));
-
-  const ok = document.getElementById('ad-ok');
-  ok.style.display = 'block';
-  setTimeout(() => ok.style.display = 'none', 3000);
-
-  if (finalCode) document.getElementById('ad-preview').innerHTML = finalCode;
-}
-
-function saveContentSettings() {
-  const liveSlug = document.getElementById('live-slug').value.trim();
-  localStorage.setItem('tvc_content_settings', JSON.stringify({ liveSlug }));
-  const ok = document.getElementById('content-ok');
-  ok.style.display = 'block';
-  setTimeout(() => ok.style.display = 'none', 3000);
 }
 
 function saveSeoSettings() {

@@ -4,84 +4,73 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Quiniela Mundialista — TVContigo</title>
-  <meta name="description" content="Participa en la Quiniela Mundialista 2026. Predice al campeón y reparte el pozo entre los ganadores.">
+  <meta name="description" content="Participa en la Quiniela Mundialista 2026. Predice al campeón y reparte el bote entre los ganadores.">
   <meta name="theme-color" content="#0ea5e9">
   <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="stylesheet" href="css/style.css">
   <style>
-    .q-wrap { max-width: 680px; margin: 0 auto; padding: 16px 16px 40px; }
+    .q-wrap { max-width: 680px; margin: 0 auto; padding: 16px 16px 48px; }
+    .back-link { display:inline-flex; align-items:center; gap:6px; color:var(--text-dim); text-decoration:none; font-size:13px; margin-bottom:14px; }
     .q-hero {
       background: linear-gradient(135deg, #0d1f3d, #0f1f3d 40%, #1a1330);
       border: 1.5px solid rgba(249,115,22,.3); border-radius: 18px;
-      padding: 24px; text-align: center; margin-bottom: 18px; position: relative; overflow: hidden;
+      padding: 22px; text-align: center; margin-bottom: 18px; position: relative; overflow: hidden;
     }
     .q-hero::after { content: '🏆'; position: absolute; right: -10px; bottom: -20px; font-size: 120px; opacity: .06; }
-    .q-hero h1 { font-family: 'Bebas Neue', sans-serif; font-size: 34px; letter-spacing: 1px; }
+    .q-hero h1 { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 1px; }
     .q-hero h1 span { color: var(--orange); }
     .q-hero p { color: var(--text-dim); font-size: 13px; margin-top: 6px; }
-    .pot-box { display: flex; gap: 12px; margin: 18px 0; }
-    .pot-item { flex: 1; background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 14px; padding: 16px; text-align: center; }
-    .pot-val { font-family: 'Bebas Neue', sans-serif; font-size: 30px; line-height: 1; color: var(--orange); }
-    .pot-val.blue { color: var(--blue); }
-    .pot-label { font-size: 10px; color: var(--text-dim); letter-spacing: .5px; margin-top: 4px; }
-    .q-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px; padding: 22px; margin-bottom: 16px; }
-    .q-card h3 { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
-    .q-card h3 .num { width: 24px; height: 24px; border-radius: 50%; background: var(--orange); color: #fff; font-family: 'Inter'; font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
-    .team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px,1fr)); gap: 8px; }
+    .q-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 14px; }
+    .q-card h3 { font-family: 'Bebas Neue', sans-serif; font-size: 19px; letter-spacing: 1px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .q-card h3 .num { width: 22px; height: 22px; border-radius: 50%; background: var(--orange); color: #fff; font-family: 'Inter'; font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
+    /* Pool selector cards */
+    .pool-card { background: linear-gradient(135deg,#101a2e,#161228); border:1.5px solid var(--border); border-radius:14px; padding:18px; margin-bottom:12px; cursor:pointer; transition:all .18s; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .pool-card:hover { border-color:var(--orange); transform:translateY(-2px); }
+    .pool-name { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:1px; }
+    .pool-sub { font-size:12px; color:var(--text-dim); }
+    .pool-pot { text-align:right; }
+    .pool-pot-val { font-family:'Bebas Neue',sans-serif; font-size:26px; color:var(--orange); line-height:1; }
+    .pool-pot-lbl { font-size:9px; color:var(--text-muted); letter-spacing:.5px; }
+    .team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px,1fr)); gap: 8px; }
     .team-opt { background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 10px; padding: 10px 6px; cursor: pointer; text-align: center; transition: all .15s; font-size: 11px; }
     .team-opt:hover { border-color: var(--orange); }
     .team-opt.sel { background: rgba(249,115,22,.15); border-color: var(--orange); color: var(--orange); font-weight: 700; }
     .team-opt .f { font-size: 22px; display: block; }
-    .pay-method { display: flex; gap: 10px; margin-bottom: 14px; }
-    .pay-opt { flex: 1; background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px; cursor: pointer; text-align: center; font-size: 12px; font-weight: 600; transition: all .15s; }
+    .pay-method { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap:wrap; }
+    .pay-opt { flex: 1; min-width:130px; background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 10px; padding: 11px; cursor: pointer; text-align: center; font-size: 12px; font-weight: 600; transition: all .15s; }
     .pay-opt.sel { border-color: var(--blue); background: rgba(14,165,233,.1); color: var(--blue); }
     .bank-info { background: var(--surface-2); border-radius: 10px; padding: 14px; font-size: 13px; line-height: 1.9; margin-bottom: 12px; }
-    .bank-info .clabe { font-family: monospace; font-size: 15px; color: var(--blue); letter-spacing: 1px; }
+    .bank-info .mono { font-family: monospace; color: var(--blue); }
     .copy-btn { background: var(--surface-3); border: 1px solid var(--border); color: var(--text-dim); font-size: 10px; padding: 2px 8px; border-radius: 5px; cursor: pointer; margin-left: 6px; }
-    .legal-strip { font-size: 11px; color: var(--text-muted); text-align: center; line-height: 1.7; margin-top: 18px; }
+    .revolut-cta { background: linear-gradient(135deg,#0a1f3a,#06122a); border:1px solid rgba(14,165,233,.3); border-radius:12px; padding:14px; margin-bottom:12px; }
+    .revolut-cta a { display:inline-block; margin-top:8px; background:#0ea5e9; color:#fff; padding:8px 16px; border-radius:8px; font-size:12px; font-weight:700; text-decoration:none; }
+    .legal-strip { font-size: 11px; color: var(--text-muted); text-align: center; line-height: 1.7; margin-top: 16px; }
     .legal-strip a { color: var(--text-dim); }
     .age-badge { display: inline-block; background: var(--red); color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 5px; }
-    .status-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+    .status-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
     .status-pending { background: rgba(249,115,22,.15); color: var(--orange); }
     .status-verified { background: rgba(34,197,94,.15); color: var(--green); }
     .status-rejected { background: rgba(239,68,68,.15); color: var(--red); }
-    .back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--text-dim); text-decoration: none; font-size: 13px; margin-bottom: 14px; }
+    .confirm-box { background: rgba(34,197,94,.08); border:1px solid rgba(34,197,94,.3); border-radius:12px; padding:16px; text-align:center; }
+    .bounty-row { display:flex; align-items:center; gap:10px; padding:9px 11px; border-radius:10px; background:var(--surface-2); border:1.5px solid var(--border); margin-bottom:6px; }
+    .bounty-row.mine { border-color: var(--orange); background: rgba(249,115,22,.08); }
+    .bounty-amt { font-family:'Bebas Neue',sans-serif; font-size:18px; color:var(--green); }
   </style>
 </head>
 <body style="padding-top:0;padding-bottom:24px;">
-
 <div class="q-wrap">
   <a class="back-link" href="index.html">← Volver a TVContigo</a>
-
   <div class="q-hero">
     <h1>QUINIELA <span>MUNDIALISTA</span></h1>
-    <p id="q-name">Predice al campeón del Mundial 2026 · El pozo se reparte entre los ganadores</p>
-    <div class="pot-box">
-      <div class="pot-item">
-        <div class="pot-val" id="pot-total">—</div>
-        <div class="pot-label">POZO ACUMULADO</div>
-      </div>
-      <div class="pot-item">
-        <div class="pot-val blue" id="pot-players">—</div>
-        <div class="pot-label">PARTICIPANTES</div>
-      </div>
-    </div>
-    <div style="font-size:12px;color:var(--text-dim);">
-      Boleto: <strong id="q-entry">$100</strong> &nbsp;·&nbsp; Comisión app: <strong id="q-fee">$20</strong> &nbsp;·&nbsp; Al pozo: <strong id="q-pool">$80</strong>
-    </div>
+    <p>Predice al campeón del Mundial 2026 · El bote se reparte entre los ganadores</p>
   </div>
-
-  <!-- Estado del usuario / formulario -->
-  <div id="q-content">
-    <div class="q-card" style="text-align:center;">
-      <p style="color:var(--text-dim);">Cargando...</p>
-    </div>
+  <div id="q-app">
+    <div class="q-card" style="text-align:center;"><p style="color:var(--text-dim);">Cargando quinielas...</p></div>
   </div>
-
   <div class="legal-strip">
     <span class="age-badge">+18</span> &nbsp; Solo mayores de edad. Concurso de pronósticos por habilidad.<br>
-    Al participar aceptas el <a href="pages/reglamento-quiniela.html">Reglamento de la Quiniela</a>,
+    Al participar aceptas el <a href="pages/reglamento-quiniela.html">Reglamento</a>,
     los <a href="pages/terminos.html">Términos</a> y el <a href="pages/privacidad.html">Aviso de Privacidad</a>.<br>
     Juega con responsabilidad. Esto no es una casa de apuestas.
   </div>

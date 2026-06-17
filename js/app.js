@@ -270,13 +270,26 @@ function renderRanking() {
   `).join('');
 }
 
-// ── Ad Settings ───────────────────────────────────────────────────────────
-function loadAdSettings() {
-  const settings = JSON.parse(localStorage.getItem('tvc_ad_settings') || '{}');
+// ── Ad Settings (global, desde Supabase, adaptado PC/móvil) ───────────────
+async function loadAdSettings() {
   const adBar = document.getElementById('ad-bar');
   const adContent = document.getElementById('ad-content');
-  if (settings.adsEnabled === false) { adBar.classList.add('hidden'); return; }
-  if (settings.adCode) adContent.innerHTML = settings.adCode;
+  try {
+    const { data } = await sb.from('ad_config').select('*').eq('id', 1).single();
+    if (!data || !data.enabled) { adBar.classList.add('hidden'); return; }
+    const isMobile = window.matchMedia('(max-width: 640px)').matches;
+    const code = isMobile ? (data.mobile_code || data.desktop_code) : (data.desktop_code || data.mobile_code);
+    if (code && code.trim()) {
+      adContent.innerHTML = code;
+      // Re-ejecuta scripts inyectados (AdSense, etc.)
+      adContent.querySelectorAll('script').forEach(old => {
+        const s = document.createElement('script');
+        [...old.attributes].forEach(a => s.setAttribute(a.name, a.value));
+        s.textContent = old.textContent;
+        old.replaceWith(s);
+      });
+    }
+  } catch (e) { /* deja el placeholder por defecto */ }
 }
 
 function closeAd() {
