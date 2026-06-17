@@ -138,25 +138,62 @@
       <div class="chart-bars" id="chart-bars"></div>
     </div>
 
-    <!-- Content Settings -->
+    <!-- Live Match Settings (conectado a Supabase live_config) -->
     <div class="section-card">
-      <h3><span class="dot"></span> Contenido en Vivo</h3>
-      <label>Slug del partido en vivo (embed.st)</label>
-      <input type="text" id="live-slug" placeholder="ej: ppv-argentina-vs-mexico">
+      <h3><span class="dot"></span> Partido EN VIVO (se actualiza en el sitio al instante)</h3>
+      <label>Slug del partido en embed.st</label>
+      <input type="text" id="live-slug" placeholder="ej: ppv-austria-vs-jordan">
       <div class="form-row">
         <div>
-          <label>URL alternativa canal 1</label>
-          <input type="url" id="alt-url-1" placeholder="https://...">
+          <label>Estado</label>
+          <select id="live-status">
+            <option value="live">🔴 En vivo</option>
+            <option value="off">⚫ Sin partido en vivo</option>
+          </select>
         </div>
         <div>
-          <label>URL alternativa canal 2</label>
-          <input type="url" id="alt-url-2" placeholder="https://...">
+          <label>Jornada / Competición</label>
+          <input type="text" id="live-comp" placeholder="Jornada 1">
         </div>
       </div>
-      <button class="btn-save" onclick="saveContentSettings()">Guardar configuración</button>
-      <div class="success-msg" id="content-ok" style="display:none;">✓ Guardado correctamente</div>
+      <div class="form-row">
+        <div>
+          <label>Local (nombre)</label>
+          <input type="text" id="live-home" placeholder="Austria">
+        </div>
+        <div>
+          <label>Local (bandera emoji)</label>
+          <input type="text" id="live-home-flag" placeholder="🇦🇹">
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label>Visitante (nombre)</label>
+          <input type="text" id="live-away" placeholder="Jordania">
+        </div>
+        <div>
+          <label>Visitante (bandera emoji)</label>
+          <input type="text" id="live-away-flag" placeholder="🇯🇴">
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label>Marcador local</label>
+          <input type="text" id="live-hs" placeholder="0">
+        </div>
+        <div>
+          <label>Marcador visitante</label>
+          <input type="text" id="live-as" placeholder="0">
+        </div>
+      </div>
+      <label>Canales (JSON — id, name, option, tag, n=número de canal en embed.st)</label>
+      <textarea id="live-channels" style="min-height:160px;font-family:monospace;font-size:12px;"></textarea>
+      <button class="btn-save" onclick="saveLiveConfig()">Publicar partido en vivo</button>
+      <div class="success-msg" id="content-ok" style="display:none;">✓ Publicado — visible en el sitio al recargar</div>
+      <div class="err" id="content-err" style="display:none;"></div>
       <p style="font-size:11px;color:var(--muted);margin-top:10px;">
-        ⚠️ Cambiar el slug actualiza todos los canales. Edita también <code>js/data.js → LIVE_SLUG</code> antes de hacer push.
+        💡 Saca el slug y los canales de <a href="https://lacancha.tv/es/en-vivo" target="_blank" style="color:var(--blue)">lacancha.tv/es/en-vivo</a>.
+        Esto actualiza el sitio <strong>sin necesidad de re-desplegar</strong>.
       </p>
     </div>
 
@@ -235,8 +272,14 @@
   </div><!-- /main -->
 </div><!-- /dashboard -->
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 const ADMIN_PASS = 'tvcontigo2026';
+
+// Supabase client (mismo proyecto FutboleroMX)
+const SUPA_URL = 'https://sclqzavebwinezpivmwr.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNjbHF6YXZlYndpbmV6cGl2bXdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2NDMzNjUsImV4cCI6MjA5NzIxOTM2NX0.khNF90QxEqh1jEOxdtseREfWLmGAW-3cVJpots4VbTc';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 
 function doAdminLogin() {
   const pass = document.getElementById('admin-pass').value;
@@ -277,15 +320,68 @@ function initDashboard() {
   if (s.slotId) document.getElementById('adsense-slot').value = s.slotId;
   if (s.adCode) document.getElementById('ad-code').value = s.adCode;
 
-  const cs = JSON.parse(localStorage.getItem('tvc_content_settings') || '{}');
-  if (cs.liveSlug) document.getElementById('live-slug').value = cs.liveSlug;
-
+  loadLiveConfigAdmin();
   renderChart();
   fetchUserCount();
 }
 
+async function loadLiveConfigAdmin() {
+  try {
+    const { data } = await sb.from('live_config').select('*').eq('id', 1).single();
+    if (!data) return;
+    document.getElementById('live-slug').value = data.slug || '';
+    document.getElementById('live-status').value = data.status === 'live' ? 'live' : 'off';
+    document.getElementById('live-comp').value = data.comp || '';
+    document.getElementById('live-home').value = data.home_name || '';
+    document.getElementById('live-home-flag').value = data.home_flag || '';
+    document.getElementById('live-away').value = data.away_name || '';
+    document.getElementById('live-away-flag').value = data.away_flag || '';
+    document.getElementById('live-hs').value = data.hs ?? 0;
+    document.getElementById('live-as').value = data.as_ ?? 0;
+    document.getElementById('live-channels').value = JSON.stringify(data.channels || [], null, 2);
+  } catch (e) { /* ignora */ }
+}
+
+async function saveLiveConfig() {
+  const err = document.getElementById('content-err');
+  const ok = document.getElementById('content-ok');
+  err.style.display = 'none'; ok.style.display = 'none';
+
+  let channels;
+  try {
+    channels = JSON.parse(document.getElementById('live-channels').value || '[]');
+  } catch (e) {
+    err.textContent = 'El JSON de canales no es válido. Revísalo.';
+    err.style.display = 'block';
+    return;
+  }
+
+  const row = {
+    id: 1,
+    slug: document.getElementById('live-slug').value.trim(),
+    status: document.getElementById('live-status').value,
+    comp: document.getElementById('live-comp').value.trim(),
+    home_name: document.getElementById('live-home').value.trim(),
+    home_flag: document.getElementById('live-home-flag').value.trim(),
+    away_name: document.getElementById('live-away').value.trim(),
+    away_flag: document.getElementById('live-away-flag').value.trim(),
+    hs: parseInt(document.getElementById('live-hs').value) || 0,
+    as_: parseInt(document.getElementById('live-as').value) || 0,
+    channels,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = await sb.from('live_config').upsert(row, { onConflict: 'id' });
+  if (error) {
+    err.textContent = 'Error al guardar: ' + error.message;
+    err.style.display = 'block';
+    return;
+  }
+  ok.style.display = 'block';
+  setTimeout(() => ok.style.display = 'none', 4000);
+}
+
 function fetchUserCount() {
-  // Simulated - would need Supabase service role key for real count
   document.getElementById('stat-users').textContent = '—';
 }
 

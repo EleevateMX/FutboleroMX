@@ -5,8 +5,16 @@
 const LIVE_SLUG = 'ppv-austria-vs-jordan';
 const ES = (n) => `https://embed.st/embed/admin/${LIVE_SLUG}/${n}`;
 
-// Canales reales actuales (mapeo de números de canal embed.st)
-const CHANNELS = [
+// Construye la lista de canales desde un slug + definición (usado por live_config)
+function buildChannels(slug, list) {
+  return list.map(c => ({
+    id: c.id, name: c.name, option: c.option, tag: c.tag || '',
+    url: `https://embed.st/embed/admin/${slug}/${c.n}`, live: true,
+  }));
+}
+
+// Canales reales actuales (default — se sobrescribe con Supabase live_config)
+let CHANNELS = [
   { id: 'telemundo-1', name: 'TELEMUNDO', option: 'OPCIÓN 1', tag: 'PARTIDO', url: ES(7),  live: true },
   { id: 'telemundo-2', name: 'TELEMUNDO', option: 'OPCIÓN 2', tag: 'PARTIDO', url: ES(8),  live: true },
   { id: 'tsn-1',       name: 'TSN',       option: 'OPCIÓN 1', tag: '',        url: ES(1),  live: true },
@@ -20,6 +28,9 @@ const CHANNELS = [
   { id: 'orf-1',       name: 'ORF 1',     option: 'OPCIÓN 1', tag: '',        url: ES(11), live: true },
   { id: 'orf-2',       name: 'ORF 1',     option: 'OPCIÓN 2', tag: '',        url: ES(12), live: true },
 ];
+
+// Partido EN VIVO actual (se sobrescribe con Supabase live_config en runtime)
+let LIVE_MATCH = null;
 
 // Todos los partidos del Mundial 2026 (datos reales lacancha.tv)
 // status: 'live' | 'finished' | 'scheduled'  ·  kickoff en UTC ISO

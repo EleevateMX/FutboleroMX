@@ -4,6 +4,7 @@ let _activeChannel = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   await authInit();
+  await loadLiveConfig();   // partido en vivo desde Supabase (editable en admin)
   renderHero();
   renderChannelStrip();
   renderMatchesRow();
@@ -15,10 +16,32 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadAdSettings();
 });
 
+// ── Carga el partido en vivo desde Supabase (live_config) ─────────────────
+async function loadLiveConfig() {
+  try {
+    const { data } = await sb.from('live_config').select('*').eq('id', 1).single();
+    if (data && data.slug && Array.isArray(data.channels) && data.channels.length) {
+      CHANNELS = buildChannels(data.slug, data.channels);
+      LIVE_MATCH = (data.status === 'live') ? {
+        id: 'live',
+        home: { name: data.home_name, flag: data.home_flag },
+        away: { name: data.away_name, flag: data.away_flag },
+        kickoff: new Date().toISOString(), status: 'live',
+        hs: data.hs ?? 0, as: data.as_ ?? 0,
+        venue: data.venue || '', city: data.city || '', comp: data.comp || '',
+        defaultChannel: CHANNELS[0]?.id,
+      } : null;
+      return;
+    }
+  } catch (e) { /* fallback a data.js */ }
+  // Fallback: usa el partido 'live' definido en data.js
+  LIVE_MATCH = MATCHES.find(m => m.status === 'live') || null;
+}
+
 // ── Hero ──────────────────────────────────────────────────────────────────
 function renderHero() {
   const hero = document.getElementById('hero-section');
-  const live = MATCHES.find(m => m.status === 'live');
+  const live = (LIVE_MATCH && LIVE_MATCH.status === 'live') ? LIVE_MATCH : null;
   const next = MATCHES.filter(m => m.status === 'scheduled')[0];
   const match = live || next;
 
@@ -115,7 +138,7 @@ function switchChannel(channelId, el) {
 // ── Matches Row (en vivo + próximos) ──────────────────────────────────────
 function renderMatchesRow() {
   const row = document.getElementById('matches-row');
-  const live = MATCHES.filter(m => m.status === 'live');
+  const live = (LIVE_MATCH && LIVE_MATCH.status === 'live') ? [LIVE_MATCH] : [];
   const upcoming = MATCHES.filter(m => m.status === 'scheduled').slice(0, 14);
   const list = [...live, ...upcoming];
 
