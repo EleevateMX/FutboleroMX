@@ -88,9 +88,9 @@
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">TV<span>Contigo</span></div>
-    <div class="login-sub">Panel de administración</div>
-    <input class="inp" type="password" id="admin-pass" placeholder="Contraseña de admin" onkeydown="if(event.key==='Enter')doAdminLogin()">
-    <button class="btn-login" onclick="doAdminLogin()">Entrar al Panel</button>
+    <div class="login-sub">Ingresa tu clave de operación</div>
+    <input class="inp" type="password" id="admin-pass" placeholder="Clave de operación" onkeydown="if(event.key==='Enter')doAdminLogin()">
+    <button class="btn-login" onclick="doAdminLogin()">Desbloquear panel</button>
     <div class="err" id="login-err"></div>
   </div>
 </div>
@@ -334,6 +334,16 @@
       <button class="btn-save" onclick="sendPush()">Enviar a todos</button>
       <div class="success-msg" id="push-ok" style="display:none;"></div>
       <div class="err" id="push-err" style="display:none;"></div>
+
+      <!-- Partidos del día → aviso rápido -->
+      <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:18px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;">
+          <span>⚽ Partidos del día</span>
+          <button class="btn-out" style="font-size:12px;" onclick="loadTodayMatches()">↻ Recargar</button>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Manda un aviso rápido de un partido específico con un toque.</div>
+        <div id="today-matches-list"><p style="font-size:12px;color:var(--muted);">Cargando partidos...</p></div>
+      </div>
     </div>
 
     <!-- Ad Settings (global, PC + móvil) -->
@@ -475,20 +485,31 @@ const SUPA_URL = 'https://auth.tvcontigo.site';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNjbHF6YXZlYndpbmV6cGl2bXdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2NDMzNjUsImV4cCI6MjA5NzIxOTM2NX0.khNF90QxEqh1jEOxdtseREfWLmGAW-3cVJpots4VbTc';
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 
-function doAdminLogin() {
+async function doAdminLogin() {
   const pass = document.getElementById('admin-pass').value;
-  if (pass === ADMIN_PASS) {
-    sessionStorage.setItem('tvc_admin', '1');
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('dashboard').style.display = 'block';
-    initDashboard();
-  } else {
-    document.getElementById('login-err').textContent = 'Contraseña incorrecta';
+  const errEl = document.getElementById('login-err');
+  const btn = document.querySelector('.btn-login');
+  errEl.textContent = ''; if (btn) { btn.textContent = 'Verificando...'; btn.disabled = true; }
+  try {
+    const { data } = await sb.rpc('check_op_key', { p_pass: pass });
+    if (data === true) {
+      sessionStorage.setItem('tvc_admin', '1');
+      sessionStorage.setItem('tvc_opkey', pass);   // una sola clave desbloquea todo
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      initDashboard();
+    } else {
+      errEl.textContent = 'Clave incorrecta';
+    }
+  } catch (e) {
+    errEl.textContent = 'Error de conexión, intenta de nuevo';
   }
+  if (btn) { btn.textContent = 'Desbloquear panel'; btn.disabled = false; }
 }
 
 function adminLogout() {
   sessionStorage.removeItem('tvc_admin');
+  sessionStorage.removeItem('tvc_opkey');
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('dashboard').style.display = 'none';
 }
@@ -548,6 +569,7 @@ function initDashboard() {
   loadLiveConfigAdmin();
   loadQuinielaAdmin();
   loadPushStats();
+  loadTodayMatches();
   loadFanModeration();
   loadSettings();
   fetchUserCount();
@@ -627,6 +649,41 @@ function fillPush(kind) {
   if (kind === 'match') { t.value = '¡Partido por empezar! ⚽'; b.value = 'Tu partido arranca pronto. Míralo en vivo gratis en TVContigo.'; u.value = 'https://tvcontigo.site/'; }
   if (kind === 'quiniela') { t.value = '🏆 Quiniela Mundialista'; b.value = 'El bote está creciendo. Predice al campeón y participa antes de que cierre.'; u.value = 'https://tvcontigo.site/quiniela.html'; }
   if (kind === 'promo') { t.value = '🎁 TVContigo'; b.value = 'Tenemos algo para ti. Entra y descúbrelo.'; u.value = 'https://tvcontigo.site/'; }
+}
+
+async function loadTodayMatches() {
+  const el = document.getElementById('today-matches-list');
+  try {
+    const { data } = await sb.functions.invoke('today-matches', { body: {} });
+    const ms = (data && data.matches) || [];
+    if (!ms.length) { el.innerHTML = '<p style="font-size:12px;color:var(--muted);">No hay partidos en las próximas horas.</p>'; return; }
+    el.innerHTML = ms.map(m => {
+      const t = new Date(m.kickoff).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
+      const live = m.status === 'live';
+      const tag = live ? `<span style="color:#ef4444;font-weight:700;">● EN VIVO ${m.hs}-${m.as}</span>` : `<span style="color:var(--dim);">${t} hrs</span>`;
+      return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;">
+        <div><div style="font-size:13px;font-weight:700;">${m.home} vs ${m.away}</div><div style="font-size:11px;">${tag}</div></div>
+        <button class="btn-save" style="padding:6px 12px;font-size:12px;white-space:nowrap;" onclick='sendMatchPush(${JSON.stringify(m)})'>📢 Avisar</button>
+      </div>`;
+    }).join('');
+  } catch (e) { el.innerHTML = '<p style="font-size:12px;color:var(--muted);">No se pudieron cargar los partidos.</p>'; }
+}
+
+async function sendMatchPush(m) {
+  if (!qKey()) { alert('Ingresa la clave de operación (arriba).'); return; }
+  const live = m.status === 'live';
+  const t = new Date(m.kickoff).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const title = live ? `🔴 ¡${m.home} vs ${m.away} EN VIVO!` : `⚽ Hoy: ${m.home} vs ${m.away}`;
+  const body = live ? 'El partido ya empezó. Míralo gratis ahora en TVContigo.' : `Arranca a las ${t} hrs. Míralo gratis en TVContigo.`;
+  if (!confirm(`¿Enviar aviso de "${m.home} vs ${m.away}" a todos los suscriptores?`)) return;
+  try {
+    const { data, error } = await sb.functions.invoke('send-push', { body: { pass: qKey(), title, body, url: 'https://tvcontigo.site/' } });
+    if (error) throw error;
+    if (data && data.error) throw new Error(data.error);
+    const ok = document.getElementById('push-ok');
+    ok.textContent = `✓ Aviso enviado: ${data.sent} entregados.`; ok.style.display = 'block';
+    setTimeout(() => ok.style.display = 'none', 4000);
+  } catch (e) { alert('Error: ' + (e.message || e)); }
 }
 
 async function sendPush() {

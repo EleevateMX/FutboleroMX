@@ -376,7 +376,7 @@
   // Cuenta la instalación cuando la app corre instalada (sirve en iPhone y Android)
   if (isStandalone && !localStorage.getItem('tvc_installed')) {
     localStorage.setItem('tvc_installed', '1');
-    try { sb.rpc('increment_install'); } catch (e) {}
+    try { sb.rpc('increment_install').then(() => {}, () => {}); } catch (e) {}
   }
   if (isStandalone) installBtn.style.display = 'none';
 
@@ -397,7 +397,7 @@
 
   window.addEventListener('appinstalled', () => {
     installBtn.style.display = 'none';
-    try { sb.rpc('increment_install'); } catch (e) {}
+    try { sb.rpc('increment_install').then(() => {}, () => {}); } catch (e) {}
     localStorage.setItem('tvc_installed', '1');
   });
 

@@ -15,7 +15,10 @@ function _visitorId() {
   return v;
 }
 function trackEvent(kind, label) {
-  try { sb.from('traffic').insert({ kind, label: label || null, visitor: _visitorId() }); } catch (e) {}
+  // OJO: en supabase-js la petición solo se manda con .then()/await
+  try {
+    sb.from('traffic').insert({ kind, label: label || null, visitor: _visitorId() }).then(() => {}, () => {});
+  } catch (e) {}
 }
 
 async function authInit() {
