@@ -373,6 +373,13 @@
   const installBtn = document.getElementById('install-btn');
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
+  // Cuenta la instalación cuando la app corre instalada (sirve en iPhone y Android)
+  if (isStandalone && !localStorage.getItem('tvc_installed')) {
+    localStorage.setItem('tvc_installed', '1');
+    try { sb.rpc('increment_install'); } catch (e) {}
+  }
+  if (isStandalone) installBtn.style.display = 'none';
+
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     _deferredPrompt = e;

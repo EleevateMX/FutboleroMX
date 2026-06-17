@@ -111,6 +111,12 @@
 
   <div class="main">
     <h2>Dashboard</h2>
+    <!-- Clave de operación global (siempre visible) -->
+    <div style="background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.25);border-radius:12px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <span style="font-size:13px;font-weight:700;color:var(--orange);white-space:nowrap;">🔑 Clave de operación</span>
+      <input type="password" id="q-op-key" placeholder="Escríbela una vez por sesión" style="flex:1;min-width:200px;margin:0;">
+      <span style="font-size:11px;color:var(--dim);">Necesaria para verificar pagos, publicar partidos y enviar notificaciones.</span>
+    </div>
     <div id="admin-tabs"></div>
 
     <!-- Stats -->
@@ -215,13 +221,7 @@
     <!-- Datos de pago globales -->
     <div class="section-card">
       <h3><span class="dot"></span> 💳 Datos de pago (Revolut)</h3>
-      <div style="background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--dim);margin-bottom:16px;">
-        <strong style="color:var(--orange);">Clave de operación</strong> — necesaria para todas las acciones de la quiniela. No se guarda en el sitio.
-      </div>
-      <label>Clave de operación</label>
-      <input type="password" id="q-op-key" placeholder="Clave secreta de la quiniela">
-
-      <div style="font-size:13px;font-weight:700;margin:14px 0 10px;">Transferencia nacional (SPEI)</div>
+      <div style="font-size:13px;font-weight:700;margin:0 0 10px;">Transferencia nacional (SPEI)</div>
       <div class="form-row">
         <div><label>Banco</label><input type="text" id="p-nat-bank"></div>
         <div><label>Beneficiario</label><input type="text" id="p-nat-holder"></div>
