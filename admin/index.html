@@ -76,6 +76,10 @@
     .bar{width:100%;background:var(--blue);border-radius:4px 4px 0 0;min-height:4px;transition:.3s;}
     .bar-label{font-size:9px;color:var(--dim);}
     .success-msg{color:var(--green);font-size:13px;font-weight:600;margin-top:8px;}
+    .admin-tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:22px;padding-bottom:4px;position:sticky;top:60px;background:var(--bg);z-index:50;}
+    .admin-tab{background:var(--s2);border:1px solid var(--border);color:var(--dim);padding:9px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;transition:all .15s;}
+    .admin-tab:hover{color:var(--text);}
+    .admin-tab.active{background:var(--blue);color:#fff;border-color:var(--blue);}
   </style>
 </head>
 <body>
@@ -107,6 +111,7 @@
 
   <div class="main">
     <h2>Dashboard</h2>
+    <div id="admin-tabs"></div>
 
     <!-- Stats -->
     <div class="stats-grid">
@@ -346,6 +351,21 @@
         <button class="toggle on" id="toggle-ads" onclick="document.getElementById('toggle-ads').classList.toggle('on')"></button>
       </div>
 
+      <!-- Generador rápido de AdSense -->
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:16px;margin:16px 0;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:4px;">⚡ Generador rápido de AdSense</div>
+        <div style="font-size:11px;color:var(--dim);margin-bottom:12px;">Pega tu ID de Google AdSense y los IDs de bloque, y te genero el código para PC y móvil automáticamente.</div>
+        <label>ID de cliente AdSense (ca-pub-…)</label>
+        <input type="text" id="ads-pub" placeholder="ca-pub-1234567890123456">
+        <div class="form-row">
+          <div><label>ID de bloque PC (728×90)</label><input type="text" id="ads-slot-pc" placeholder="1234567890"></div>
+          <div><label>ID de bloque móvil (320×50)</label><input type="text" id="ads-slot-mb" placeholder="0987654321"></div>
+        </div>
+        <button class="btn-out" onclick="genAdsense()">Generar código automáticamente</button>
+        <div class="success-msg" id="ads-gen-ok" style="display:none;">✓ Código generado abajo. Revisa y dale "Guardar publicidad".</div>
+        <div class="err" id="ads-gen-err" style="display:none;"></div>
+      </div>
+
       <label style="margin-top:14px;">Anuncio para PC / escritorio (recomendado 728×90 — leaderboard)</label>
       <textarea id="ad-desktop" placeholder="<!-- Código AdSense o HTML del banner para PC -->" style="min-height:90px;font-family:monospace;font-size:12px;"></textarea>
 
@@ -445,7 +465,39 @@ if (sessionStorage.getItem('tvc_admin') === '1') {
   window.addEventListener('DOMContentLoaded', initDashboard);
 }
 
+const TAB_RULES = [
+  { tab:'Resumen',  rx:/tr[áa]fico/i },
+  { tab:'En Vivo',  rx:/en vivo/i },
+  { tab:'Quiniela', rx:/quiniela|datos de pago/i },
+  { tab:'Push',     rx:/push/i },
+  { tab:'Anuncios', rx:/publicidad/i },
+  { tab:'Muro',     rx:/muro/i },
+  { tab:'Ajustes',  rx:/seo|dominio/i },
+];
+const TAB_ORDER = ['Resumen','En Vivo','Quiniela','Push','Anuncios','Muro','Ajustes'];
+
+function buildTabs() {
+  const cards = [...document.querySelectorAll('.main .section-card')];
+  cards.forEach(c => {
+    const h = c.querySelector('h3');
+    const t = h ? h.textContent : '';
+    const rule = TAB_RULES.find(r => r.rx.test(t));
+    c.dataset.tab = rule ? rule.tab : 'Resumen';
+  });
+  const present = TAB_ORDER.filter(n => cards.some(c => c.dataset.tab === n));
+  const bar = document.getElementById('admin-tabs');
+  bar.className = 'admin-tabs';
+  bar.innerHTML = present.map((n,i) => `<button class="admin-tab ${i===0?'active':''}" onclick="showTab('${n}', this)">${n}</button>`).join('');
+  if (present.length) showTab(present[0]);
+}
+function showTab(name, btn) {
+  document.querySelectorAll('.main .section-card').forEach(c => { c.style.display = (c.dataset.tab === name) ? '' : 'none'; });
+  document.querySelectorAll('.admin-tab').forEach(b => b.classList.toggle('active', b.textContent === name));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 function initDashboard() {
+  buildTabs();
   document.getElementById('stat-pv').textContent = localStorage.getItem('tvc_pv') || '0';
   document.getElementById('stat-imp').textContent = parseInt(localStorage.getItem('tvc_pv') || 0) * 3;
 
@@ -564,6 +616,21 @@ async function loadAds() {
     document.getElementById('ad-desktop').value = data.desktop_code || '';
     document.getElementById('ad-mobile').value = data.mobile_code || '';
   } catch (e) { /* ignora */ }
+}
+
+function genAdsense() {
+  const ok = document.getElementById('ads-gen-ok'); const err = document.getElementById('ads-gen-err');
+  ok.style.display = 'none'; err.style.display = 'none';
+  const pub = document.getElementById('ads-pub').value.trim();
+  const pc = document.getElementById('ads-slot-pc').value.trim();
+  const mb = document.getElementById('ads-slot-mb').value.trim();
+  if (!/^ca-pub-\d{10,}$/.test(pub)) { err.textContent = 'El ID de cliente debe verse como ca-pub-1234567890.'; err.style.display = 'block'; return; }
+  if (!pc && !mb) { err.textContent = 'Pon al menos un ID de bloque (PC o móvil).'; err.style.display = 'block'; return; }
+  const lib = `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${pub}" crossorigin="anonymous"></scr` + `ipt>`;
+  const ins = (slot, w, h) => `${lib}\n<ins class="adsbygoogle" style="display:inline-block;width:${w}px;height:${h}px" data-ad-client="${pub}" data-ad-slot="${slot}"></ins>\n<scr`+`ipt>(adsbygoogle = window.adsbygoogle || []).push({});</scr`+`ipt>`;
+  if (pc) document.getElementById('ad-desktop').value = ins(pc, 728, 90);
+  if (mb) document.getElementById('ad-mobile').value = ins(mb, 320, 50);
+  ok.style.display = 'block';
 }
 
 async function saveAdSettings() {
