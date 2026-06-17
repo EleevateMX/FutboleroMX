@@ -10,7 +10,7 @@ const P_TEAMS = [
 ];
 function flagOf(name) { const t = P_TEAMS.find(x => x.name === name); return t ? t.flag : '🏳️'; }
 
-let _pools = [], _entries = [], _myEntries = [];
+let _pools = [], _stats = {}, _myEntries = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
   await authInit();
@@ -21,13 +21,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadProfile() {
   const user = Auth.getUser();
-  const [{ data: pools }, { data: entries }, { data: mine }] = await Promise.all([
+  const [{ data: pools }, { data: stats }, { data: mine }] = await Promise.all([
     sb.from('quiniela_pool').select('*').order('entry_amount'),
-    sb.from('quiniela_public').select('pool_id, champion_pick, payment_status'),
+    sb.rpc('quiniela_stats'),
     sb.from('quiniela_entries').select('*').eq('user_id', user.id),
   ]);
   _pools = pools || [];
-  _entries = entries || [];
+  _stats = stats || {};
   _myEntries = mine || [];
   render();
 }
@@ -35,13 +35,13 @@ async function loadProfile() {
 function money(n, cur) { return '$' + Number(Math.round(n)).toLocaleString('es-MX') + ' ' + (cur || 'MXN'); }
 function potOf(p) {
   const per = (p.entry_amount - p.service_fee);
-  const v = _entries.filter(e => e.pool_id === p.id && e.payment_status === 'verified').length;
+  const v = (_stats[p.id] && _stats[p.id].verified) || 0;
   return (p.base_pot || 0) + v * per;
 }
 function countsOf(p) {
   const c = { ...(p.seed_picks || {}) };
-  _entries.filter(e => e.pool_id === p.id && e.payment_status === 'verified')
-    .forEach(e => { c[e.champion_pick] = (c[e.champion_pick] || 0) + 1; });
+  const real = (_stats[p.id] && _stats[p.id].counts) || {};
+  for (const [team, n] of Object.entries(real)) c[team] = (c[team] || 0) + Number(n);
   return c;
 }
 

@@ -602,6 +602,8 @@ async function saveLiveConfig() {
   const ok = document.getElementById('content-ok');
   err.style.display = 'none'; ok.style.display = 'none';
 
+  if (!qKey()) { err.textContent = 'Ingresa la clave de operación (sección de pago).'; err.style.display = 'block'; return; }
+
   let channels;
   try {
     channels = JSON.parse(document.getElementById('live-channels').value || '[]');
@@ -611,22 +613,19 @@ async function saveLiveConfig() {
     return;
   }
 
-  const row = {
-    id: 1,
-    slug: document.getElementById('live-slug').value.trim(),
-    status: document.getElementById('live-status').value,
-    comp: document.getElementById('live-comp').value.trim(),
-    home_name: document.getElementById('live-home').value.trim(),
-    home_flag: document.getElementById('live-home-flag').value.trim(),
-    away_name: document.getElementById('live-away').value.trim(),
-    away_flag: document.getElementById('live-away-flag').value.trim(),
-    hs: parseInt(document.getElementById('live-hs').value) || 0,
-    as_: parseInt(document.getElementById('live-as').value) || 0,
-    channels,
-    updated_at: new Date().toISOString(),
-  };
-
-  const { error } = await sb.from('live_config').upsert(row, { onConflict: 'id' });
+  const { error } = await sb.rpc('qadmin_update_live', {
+    p_pass: qKey(),
+    p_slug: document.getElementById('live-slug').value.trim(),
+    p_status: document.getElementById('live-status').value,
+    p_comp: document.getElementById('live-comp').value.trim(),
+    p_home_name: document.getElementById('live-home').value.trim(),
+    p_home_flag: document.getElementById('live-home-flag').value.trim(),
+    p_away_name: document.getElementById('live-away').value.trim(),
+    p_away_flag: document.getElementById('live-away-flag').value.trim(),
+    p_hs: parseInt(document.getElementById('live-hs').value) || 0,
+    p_as: parseInt(document.getElementById('live-as').value) || 0,
+    p_channels: channels,
+  });
   if (error) {
     err.textContent = 'Error al guardar: ' + error.message;
     err.style.display = 'block';

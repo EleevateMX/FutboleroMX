@@ -9,7 +9,7 @@ const Q_TEAMS = [
   { name:'Japón', flag:'🇯🇵' }, { name:'Noruega', flag:'🇳🇴' },
 ];
 
-let _pools = [], _pay = {}, _entries = [], _myEntries = [];
+let _pools = [], _pay = {}, _stats = {}, _myEntries = [];
 let _selectedPool = null, _pickedChampion = null, _payMethod = 'nat';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -24,30 +24,30 @@ async function loadAll() {
   const reqs = [
     sb.from('quiniela_pool').select('*').order('entry_amount'),
     sb.from('pay_config').select('*').eq('id', 1).single(),
-    sb.from('quiniela_public').select('pool_id, champion_pick, payment_status'),
+    sb.rpc('quiniela_stats'),   // solo conteos agregados (sin exponer filas)
   ];
   if (user) reqs.push(sb.from('quiniela_entries').select('*').eq('user_id', user.id));
   const res = await Promise.all(reqs);
   _pools = res[0].data || [];
   _pay = res[1].data || {};
-  _entries = res[2].data || [];
+  _stats = res[2].data || {};
   _myEntries = user ? (res[3].data || []) : [];
   renderApp();
 }
 
 function money(n, cur) { return '$' + Number(Math.round(n)).toLocaleString('es-MX') + ' ' + (cur || 'MXN'); }
 
+function verifiedOf(pool) { return (_stats[pool.id] && _stats[pool.id].verified) || 0; }
+
 function potOf(pool) {
   const per = (pool.entry_amount - pool.service_fee);
-  const verified = _entries.filter(e => e.pool_id === pool.id && e.payment_status === 'verified');
-  const seedTotal = Object.values(pool.seed_picks || {}).reduce((a, b) => a + Number(b), 0);
-  return (pool.base_pot || 0) + verified.length * per;
+  return (pool.base_pot || 0) + verifiedOf(pool) * per;
 }
 
 function countsOf(pool) {
   const counts = { ...(pool.seed_picks || {}) };
-  _entries.filter(e => e.pool_id === pool.id && e.payment_status === 'verified')
-    .forEach(e => { counts[e.champion_pick] = (counts[e.champion_pick] || 0) + 1; });
+  const real = (_stats[pool.id] && _stats[pool.id].counts) || {};
+  for (const [team, n] of Object.entries(real)) counts[team] = (counts[team] || 0) + Number(n);
   return counts;
 }
 
@@ -110,7 +110,7 @@ function renderPoolDetail(el) {
       <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;">${p.name}</div>
       <div style="display:flex;justify-content:center;gap:18px;margin-top:8px;">
         <div><div style="font-family:'Bebas Neue';font-size:24px;color:var(--orange);line-height:1;">${money(potOf(p), p.currency)}</div><div style="font-size:9px;color:var(--text-muted);">BOTE</div></div>
-        <div><div style="font-family:'Bebas Neue';font-size:24px;color:var(--blue);line-height:1;">${_entries.filter(e=>e.pool_id===p.id&&e.payment_status==='verified').length}</div><div style="font-size:9px;color:var(--text-muted);">JUGADORES</div></div>
+        <div><div style="font-family:'Bebas Neue';font-size:24px;color:var(--blue);line-height:1;">${verifiedOf(p)}</div><div style="font-size:9px;color:var(--text-muted);">JUGADORES</div></div>
       </div>
       <div style="font-size:11px;color:var(--text-dim);margin-top:8px;">Boleto ${money(p.entry_amount,p.currency)} · Comisión ${money(p.service_fee,p.currency)} · Al bote ${money(p.entry_amount-p.service_fee,p.currency)}</div>
     </div>
