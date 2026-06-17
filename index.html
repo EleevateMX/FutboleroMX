@@ -353,6 +353,22 @@
   </div>
 </div>
 
+<!-- Partido próximo: cuenta regresiva + avísame -->
+<div class="modal-backdrop" id="match-info-modal">
+  <div class="modal" style="text-align:center;">
+    <button class="modal-close" onclick="closeModal('match-info-modal')">×</button>
+    <div id="mi-comp" style="font-size:11px;font-weight:800;letter-spacing:1.5px;color:var(--orange);text-transform:uppercase;"></div>
+    <div id="mi-teams" style="font-family:'Bebas Neue',sans-serif;font-size:30px;line-height:1.1;margin:8px 0 4px;"></div>
+    <div id="mi-when" style="font-size:13px;color:var(--text-dim);margin-bottom:14px;"></div>
+    <div id="mi-countdown" class="mi-countdown"></div>
+    <div id="mi-actions" style="display:flex;flex-direction:column;gap:9px;margin-top:18px;">
+      <button id="mi-notify" class="btn btn-orange" style="padding:12px;font-size:15px;font-weight:700;" onclick="avisarMatch()">🔔 Avísame cuando empiece</button>
+      <button class="btn" style="padding:11px;font-size:14px;background:var(--surface-3);color:var(--text);" onclick="addToCalendar()">📅 Agregar a mi calendario</button>
+    </div>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:14px;line-height:1.5;">En cuanto la señal esté al aire, este partido se abre solo con Telemundo. 📺</p>
+  </div>
+</div>
+
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/data.js"></script>

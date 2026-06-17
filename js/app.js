@@ -366,8 +366,11 @@ function renderMatchesRow() {
   row.innerHTML = list.map(m => {
     const isLive = m.status === 'live';
     const ft = fmtMatchTime(m.kickoff);
+    const click = isLive
+      ? `switchChannel('${m.defaultChannel || (CHANNELS[0] && CHANNELS[0].id) || ''}')`
+      : `openMatchInfo('${m.id}')`;   // partido próximo → cuenta regresiva + avísame
     return `
-    <div class="match-card ${isLive ? 'live' : ''}" onclick="${isLive ? `switchChannel('${m.defaultChannel || 'telemundo-1'}')` : ''}">
+    <div class="match-card ${isLive ? 'live' : ''}" onclick="${click}">
       <div class="mc-status ${isLive ? 'live' : 'upcoming'}">
         ${isLive ? '● EN VIVO' : '⏰ ' + ft.day + ' ' + ft.time}
       </div>
@@ -387,6 +390,82 @@ function renderMatchesRow() {
       <div class="mc-competition">${m.comp}</div>
     </div>`;
   }).join('');
+}
+
+// ── Partido próximo: cuenta regresiva + "Avísame" ─────────────────────────
+let _miMatch = null, _miTimer = null;
+function openMatchInfo(matchId) {
+  const m = MATCHES.find(x => x.id === matchId);
+  if (!m) return;
+  _miMatch = m;
+  const ft = fmtMatchTime(m.kickoff);
+  document.getElementById('mi-comp').textContent = m.comp || 'Mundial 2026';
+  document.getElementById('mi-teams').innerHTML =
+    `${m.home.flag} ${m.home.name} <span style="color:var(--text-muted)">vs</span> ${m.away.name} ${m.away.flag}`;
+  document.getElementById('mi-when').textContent = `${ft.day} · ${ft.time}`;
+  _renderCountdown();
+  if (_miTimer) clearInterval(_miTimer);
+  _miTimer = setInterval(_renderCountdown, 1000);
+  _refreshNotifyBtn();
+  openModal('match-info-modal');
+  trackEvent('match_info', m.id);
+}
+
+function _renderCountdown() {
+  const modal = document.getElementById('match-info-modal');
+  if (modal && !modal.classList.contains('open')) {
+    if (_miTimer) { clearInterval(_miTimer); _miTimer = null; }
+    return;
+  }
+  const el = document.getElementById('mi-countdown');
+  if (!el || !_miMatch) return;
+  const diff = new Date(_miMatch.kickoff).getTime() - Date.now();
+  if (diff <= 0) {
+    el.innerHTML = `<div class="mi-live">● A punto de empezar… abriremos la señal en cuanto esté al aire</div>`;
+    return;
+  }
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff % 86400000) / 3600000);
+  const mn = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  const box = (v, l) => `<div class="cd-box"><div class="cd-num">${String(v).padStart(2, '0')}</div><div class="cd-lbl">${l}</div></div>`;
+  el.innerHTML = (d > 0 ? box(d, 'días') : '') + box(h, 'hrs') + box(mn, 'min') + box(s, 'seg');
+}
+
+function _refreshNotifyBtn() {
+  const btn = document.getElementById('mi-notify');
+  if (!btn || !_miMatch) return;
+  const ids = JSON.parse(localStorage.getItem('tvc_notify_matches') || '[]');
+  const on = ids.includes(_miMatch.id) && typeof Notification !== 'undefined' && Notification.permission === 'granted';
+  if (on) {
+    btn.textContent = '✓ Te avisaremos cuando empiece';
+    btn.disabled = true; btn.style.opacity = '.75'; btn.style.cursor = 'default';
+  } else {
+    btn.textContent = '🔔 Avísame cuando empiece';
+    btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer';
+  }
+}
+
+async function avisarMatch() {
+  if (_miMatch) {
+    const ids = JSON.parse(localStorage.getItem('tvc_notify_matches') || '[]');
+    if (!ids.includes(_miMatch.id)) { ids.push(_miMatch.id); localStorage.setItem('tvc_notify_matches', JSON.stringify(ids)); }
+    trackEvent('notify_match', _miMatch.id);
+  }
+  await subscribePush();   // pide permiso + guarda la suscripción (push.js)
+  _refreshNotifyBtn();
+}
+
+function addToCalendar() {
+  if (!_miMatch) return;
+  const start = new Date(_miMatch.kickoff);
+  const end = new Date(start.getTime() + 2 * 3600000);
+  const fmt = d => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const text = encodeURIComponent(`${_miMatch.home.name} vs ${_miMatch.away.name} — Mundial 2026`);
+  const details = encodeURIComponent('Míralo gratis en TVContigo: https://tvcontigo.site');
+  const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${fmt(start)}/${fmt(end)}&details=${details}`;
+  window.open(url, '_blank', 'noopener');
+  trackEvent('add_calendar', _miMatch.id);
 }
 
 // ── Channels Grid ─────────────────────────────────────────────────────────
@@ -548,6 +627,7 @@ function closeModal(id) {
   document.getElementById(id).classList.remove('open');
   const err = document.getElementById(id === 'login-modal' ? 'login-error' : 'reg-error');
   if (err) err.textContent = '';
+  if (id === 'match-info-modal' && _miTimer) { clearInterval(_miTimer); _miTimer = null; }
 }
 function closeAll() { document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('open')); }
 function switchModal(from, to) { closeModal(from); openModal(to); }
