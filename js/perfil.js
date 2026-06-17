@@ -19,16 +19,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('avatar-input').addEventListener('change', onAvatarPicked);
 });
 
+let _refCode = '';
 async function loadProfile() {
   const user = Auth.getUser();
-  const [{ data: pools }, { data: stats }, { data: mine }] = await Promise.all([
+  const [{ data: pools }, { data: stats }, { data: mine }, { data: prof }] = await Promise.all([
     sb.from('quiniela_pool').select('*').order('entry_amount'),
     sb.rpc('quiniela_stats'),
     sb.from('quiniela_entries').select('*').eq('user_id', user.id),
+    sb.from('profiles').select('referral_code, pts').eq('id', user.id).single(),
   ]);
   _pools = pools || [];
   _stats = stats || {};
   _myEntries = mine || [];
+  _refCode = prof ? (prof.referral_code || '') : '';
   render();
 }
 
@@ -70,6 +73,16 @@ function render() {
         ${u.googleName ? `<button class="btn btn-ghost" style="white-space:nowrap;padding:0 14px;" onclick="useGoogleName()">Usar de Google</button>` : ''}
       </div>
       <div class="form-error" id="name-err"></div>
+    </div>
+
+    <div class="p-card">
+      <h3><span class="dot"></span> 🎁 Invita y gana puntos</h3>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:10px;">Comparte tu link. Por cada amigo que se registre, ganas <strong>+10 puntos</strong> y subes en el ranking.</p>
+      <div style="display:flex;gap:8px;">
+        <input class="form-input" id="ref-link" readonly value="https://tvcontigo.site/?ref=${_refCode}" style="flex:1;font-size:12px;">
+        <button class="btn btn-orange" style="padding:0 16px;white-space:nowrap;" onclick="copyRef()">Copiar</button>
+      </div>
+      <button class="btn-full btn-blue-full" style="margin-top:10px;" onclick="shareRef()">📲 Compartir mi link</button>
     </div>
 
     ${renderMyTickets()}
@@ -171,6 +184,18 @@ async function onAvatarPicked(e) {
   if (!res.ok) { _showToast(res.msg, 'var(--red)'); return; }
   _showToast('Foto actualizada', 'var(--green)'); render();
 }
+function copyRef() {
+  const link = document.getElementById('ref-link').value;
+  navigator.clipboard?.writeText(link);
+  _showToast('🔗 Link copiado', 'var(--green)');
+}
+async function shareRef() {
+  const link = document.getElementById('ref-link').value;
+  const data = { title: 'TVContigo', text: '⚽ Mira el Mundial 2026 gratis en TVContigo:', url: link };
+  if (navigator.share) { try { await navigator.share(data); } catch (e) {} }
+  else { navigator.clipboard?.writeText(link); _showToast('🔗 Link copiado', 'var(--green)'); }
+}
+
 async function doLogout() { await Auth.logout(); location.href = 'index.html'; }
 
 function _showToast(msg, color = 'var(--surface-3)') {

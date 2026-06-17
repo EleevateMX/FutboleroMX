@@ -3,7 +3,10 @@
 let _activeChannel = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
+  captureReferral();
+  loadSiteSettings();
   await authInit();
+  if (Auth.isLoggedIn()) applyReferralIfAny();
   trackEvent('page', 'home');
   await loadLiveConfig();   // partido en vivo desde Supabase (editable en admin)
   renderHero();
@@ -17,6 +20,50 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadFanWall();
   loadAdSettings();
 });
+
+// ── Referidos ───────────────────────────────────────────────────────────────
+function captureReferral() {
+  const ref = new URLSearchParams(location.search).get('ref');
+  if (ref) localStorage.setItem('tvc_ref', ref.toUpperCase());
+}
+async function applyReferralIfAny() {
+  const ref = localStorage.getItem('tvc_ref');
+  if (!ref) return;
+  try {
+    const { data } = await sb.rpc('apply_referral', { p_code: ref });
+    if (data && data.ok) { localStorage.removeItem('tvc_ref'); }
+  } catch (e) {}
+}
+
+// ── Integraciones del sitio (analytics + comunidad) ─────────────────────────
+async function loadSiteSettings() {
+  try {
+    const { data } = await sb.from('site_settings').select('*').eq('id', 1).single();
+    if (!data) return;
+    if (data.ga_id) {
+      const s = document.createElement('script'); s.async = true;
+      s.src = 'https://www.googletagmanager.com/gtag/js?id=' + data.ga_id; document.head.appendChild(s);
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function(){ dataLayer.push(arguments); };
+      gtag('js', new Date()); gtag('config', data.ga_id);
+    }
+    if (data.pixel_id) {
+      !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', data.pixel_id); fbq('track', 'PageView');
+    }
+    renderCommunity(data.whatsapp_url, data.telegram_url);
+  } catch (e) {}
+}
+function renderCommunity(wa, tg) {
+  const el = document.getElementById('community-box');
+  if (!el || (!wa && !tg)) return;
+  el.innerHTML = `
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">Únete a la comunidad y entérate de cada partido:</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      ${wa ? `<a href="${wa}" target="_blank" rel="noopener" style="flex:1;min-width:140px;text-align:center;background:#25D366;color:#fff;text-decoration:none;font-weight:700;font-size:13px;padding:11px;border-radius:10px;">💬 WhatsApp</a>` : ''}
+      ${tg ? `<a href="${tg}" target="_blank" rel="noopener" style="flex:1;min-width:140px;text-align:center;background:#229ED9;color:#fff;text-decoration:none;font-weight:700;font-size:13px;padding:11px;border-radius:10px;">✈️ Telegram</a>` : ''}
+    </div>`;
+}
 
 // ── Muro de la afición ──────────────────────────────────────────────────────
 async function loadFanWall() {
@@ -327,17 +374,27 @@ async function savePick(matchId, pick, btn) {
   _showToast('Pronóstico guardado', 'var(--green)');
 }
 
-// ── Ranking ───────────────────────────────────────────────────────────────
-function renderRanking() {
+// ── Ranking (real desde Supabase, con respaldo) ───────────────────────────
+async function renderRanking() {
   const container = document.getElementById('ranking-container');
   const posClass = ['gold','silver','bronze'];
-  container.innerHTML = RANKING.map((u, i) => `
-    <div class="ranking-row">
+  let list = RANKING;
+  try {
+    const { data } = await sb.rpc('top_ranking');
+    if (data && data.length) list = data;
+  } catch (e) {}
+  container.innerHTML = list.map((u, i) => {
+    const ini = (u.name || '?').slice(0, 2).toUpperCase();
+    const av = u.avatar
+      ? `<div style="width:30px;height:30px;border-radius:50%;background-image:url('${u.avatar}');background-size:cover;background-position:center;flex-shrink:0;"></div>`
+      : `<div style="width:30px;height:30px;border-radius:50%;background:var(--surface-3);color:var(--text-dim);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${ini}</div>`;
+    return `<div class="ranking-row">
       <div class="ranking-pos ${posClass[i] || ''}">${i + 1}</div>
-      <div class="ranking-name">${u.name}</div>
+      ${av}
+      <div class="ranking-name">${esc(u.name)}</div>
       <div class="ranking-pts">${u.pts} <span style="font-size:11px;color:var(--text-dim)">pts</span></div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 // ── Ad Settings (global, desde Supabase, adaptado PC/móvil) ───────────────

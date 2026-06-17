@@ -446,6 +446,23 @@
       </div>
     </div>
 
+    <!-- Integraciones: analytics + comunidad -->
+    <div class="section-card">
+      <h3><span class="dot"></span> 🔌 Integraciones (analytics y comunidad)</h3>
+      <div style="font-size:12px;color:var(--dim);margin-bottom:14px;">Se cargan en el sitio para todos. Requiere la clave de operación.</div>
+      <div class="form-row">
+        <div><label>Google Analytics (Measurement ID, G-XXXX)</label><input type="text" id="set-ga" placeholder="G-XXXXXXXXXX"></div>
+        <div><label>Meta Pixel ID</label><input type="text" id="set-pixel" placeholder="1234567890"></div>
+      </div>
+      <div class="form-row">
+        <div><label>Link canal de WhatsApp</label><input type="url" id="set-wa" placeholder="https://chat.whatsapp.com/..."></div>
+        <div><label>Link canal de Telegram</label><input type="url" id="set-tg" placeholder="https://t.me/..."></div>
+      </div>
+      <button class="btn-save" onclick="saveSettings()">Guardar integraciones</button>
+      <div class="success-msg" id="set-ok" style="display:none;">✓ Guardado (visible en el sitio)</div>
+      <div class="err" id="set-err" style="display:none;"></div>
+    </div>
+
   </div><!-- /main -->
 </div><!-- /dashboard -->
 
@@ -490,7 +507,7 @@ const TAB_RULES = [
   { tab:'Push',     rx:/push/i },
   { tab:'Anuncios', rx:/publicidad/i },
   { tab:'Muro',     rx:/muro/i },
-  { tab:'Ajustes',  rx:/seo|dominio/i },
+  { tab:'Ajustes',  rx:/seo|dominio|integraciones/i },
 ];
 const TAB_ORDER = ['Resumen','En Vivo','Quiniela','Push','Anuncios','Muro','Ajustes'];
 
@@ -525,6 +542,7 @@ function initDashboard() {
   loadQuinielaAdmin();
   loadPushStats();
   loadFanModeration();
+  loadSettings();
   fetchUserCount();
 }
 
@@ -954,6 +972,31 @@ function saveSeoSettings() {
   const ok = document.getElementById('seo-ok');
   ok.style.display = 'block';
   setTimeout(() => ok.style.display = 'none', 3000);
+}
+
+async function loadSettings() {
+  try {
+    const { data } = await sb.from('site_settings').select('*').eq('id', 1).single();
+    if (!data) return;
+    document.getElementById('set-ga').value = data.ga_id || '';
+    document.getElementById('set-pixel').value = data.pixel_id || '';
+    document.getElementById('set-wa').value = data.whatsapp_url || '';
+    document.getElementById('set-tg').value = data.telegram_url || '';
+  } catch (e) {}
+}
+async function saveSettings() {
+  const ok = document.getElementById('set-ok'); const err = document.getElementById('set-err');
+  ok.style.display = 'none'; err.style.display = 'none';
+  if (!qKey()) { err.textContent = 'Ingresa la clave de operación.'; err.style.display = 'block'; return; }
+  const { error } = await sb.rpc('qadmin_update_settings', {
+    p_pass: qKey(),
+    p_ga: document.getElementById('set-ga').value.trim(),
+    p_pixel: document.getElementById('set-pixel').value.trim(),
+    p_wa: document.getElementById('set-wa').value.trim(),
+    p_tg: document.getElementById('set-tg').value.trim(),
+  });
+  if (error) { err.textContent = 'Error: ' + error.message; err.style.display = 'block'; return; }
+  ok.style.display = 'block'; setTimeout(() => ok.style.display = 'none', 4000);
 }
 </script>
 </body>
