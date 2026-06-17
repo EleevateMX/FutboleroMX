@@ -82,10 +82,13 @@ const Auth = {
 
 async function signInWithGoogle() {
   closeAll();
+  // URL limpia del directorio actual (sin index.html / query / hash)
+  const base = window.location.pathname.replace(/index\.html$/, '');
+  const redirectTo = window.location.origin + base;
   await sb.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: window.location.origin + window.location.pathname,
+      redirectTo,
       queryParams: { access_type: 'offline', prompt: 'consent' },
     },
   });

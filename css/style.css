@@ -161,6 +161,39 @@ body {
 .hero-no-live h2 { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 1px; }
 .hero-no-live p { color: var(--text-dim); font-size: 13px; }
 
+/* ── Iframe Notice (estilo lacancha.tv) ───────────────────────────────────── */
+.iframe-notice {
+  display: none; align-items: flex-start; gap: 8px;
+  background: rgba(249,115,22,.08);
+  border: 1px solid rgba(249,115,22,.22);
+  border-radius: 10px; margin: 10px 20px 0;
+  padding: 10px 14px; font-size: 11.5px; line-height: 1.5;
+  color: var(--text-dim);
+}
+.iframe-notice-icon { flex-shrink: 0; }
+.iframe-notice a { color: var(--orange); font-weight: 600; }
+.iframe-notice strong { color: var(--text); }
+
+/* ── Channel Warning ──────────────────────────────────────────────────────── */
+.channel-warning {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 10px; margin: 10px 20px; padding: 10px 14px;
+  font-size: 12px; color: var(--text-dim);
+}
+.cw-close {
+  background: none; border: none; color: var(--text-muted);
+  cursor: pointer; font-size: 13px; flex-shrink: 0; padding: 2px 6px;
+}
+.cw-close:hover { color: var(--text); }
+
+/* ── Chip Tag ─────────────────────────────────────────────────────────────── */
+.chip-tag {
+  font-size: 8px; font-weight: 800; letter-spacing: .5px;
+  color: var(--orange); background: rgba(249,115,22,.12);
+  padding: 1px 5px; border-radius: 4px;
+}
+
 /* ── Channel Selector (below hero) ───────────────────────────────────────── */
 .channel-strip {
   background: var(--surface);

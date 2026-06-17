@@ -7,6 +7,10 @@
   <meta name="description" content="Mira el fútbol en vivo gratis. Mundial 2026, canales HD, quiniela y más. Sin suscripción.">
   <meta name="theme-color" content="#0ea5e9">
   <link rel="manifest" href="manifest.json">
+  <!-- Favicons TVContigo -->
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <!-- Open Graph -->
   <meta property="og:title" content="TVContigo — Fútbol en Vivo">
@@ -43,6 +47,12 @@
   </div>
 </nav>
 
+<!-- Aviso de iframe (estilo lacancha.tv) -->
+<div class="iframe-notice" id="iframe-notice">
+  <span class="iframe-notice-icon">ℹ️</span>
+  <span>Este contenido se muestra desde un proveedor externo mediante <strong>iframe</strong>. TVContigo no aloja ni transmite directamente esta señal. Si eres titular de derechos y deseas reportar material, revisa nuestra <a href="pages/dmca.html">política DMCA</a>.</span>
+</div>
+
 <!-- Hero: Live Stream -->
 <section class="hero" id="hero-section">
   <div class="hero-no-live" id="hero-placeholder">
@@ -55,6 +65,12 @@
 <!-- Channel Selector Strip -->
 <div class="channel-strip" id="channel-strip">
   <!-- rendered by app.js -->
+</div>
+
+<!-- Aviso "¿un canal no carga?" -->
+<div class="channel-warning">
+  <span>📡 ¿Un canal no carga? Puede que la transmisión aún no esté al aire o haya cambiado de fuente — prueba con otra opción.</span>
+  <button class="cw-close" onclick="this.parentElement.style.display='none'">✕</button>
 </div>
 
 <!-- ── Row: Partidos en Vivo / Próximos ─────────────────────────────────── -->

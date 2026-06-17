@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 function renderHero() {
   const hero = document.getElementById('hero-section');
   const live = MATCHES.find(m => m.status === 'live');
-  const next = MATCHES.find(m => m.status === 'upcoming');
+  const next = MATCHES.filter(m => m.status === 'scheduled')[0];
   const match = live || next;
 
   if (!match) {
@@ -32,38 +32,53 @@ function renderHero() {
     return;
   }
 
+  const isLive = match.status === 'live';
   const ch = CHANNELS.find(c => c.id === (match.defaultChannel || CHANNELS[0].id));
   _activeChannel = ch || CHANNELS[0];
 
-  const isLive = match.status === 'live';
+  const ft = fmtMatchTime(match.kickoff);
+  const venueLine = match.venue ? `${match.venue} · ${match.city}` : match.comp;
 
-  hero.innerHTML = `
-    <iframe src="${_activeChannel.url}" allowfullscreen allow="autoplay; fullscreen"
-      style="width:100%;height:100%;border:none;display:block;"></iframe>
-    <div class="hero-overlay"></div>
-    <div class="hero-info">
-      <div class="hero-meta">
-        ${isLive ? `<div class="hero-live-badge"><span style="width:6px;height:6px;border-radius:50%;background:#fff;display:inline-block;"></span> EN VIVO</div>` : ''}
-        <div class="hero-title">${match.home.flag} ${match.home.name} vs ${match.away.flag} ${match.away.name}</div>
-        <div class="hero-subtitle">${match.competition} &nbsp;·&nbsp; ${isLive ? match.time : match.time + ' ' + (match.date || '')}</div>
-      </div>
-      <div class="hero-actions">
-        <button class="btn-watch" onclick="scrollToSection('all-channels')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
-          Cambiar canal
-        </button>
-      </div>
-    </div>`;
+  if (isLive) {
+    hero.innerHTML = `
+      <iframe src="${_activeChannel.url}" allowfullscreen allow="autoplay; fullscreen; encrypted-media"
+        style="width:100%;height:100%;border:none;display:block;"></iframe>
+      <div class="hero-overlay"></div>
+      <div class="hero-info">
+        <div class="hero-meta">
+          <div class="hero-live-badge"><span style="width:6px;height:6px;border-radius:50%;background:#fff;display:inline-block;"></span> EN VIVO · ${_activeChannel.name}</div>
+          <div class="hero-title">${match.home.flag} ${match.home.name} ${match.hs}-${match.as} ${match.away.name} ${match.away.flag}</div>
+          <div class="hero-subtitle">📍 ${venueLine} · ${match.comp}</div>
+        </div>
+      </div>`;
+  } else {
+    hero.innerHTML = `
+      <div class="hero-no-live">
+        <div style="font-size:13px;color:var(--orange);font-weight:700;letter-spacing:1px;">PRÓXIMO PARTIDO</div>
+        <div style="font-size:34px;font-family:'Bebas Neue',sans-serif;letter-spacing:1px;">${match.home.flag} ${match.home.name} <span style="color:var(--text-muted)">vs</span> ${match.away.name} ${match.away.flag}</div>
+        <p>${ft.day} ${ft.time} · ${match.comp}</p>
+        <p style="font-size:11px;">📍 ${venueLine}</p>
+      </div>`;
+  }
+
+  // Aviso de iframe (estilo lacancha.tv)
+  renderIframeNotice(isLive);
 }
 
-// ── Channel Strip (quick selector) ───────────────────────────────────────
+function renderIframeNotice(isLive) {
+  const el = document.getElementById('iframe-notice');
+  if (!el) return;
+  el.style.display = isLive ? 'flex' : 'none';
+}
+
+// ── Channel Strip (selector rápido tipo lacancha) ─────────────────────────
 function renderChannelStrip() {
   const strip = document.getElementById('channel-strip');
   strip.innerHTML = CHANNELS.map((ch, i) => `
     <div class="channel-chip ${i === 0 ? 'active' : ''}" onclick="switchChannel('${ch.id}', this)">
       <span class="chip-name">${ch.name}</span>
       <span class="chip-label">${ch.option}</span>
-      ${ch.live ? '<span class="chip-live">● EN VIVO</span>' : ''}
+      ${ch.tag ? `<span class="chip-tag">${ch.tag}</span>` : (ch.live ? '<span class="chip-live">● EN VIVO</span>' : '')}
     </div>
   `).join('');
 }
@@ -74,7 +89,12 @@ function switchChannel(channelId, el) {
   _activeChannel = ch;
 
   document.querySelectorAll('.channel-chip').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
+  if (el && el.classList.contains('channel-chip')) {
+    el.classList.add('active');
+  } else {
+    const chip = document.querySelector(`.channel-chip[onclick*="${ch.id}"]`);
+    if (chip) chip.classList.add('active');
+  }
 
   const hero = document.getElementById('hero-section');
   const iframe = hero.querySelector('iframe');
@@ -83,24 +103,29 @@ function switchChannel(channelId, el) {
   } else {
     renderHero();
     setTimeout(() => {
-      const newIframe = hero.querySelector('iframe');
-      if (newIframe) newIframe.src = ch.url;
+      const f = hero.querySelector('iframe');
+      if (f) f.src = ch.url;
     }, 50);
   }
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  _showToast(`📺 ${ch.name} ${ch.option} cargando...`, 'var(--blue)');
+  _showToast(`📺 ${ch.name} ${ch.option}`, 'var(--blue)');
 }
 
-// ── Matches Row ───────────────────────────────────────────────────────────
+// ── Matches Row (en vivo + próximos) ──────────────────────────────────────
 function renderMatchesRow() {
   const row = document.getElementById('matches-row');
-  row.innerHTML = MATCHES.map(m => {
+  const live = MATCHES.filter(m => m.status === 'live');
+  const upcoming = MATCHES.filter(m => m.status === 'scheduled').slice(0, 14);
+  const list = [...live, ...upcoming];
+
+  row.innerHTML = list.map(m => {
     const isLive = m.status === 'live';
+    const ft = fmtMatchTime(m.kickoff);
     return `
-    <div class="match-card ${isLive ? 'live' : ''}" onclick="${isLive ? `switchChannel('${m.defaultChannel || 'telemundo-1'}', document.querySelector('.channel-chip'))` : ''}">
+    <div class="match-card ${isLive ? 'live' : ''}" onclick="${isLive ? `switchChannel('${m.defaultChannel || 'telemundo-1'}')` : ''}">
       <div class="mc-status ${isLive ? 'live' : 'upcoming'}">
-        ${isLive ? '● EN VIVO' : '⏰ ' + (m.date || '') + ' ' + m.time}
+        ${isLive ? '● EN VIVO' : '⏰ ' + ft.day + ' ' + ft.time}
       </div>
       <div class="mc-teams">
         <div class="mc-team">
@@ -108,15 +133,14 @@ function renderMatchesRow() {
           <div class="mc-team-name">${m.home.name}</div>
         </div>
         <div class="mc-score-block">
-          <div class="mc-score">${isLive ? m.score : 'vs'}</div>
-          ${isLive ? `<div class="mc-time">${m.time}</div>` : ''}
+          <div class="mc-score">${isLive ? `${m.hs}-${m.as}` : 'vs'}</div>
         </div>
         <div class="mc-team">
           <div class="mc-flag">${m.away.flag}</div>
           <div class="mc-team-name">${m.away.name}</div>
         </div>
       </div>
-      <div class="mc-competition">${m.competition}</div>
+      <div class="mc-competition">${m.comp}</div>
     </div>`;
   }).join('');
 }
@@ -125,7 +149,7 @@ function renderMatchesRow() {
 function renderChannelsGrid() {
   const grid = document.getElementById('channels-grid');
   grid.innerHTML = CHANNELS.map(ch => `
-    <div class="ch-card" onclick="switchChannel('${ch.id}', document.querySelector('.channel-chip[onclick*=\\'${ch.id}\\']') || document.querySelector('.channel-chip'))">
+    <div class="ch-card" onclick="switchChannel('${ch.id}')">
       <div class="ch-name">${ch.name}</div>
       <div class="ch-option">${ch.option}</div>
       ${ch.live ? `<div class="ch-live-tag">
@@ -136,15 +160,16 @@ function renderChannelsGrid() {
   `).join('');
 }
 
-// ── Results Row ───────────────────────────────────────────────────────────
+// ── Results Row (partidos finalizados) ────────────────────────────────────
 function renderResultsRow() {
   const row = document.getElementById('results-row');
-  row.innerHTML = RESULTS.map(r => `
+  const results = MATCHES.filter(m => m.status === 'finished').reverse();
+  row.innerHTML = results.map(r => `
     <div class="result-card">
       <div class="rc-competition">${r.comp}</div>
       <div class="rc-row">
         <div class="rc-team">${r.home.flag} ${r.home.name}</div>
-        <div class="rc-score">${r.score}</div>
+        <div class="rc-score">${r.hs}-${r.as}</div>
         <div class="rc-team right">${r.away.name} ${r.away.flag}</div>
       </div>
     </div>
@@ -179,27 +204,22 @@ function renderQuinielaSection() {
     return;
   }
 
-  const upcoming = MATCHES.filter(m => m.status === 'upcoming');
+  const upcoming = MATCHES.filter(m => m.status === 'scheduled').slice(0, 10);
   container.innerHTML = upcoming.map(m => {
     const pick = Auth.getPick(m.id);
+    const ft = fmtMatchTime(m.kickoff);
     return `
     <div class="quiniela-match">
-      <div class="qm-header">${m.competition} · ${m.date || ''} ${m.time}</div>
+      <div class="qm-header">${m.comp} · ${ft.day} ${ft.time}</div>
       <div class="qm-teams">
         <div class="qm-team"><div class="qm-team-name">${m.home.flag} ${m.home.name}</div></div>
         <div class="qm-vs">VS</div>
         <div class="qm-team"><div class="qm-team-name">${m.away.flag} ${m.away.name}</div></div>
       </div>
       <div class="qm-picks">
-        <button class="pick-btn ${pick==='home'?'selected-home':''}" onclick="savePick('${m.id}','home',this)">
-          Local
-        </button>
-        <button class="pick-btn ${pick==='draw'?'selected-draw':''}" onclick="savePick('${m.id}','draw',this)">
-          Empate
-        </button>
-        <button class="pick-btn ${pick==='away'?'selected-away':''}" onclick="savePick('${m.id}','away',this)">
-          Visita
-        </button>
+        <button class="pick-btn ${pick==='home'?'selected-home':''}" onclick="savePick('${m.id}','home',this)">Local</button>
+        <button class="pick-btn ${pick==='draw'?'selected-draw':''}" onclick="savePick('${m.id}','draw',this)">Empate</button>
+        <button class="pick-btn ${pick==='away'?'selected-away':''}" onclick="savePick('${m.id}','away',this)">Visita</button>
       </div>
     </div>`;
   }).join('');
@@ -208,8 +228,7 @@ function renderQuinielaSection() {
 async function savePick(matchId, pick, btn) {
   if (!Auth.isLoggedIn()) { openModal('login-modal'); return; }
   const card = btn.closest('.quiniela-match');
-  const btns = card.querySelectorAll('.pick-btn');
-  btns.forEach(b => b.classList.remove('selected-home','selected-draw','selected-away'));
+  card.querySelectorAll('.pick-btn').forEach(b => b.classList.remove('selected-home','selected-draw','selected-away'));
   btn.classList.add(`selected-${pick}`);
   await Auth.savePick(matchId, pick);
   _showToast('Pronóstico guardado', 'var(--green)');
@@ -233,14 +252,8 @@ function loadAdSettings() {
   const settings = JSON.parse(localStorage.getItem('tvc_ad_settings') || '{}');
   const adBar = document.getElementById('ad-bar');
   const adContent = document.getElementById('ad-content');
-
-  if (settings.adsEnabled === false) {
-    adBar.classList.add('hidden');
-    return;
-  }
-  if (settings.adCode) {
-    adContent.innerHTML = settings.adCode;
-  }
+  if (settings.adsEnabled === false) { adBar.classList.add('hidden'); return; }
+  if (settings.adCode) adContent.innerHTML = settings.adCode;
 }
 
 function closeAd() {
@@ -248,16 +261,13 @@ function closeAd() {
 }
 
 // ── Modal Helpers ─────────────────────────────────────────────────────────
-function openModal(id) {
-  document.getElementById(id).classList.add('open');
-}
+function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
-  document.getElementById(id === 'login-modal' ? 'login-error' : 'reg-error').textContent = '';
+  const err = document.getElementById(id === 'login-modal' ? 'login-error' : 'reg-error');
+  if (err) err.textContent = '';
 }
-function closeAll() {
-  document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('open'));
-}
+function closeAll() { document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('open')); }
 function switchModal(from, to) { closeModal(from); openModal(to); }
 
 document.querySelectorAll('.modal-backdrop').forEach(b => {
@@ -303,12 +313,11 @@ async function logout() {
 function scrollToTop(el) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
   document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-  el.classList.add('active');
+  if (el) el.classList.add('active');
 }
-
 function scrollToSection(id, el) {
-  const el2 = document.getElementById(id);
-  if (el2) el2.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const t = document.getElementById(id);
+  if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
   if (el) {
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
     el.classList.add('active');
