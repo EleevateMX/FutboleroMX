@@ -29,8 +29,14 @@ async function loadQuiniela() {
   _pool = pool || {};
   _entries = entries || [];
 
+  // Mi boleto completo (con folio) — consulta filtrada por mi user_id
   const user = Auth.getUser();
-  _myEntry = user ? _entries.find(e => e.user_id === user.id) : null;
+  if (user) {
+    const { data: mine } = await sb.from('quiniela_entries').select('*').eq('user_id', user.id).maybeSingle();
+    _myEntry = mine || null;
+  } else {
+    _myEntry = null;
+  }
 
   renderPotHeader();
   renderContent();
