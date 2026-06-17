@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="100%" stop-color="#08080e"/>
+    </radialGradient>
+    <radialGradient id="ball" cx="38%" cy="35%" r="55%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#cccccc"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#e63946" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+
+  <!-- Red accent glow top -->
+  <ellipse cx="256" cy="80" rx="180" ry="60" fill="#e63946" opacity="0.08"/>
+
+  <!-- Soccer ball -->
+  <circle cx="256" cy="230" r="130" fill="url(#ball)" filter="url(#shadow)"/>
+
+  <!-- Pentagon patches -->
+  <!-- Center pentagon -->
+  <polygon points="256,168 289,191 277,228 235,228 223,191" fill="#1a1a1a"/>
+  <!-- Top right -->
+  <polygon points="289,191 330,178 348,215 318,238 277,228" fill="#1a1a1a"/>
+  <!-- Right -->
+  <polygon points="318,238 348,215 370,248 355,285 316,278" fill="#1a1a1a"/>
+  <!-- Bottom right -->
+  <polygon points="277,228 316,278 300,315 261,315 245,278" fill="#1a1a1a"/>
+  <!-- Bottom left -->
+  <polygon points="235,228 245,278 209,293 185,265 196,232" fill="#1a1a1a"/>
+  <!-- Left -->
+  <polygon points="223,191 196,232 162,222 158,183 192,163" fill="#1a1a1a"/>
+  <!-- Top -->
+  <polygon points="256,168 223,191 192,163 206,128 256,120" fill="#1a1a1a"/>
+  <!-- Top right 2 -->
+  <polygon points="256,168 289,191 316,163 306,128 256,120" fill="#1a1a1a"/>
+
+  <!-- Red stripe bar below ball -->
+  <rect x="96" y="382" width="320" height="6" rx="3" fill="#e63946" opacity="0.6"/>
+
+  <!-- FUTBOLERO text -->
+  <text x="256" y="440" font-family="Arial Black, sans-serif" font-size="52" font-weight="900"
+        fill="#ffffff" text-anchor="middle" letter-spacing="1">FUTBOLERO</text>
+
+  <!-- MX accent -->
+  <text x="256" y="490" font-family="Arial Black, sans-serif" font-size="38" font-weight="900"
+        fill="#e63946" text-anchor="middle" letter-spacing="4">MX</text>
+</svg>

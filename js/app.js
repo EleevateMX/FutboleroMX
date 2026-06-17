@@ -2,9 +2,9 @@ let triviaIdx = 0;
 let activeChannelId = null;
 let currentMatchChannels = [];
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initCookieBanner();
-  updateNav();
+  await authInit();          // Supabase: restaurar sesión antes de renderizar
   renderHero();
   renderChannelsGrid();
   renderMatches();
@@ -45,7 +45,7 @@ function updateNav() {
     userEl.classList.remove('visible');
   }
 }
-function logout() { Auth.logout(); updateNav(); renderQuinielaSection(); }
+async function logout() { await Auth.logout(); }
 
 function scrollToChannels() {
   document.getElementById('all-channels').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -358,11 +358,11 @@ function renderQuiniela() {
     <button class="quiniela-submit" onclick="submitQuiniela()">💾 Guardar quiniela</button>`;
 }
 
-function savePick(matchId, pick, btn) {
+async function savePick(matchId, pick, btn) {
   const row = document.getElementById('qrow-' + matchId);
   row.querySelectorAll('.q-pick').forEach(b => b.className = 'q-pick');
   btn.classList.add(pick === 'home' ? 'picked-home' : pick === 'draw' ? 'picked-draw' : 'picked-away');
-  Auth.savePick(matchId, pick);
+  await Auth.savePick(matchId, pick);
   document.getElementById('qpts-' + matchId).innerHTML = '<strong>+3 pts</strong>';
 }
 
@@ -390,26 +390,38 @@ function showError(id, msg) {
   if (el) { el.textContent = msg; el.classList.add('visible'); }
 }
 
-function doLogin(e) {
+async function doLogin(e) {
   e.preventDefault();
+  const btn      = e.submitter;
   const email    = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
-  const result   = Auth.login(email, password);
+  if (btn) { btn.disabled = true; btn.textContent = 'Entrando…'; }
+  const result   = await Auth.login(email, password);
+  if (btn) { btn.disabled = false; btn.textContent = 'Iniciar sesión'; }
   if (!result.ok) { showError('login-error', result.msg); return; }
-  closeAll(); updateNav(); renderQuinielaSection();
+  closeAll();
 }
 
-function doRegister(e) {
+async function doRegister(e) {
   e.preventDefault();
+  const btn      = e.submitter;
   const name     = document.getElementById('reg-name').value.trim();
   const email    = document.getElementById('reg-email').value.trim();
   const password = document.getElementById('reg-password').value;
   const confirm  = document.getElementById('reg-confirm').value;
   if (!name) { showError('reg-error', 'Ingresa tu nombre.'); return; }
   if (password !== confirm) { showError('reg-error', 'Las contraseñas no coinciden.'); return; }
-  const result = Auth.register(name, email, password);
+  if (btn) { btn.disabled = true; btn.textContent = 'Creando cuenta…'; }
+  const result = await Auth.register(name, email, password);
+  if (btn) { btn.disabled = false; btn.textContent = 'Crear cuenta'; }
   if (!result.ok) { showError('reg-error', result.msg); return; }
-  closeAll(); updateNav(); renderQuinielaSection();
+  closeAll();
+  // Supabase envía email de confirmación — avisar al usuario
+  const info = document.createElement('div');
+  info.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#16a34a;color:#fff;padding:14px 24px;border-radius:12px;font-size:14px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.4)';
+  info.textContent = '✅ ¡Cuenta creada! Revisa tu correo para confirmarla.';
+  document.body.appendChild(info);
+  setTimeout(() => info.remove(), 4500);
 }
 
 // close modals on overlay click

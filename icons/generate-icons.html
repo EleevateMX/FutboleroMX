@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head><title>FutboleroMX — Generar íconos PWA</title></head>
+<body style="background:#08080e;color:#fff;font-family:sans-serif;padding:2rem">
+<h2>Generador de íconos PWA — FutboleroMX</h2>
+<p>Haz clic en cada botón para descargar el ícono en el tamaño indicado.</p>
+<div id="btns" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:1rem"></div>
+<canvas id="c" style="display:none"></canvas>
+<img id="src-img" style="display:none">
+<script>
+const sizes = [72,96,128,144,152,192,384,512];
+const img = document.getElementById('src-img');
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const btns = document.getElementById('btns');
+
+img.onload = () => {
+  sizes.forEach(s => {
+    const btn = document.createElement('button');
+    btn.textContent = `Descargar ${s}×${s}`;
+    btn.style.cssText = 'background:#e63946;color:#fff;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-size:14px';
+    btn.onclick = () => {
+      canvas.width = s;
+      canvas.height = s;
+      ctx.clearRect(0, 0, s, s);
+      ctx.drawImage(img, 0, 0, s, s);
+      const a = document.createElement('a');
+      a.download = `icon-${s}.png`;
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    };
+    btns.appendChild(btn);
+  });
+
+  // Auto-generar todos
+  const autoBtn = document.createElement('button');
+  autoBtn.textContent = '⬇ Descargar TODOS';
+  autoBtn.style.cssText = 'background:#f4a261;color:#000;border:none;padding:10px 22px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700';
+  autoBtn.onclick = () => sizes.forEach((s,i) => setTimeout(() => {
+    canvas.width = s; canvas.height = s;
+    ctx.clearRect(0,0,s,s); ctx.drawImage(img,0,0,s,s);
+    const a = document.createElement('a');
+    a.download = `icon-${s}.png`;
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  }, i * 300));
+  btns.prepend(autoBtn);
+};
+img.src = 'icon.svg';
+</script>
+</body>
+</html>

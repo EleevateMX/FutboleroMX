@@ -1,48 +1,123 @@
-// Auth — LocalStorage based (no backend)
+// ── Supabase Auth ──────────────────────────────────────────────────────────────
+// Las keys se llenan automáticamente cuando el proyecto FutboleroMX esté creado
+const SUPA_URL  = '__SUPABASE_URL__';
+const SUPA_KEY  = '__SUPABASE_ANON_KEY__';
+
+const { createClient } = supabase;
+const sb = createClient(SUPA_URL, SUPA_KEY);
+
+// Estado en memoria del usuario activo
+let _user  = null;   // { id, email, name, pts }
+let _picks = {};     // { matchId: 'home'|'draw'|'away' }
+
+// ── Inicialización ─────────────────────────────────────────────────────────────
+async function authInit() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) await _loadProfile(session.user);
+
+  sb.auth.onAuthStateChange(async (_event, session) => {
+    if (session) {
+      await _loadProfile(session.user);
+    } else {
+      _user  = null;
+      _picks = {};
+    }
+    _updateNavUI();
+    if (typeof renderQuinielaSection === 'function') renderQuinielaSection();
+  });
+}
+
+async function _loadProfile(supaUser) {
+  const { data } = await sb
+    .from('profiles')
+    .select('name, pts, picks')
+    .eq('id', supaUser.id)
+    .single();
+
+  _user  = {
+    id:    supaUser.id,
+    email: supaUser.email,
+    name:  data?.name  ?? supaUser.email.split('@')[0],
+    pts:   data?.pts   ?? 0,
+  };
+  _picks = data?.picks ?? {};
+}
+
+// ── API pública ────────────────────────────────────────────────────────────────
 const Auth = {
-  getUser() {
-    try { return JSON.parse(localStorage.getItem('fmx_user')); } catch { return null; }
+  // Usuario activo (síncrono, post-init)
+  getUser: () => _user,
+
+  // Registro
+  async register(name, email, password) {
+    const { data, error } = await sb.auth.signUp({
+      email, password,
+      options: { data: { name } },
+    });
+    if (error) return { ok: false, msg: _esError(error) };
+
+    // Crear perfil en tabla pública
+    await sb.from('profiles').insert({
+      id:    data.user.id,
+      name,
+      pts:   0,
+      picks: {},
+    });
+    return { ok: true };
   },
-  getUsers() {
-    try { return JSON.parse(localStorage.getItem('fmx_users')) || []; } catch { return []; }
+
+  // Login
+  async login(email, password) {
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) return { ok: false, msg: _esError(error) };
+    return { ok: true };
   },
-  saveUsers(users) {
-    localStorage.setItem('fmx_users', JSON.stringify(users));
+
+  // Logout
+  async logout() {
+    await sb.auth.signOut();
   },
-  register(name, email, password) {
-    const users = this.getUsers();
-    if (users.find(u => u.email === email)) return { ok: false, msg: 'Ya existe una cuenta con ese correo.' };
-    if (password.length < 6) return { ok: false, msg: 'La contraseña debe tener al menos 6 caracteres.' };
-    const user = { id: Date.now(), name, email, pts: 0, picks: {}, joined: new Date().toISOString() };
-    users.push({ ...user, password });
-    this.saveUsers(users);
-    localStorage.setItem('fmx_user', JSON.stringify(user));
-    return { ok: true, user };
+
+  // Guardar pick de quiniela
+  async savePick(matchId, pick) {
+    if (!_user) return;
+    _picks[matchId] = pick;
+    await sb.from('profiles').update({ picks: _picks }).eq('id', _user.id);
   },
-  login(email, password) {
-    const users = this.getUsers();
-    const found = users.find(u => u.email === email && u.password === password);
-    if (!found) return { ok: false, msg: 'Correo o contraseña incorrectos.' };
-    const { password: _, ...user } = found;
-    localStorage.setItem('fmx_user', JSON.stringify(user));
-    return { ok: true, user };
-  },
-  logout() {
-    localStorage.removeItem('fmx_user');
-  },
-  savePick(matchId, pick) {
-    const user = this.getUser();
-    if (!user) return;
-    user.picks = user.picks || {};
-    user.picks[matchId] = pick;
-    localStorage.setItem('fmx_user', JSON.stringify(user));
-    // update in users list too
-    const users = this.getUsers();
-    const idx = users.findIndex(u => u.id === user.id);
-    if (idx > -1) { users[idx].picks = user.picks; this.saveUsers(users); }
-  },
-  getPick(matchId) {
-    const user = this.getUser();
-    return user?.picks?.[matchId] || null;
-  },
+
+  getPick: (matchId) => _picks[matchId] ?? null,
+
+  isLoggedIn: () => !!_user,
 };
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function _esError(error) {
+  const map = {
+    'Invalid login credentials':                'Correo o contraseña incorrectos.',
+    'User already registered':                  'Este correo ya tiene una cuenta.',
+    'Password should be at least 6 characters': 'La contraseña debe tener al menos 6 caracteres.',
+    'Email not confirmed':                      'Revisa tu correo y confirma tu cuenta.',
+    'signup_disabled':                          'El registro está temporalmente desactivado.',
+  };
+  for (const [key, msg] of Object.entries(map)) {
+    if (error.message?.includes(key)) return msg;
+  }
+  return error.message ?? 'Ocurrió un error. Intenta de nuevo.';
+}
+
+function _updateNavUI() {
+  const guest   = document.getElementById('nav-guest');
+  const userDiv = document.getElementById('nav-user');
+  const avatar  = document.getElementById('nav-avatar');
+  const uname   = document.getElementById('nav-username');
+  if (!guest) return;
+  if (_user) {
+    guest.style.display   = 'none';
+    userDiv.style.display = 'flex';
+    avatar.textContent    = (_user.name || '?').slice(0, 2).toUpperCase();
+    uname.textContent     = _user.name;
+  } else {
+    guest.style.display   = 'flex';
+    userDiv.style.display = 'none';
+  }
+}
