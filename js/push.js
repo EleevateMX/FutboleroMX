@@ -10,14 +10,34 @@ function urlBase64ToUint8Array(base64String) {
 
 const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 
+// Guarda (o re-guarda) la suscripción en Supabase. Devuelve {ok, error}.
+async function saveSubscription(sub) {
+  try {
+    const j = sub.toJSON();
+    const user = (typeof Auth !== 'undefined' && Auth.isLoggedIn()) ? Auth.getUser() : null;
+    const { error } = await sb.from('push_subscriptions').upsert({
+      endpoint: j.endpoint,
+      p256dh: j.keys.p256dh,
+      auth: j.keys.auth,
+      user_id: user ? user.id : null,
+      ua: navigator.userAgent.slice(0, 200),
+    }, { onConflict: 'endpoint' });
+    return { ok: !error, error };
+  } catch (e) { return { ok: false, error: e }; }
+}
+
 async function initPushButton() {
   const btn = document.getElementById('notify-btn');
   if (!btn || !pushSupported()) return;
-  // Ya concedido y suscrito → ocultar
   if (Notification.permission === 'granted') {
     const reg = await navigator.serviceWorker.ready.catch(() => null);
     const sub = reg ? await reg.pushManager.getSubscription() : null;
-    if (sub) { btn.style.display = 'none'; return; }
+    if (sub) {
+      // Recupera: re-guarda por si un intento anterior no llegó a la base
+      await saveSubscription(sub);
+      btn.style.display = 'none';
+      return;
+    }
   }
   if (Notification.permission === 'denied') { btn.style.display = 'none'; return; }
   btn.style.display = 'flex';
@@ -38,16 +58,11 @@ async function subscribePush() {
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC),
       });
     }
-    const j = sub.toJSON();
-    const user = (typeof Auth !== 'undefined' && Auth.isLoggedIn()) ? Auth.getUser() : null;
-    await sb.from('push_subscriptions').upsert({
-      endpoint: j.endpoint,
-      p256dh: j.keys.p256dh,
-      auth: j.keys.auth,
-      user_id: user ? user.id : null,
-      ua: navigator.userAgent.slice(0, 200),
-    }, { onConflict: 'endpoint' });
-
+    const res = await saveSubscription(sub);
+    if (!res.ok) {
+      _pushToast('No se pudo registrar: ' + ((res.error && res.error.message) || 'error de guardado'));
+      return;
+    }
     const btn = document.getElementById('notify-btn');
     if (btn) btn.style.display = 'none';
     _pushToast('🔔 Avisos activados. Te avisaremos de los partidos.');
