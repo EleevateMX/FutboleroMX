@@ -207,6 +207,7 @@ function renderHero() {
         </div>
       </div>`;
     armStreamWatchdog();   // si no carga, avisa "No está disponible la plataforma de streaming"
+    armHeroAutoHide();     // estilo Netflix: el rótulo se desvanece a los 5s
   } else {
     hero.innerHTML = `
       <div class="hero-no-live">
@@ -293,6 +294,23 @@ function retryStream() {
     setTimeout(() => { iframe.src = u; }, 60);
   } else {
     renderHero();
+  }
+}
+
+// ── Auto-ocultado del rótulo (estilo Netflix) ────────────────────────────
+let _heroHideTimer = null, _heroListenersSet = false;
+function armHeroAutoHide() {
+  const hero = document.getElementById('hero-section');
+  if (!hero) return;
+  hero.classList.remove('controls-hidden');           // mostrar
+  if (_heroHideTimer) clearTimeout(_heroHideTimer);
+  _heroHideTimer = setTimeout(() => {
+    if (LIVE_MATCH && LIVE_MATCH.status === 'live') hero.classList.add('controls-hidden');
+  }, 5000);
+  if (!_heroListenersSet) {
+    const show = () => armHeroAutoHide();
+    ['mousemove', 'touchstart', 'click'].forEach(ev => hero.addEventListener(ev, show, { passive: true }));
+    _heroListenersSet = true;
   }
 }
 
