@@ -1,52 +1,49 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <radialGradient id="bg" cx="50%" cy="35%" r="65%">
-      <stop offset="0%" stop-color="#0d1930"/>
-      <stop offset="100%" stop-color="#030711"/>
+    <radialGradient id="bg" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#0d1a2e"/>
+      <stop offset="100%" stop-color="#07070f"/>
     </radialGradient>
-    <radialGradient id="glow" cx="50%" cy="40%" r="50%">
-      <stop offset="0%" stop-color="#fbbf24" stop-opacity=".12"/>
-      <stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/>
+    <radialGradient id="glow" cx="50%" cy="45%" r="50%">
+      <stop offset="0%" stop-color="#0ea5e9" stop-opacity=".18"/>
+      <stop offset="100%" stop-color="#0ea5e9" stop-opacity="0"/>
     </radialGradient>
+    <linearGradient id="screen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0ea5e9" stop-opacity=".15"/>
+      <stop offset="100%" stop-color="#0ea5e9" stop-opacity=".04"/>
+    </linearGradient>
   </defs>
 
   <!-- Background -->
   <rect width="512" height="512" rx="96" fill="url(#bg)"/>
-  <!-- Gold glow -->
-  <ellipse cx="256" cy="180" rx="220" ry="140" fill="url(#glow)"/>
+  <ellipse cx="256" cy="200" rx="240" ry="160" fill="url(#glow)"/>
 
-  <!-- Globe lines (subtle) -->
-  <circle cx="256" cy="200" r="148" fill="none" stroke="#fbbf24" stroke-width="1" opacity=".12"/>
-  <ellipse cx="256" cy="200" rx="148" ry="55" fill="none" stroke="#fbbf24" stroke-width="1" opacity=".1"/>
-  <ellipse cx="256" cy="200" rx="90" ry="148" fill="none" stroke="#fbbf24" stroke-width="1" opacity=".08"/>
-  <line x1="108" y1="200" x2="404" y2="200" stroke="#fbbf24" stroke-width="1" opacity=".08"/>
-  <line x1="256" y1="52" x2="256" y2="348" stroke="#fbbf24" stroke-width="1" opacity=".08"/>
+  <!-- TV body -->
+  <rect x="64" y="120" width="384" height="244" rx="20" fill="#0f1a2e" stroke="#0ea5e9" stroke-width="3" stroke-opacity=".5"/>
+  <!-- TV screen -->
+  <rect x="84" y="140" width="344" height="200" rx="10" fill="url(#screen)"/>
+  <!-- Screen glow lines -->
+  <line x1="84" y1="180" x2="428" y2="180" stroke="#0ea5e9" stroke-width=".8" stroke-opacity=".12"/>
+  <line x1="84" y1="220" x2="428" y2="220" stroke="#0ea5e9" stroke-width=".8" stroke-opacity=".12"/>
+  <line x1="84" y1="260" x2="428" y2="260" stroke="#0ea5e9" stroke-width=".8" stroke-opacity=".12"/>
+  <line x1="84" y1="300" x2="428" y2="300" stroke="#0ea5e9" stroke-width=".8" stroke-opacity=".12"/>
 
-  <!-- Soccer ball -->
-  <circle cx="256" cy="200" r="110" fill="#f8fafc"/>
+  <!-- Play button (football) -->
+  <circle cx="256" cy="230" r="52" fill="#0ea5e9" fill-opacity=".12" stroke="#0ea5e9" stroke-width="2" stroke-opacity=".5"/>
+  <polygon points="238,206 283,230 238,254" fill="#0ea5e9" fill-opacity=".9"/>
 
-  <!-- Pentagon patches (black) -->
-  <polygon points="256,124 292,149 279,190 233,190 220,149" fill="#111"/>
-  <polygon points="292,149 337,135 354,175 324,203 279,190" fill="#111"/>
-  <polygon points="324,203 354,175 376,213 360,252 319,248" fill="#111"/>
-  <polygon points="279,190 319,248 302,283 260,283 243,252" fill="#111"/>
-  <polygon points="233,190 243,252 206,270 181,242 193,202" fill="#111"/>
-  <polygon points="220,149 193,202 155,194 151,154 186,130" fill="#111"/>
-  <polygon points="256,124 220,149 186,130 200,94 256,84" fill="#111"/>
-  <polygon points="256,124 292,149 322,130 312,94 256,84" fill="#111"/>
+  <!-- TV stand -->
+  <rect x="216" y="364" width="80" height="12" rx="4" fill="#0f1a2e" stroke="#0ea5e9" stroke-width="2" stroke-opacity=".3"/>
+  <rect x="176" y="374" width="160" height="10" rx="5" fill="#0ea5e9" fill-opacity=".25"/>
 
-  <!-- Gold accent bar -->
-  <rect x="88" y="364" width="336" height="4" rx="2" fill="#fbbf24" opacity=".5"/>
+  <!-- Signal dots top right -->
+  <circle cx="400" cy="148" r="4" fill="#0ea5e9" opacity=".7"/>
+  <circle cx="416" cy="148" r="4" fill="#0ea5e9" opacity=".4"/>
+  <circle cx="432" cy="148" r="4" fill="#f97316" opacity=".9"/>
 
-  <!-- FUTBOLERO -->
-  <text x="256" y="430" font-family="Arial Black,Impact,sans-serif" font-size="50"
-        font-weight="900" fill="#f0f4ff" text-anchor="middle" letter-spacing="-1">FUTBOLERO</text>
-
-  <!-- MX gold -->
-  <text x="256" y="482" font-family="Arial Black,Impact,sans-serif" font-size="42"
-        font-weight="900" fill="#fbbf24" text-anchor="middle" letter-spacing="8">MX</text>
-
-  <!-- 2026 subtle -->
-  <text x="256" y="352" font-family="Arial,sans-serif" font-size="18"
-        font-weight="700" fill="#fbbf24" text-anchor="middle" opacity=".4" letter-spacing="5">2026</text>
+  <!-- TVCONTIGO text -->
+  <text x="256" y="452" font-family="Arial Black,Impact,sans-serif" font-size="42"
+        font-weight="900" fill="#f0f0ff" text-anchor="middle" letter-spacing="-1">TVCONTIGO</text>
+  <text x="256" y="488" font-family="Arial Black,Impact,sans-serif" font-size="20"
+        font-weight="700" fill="#f97316" text-anchor="middle" letter-spacing="6">SITE</text>
 </svg>

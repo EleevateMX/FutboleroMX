@@ -1,14 +1,13 @@
-// ── FutboleroMX — Supabase Auth ───────────────────────────────────────────────
+// ── TVContigo — Supabase Auth ─────────────────────────────────────────────
 const SUPA_URL = 'https://sclqzavebwinezpivmwr.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNjbHF6YXZlYndpbmV6cGl2bXdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2NDMzNjUsImV4cCI6MjA5NzIxOTM2NX0.khNF90QxEqh1jEOxdtseREfWLmGAW-3cVJpots4VbTc';
 
 const { createClient } = supabase;
 const sb = createClient(SUPA_URL, SUPA_KEY);
 
-let _user  = null;  // { id, email, name, pts }
-let _picks = {};    // { matchId: 'home'|'draw'|'away' }
+let _user  = null;
+let _picks = {};
 
-// ── Init ──────────────────────────────────────────────────────────────────────
 async function authInit() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) await _loadProfile(session.user);
@@ -33,7 +32,6 @@ async function _loadProfile(supaUser) {
     .eq('id', supaUser.id)
     .single();
 
-  // Si el perfil aún no existe (primer login con Google) lo creamos
   if (!data) {
     const name = supaUser.user_metadata?.full_name
       || supaUser.user_metadata?.name
@@ -48,7 +46,6 @@ async function _loadProfile(supaUser) {
   _picks = data.picks ?? {};
 }
 
-// ── API pública ───────────────────────────────────────────────────────────────
 const Auth = {
   getUser:    () => _user,
   isLoggedIn: () => !!_user,
@@ -83,7 +80,6 @@ const Auth = {
   },
 };
 
-// Google OAuth
 async function signInWithGoogle() {
   closeAll();
   await sb.auth.signInWithOAuth({
@@ -95,7 +91,6 @@ async function signInWithGoogle() {
   });
 }
 
-// ── Nav UI ────────────────────────────────────────────────────────────────────
 function updateNav() {
   const guestEl  = document.getElementById('nav-guest');
   const userEl   = document.getElementById('nav-user');
@@ -104,25 +99,24 @@ function updateNav() {
   if (!guestEl) return;
 
   if (_user) {
-    guestEl.style.display  = 'none';
+    guestEl.style.display = 'none';
     userEl.classList.add('visible');
-    avatarEl.textContent   = (_user.name || '?').slice(0, 2).toUpperCase();
-    nameEl.textContent     = _user.name;
+    avatarEl.textContent  = (_user.name || '?').slice(0, 2).toUpperCase();
+    nameEl.textContent    = _user.name;
   } else {
-    guestEl.style.display  = 'flex';
+    guestEl.style.display = 'flex';
     userEl.classList.remove('visible');
   }
 }
 
-// ── Error messages in Spanish ─────────────────────────────────────────────────
 function _esError(error) {
   const map = {
-    'Invalid login credentials':                 'Correo o contraseña incorrectos.',
-    'User already registered':                   'Este correo ya tiene una cuenta.',
-    'Password should be at least 6 characters':  'La contraseña debe tener al menos 6 caracteres.',
-    'Email not confirmed':                       'Revisa tu correo y confirma tu cuenta.',
-    'signup_disabled':                           'El registro está temporalmente desactivado.',
-    'over_email_send_rate_limit':                'Demasiados intentos. Espera un momento.',
+    'Invalid login credentials':                'Correo o contraseña incorrectos.',
+    'User already registered':                  'Este correo ya tiene una cuenta.',
+    'Password should be at least 6 characters': 'La contraseña debe tener al menos 6 caracteres.',
+    'Email not confirmed':                      'Revisa tu correo y confirma tu cuenta.',
+    'signup_disabled':                          'El registro está temporalmente desactivado.',
+    'over_email_send_rate_limit':               'Demasiados intentos. Espera un momento.',
   };
   for (const [key, msg] of Object.entries(map)) {
     if (error.message?.includes(key)) return msg;

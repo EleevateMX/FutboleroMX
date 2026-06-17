@@ -1,87 +1,25 @@
 {
-  "name": "FutboleroMX — Fútbol en vivo",
-  "short_name": "FutboleroMX",
-  "description": "Fútbol en vivo gratis: Telemundo, FOX Sports, BBC One, TSN y más. Quiniela y rankings.",
+  "name": "TVContigo — Fútbol en Vivo",
+  "short_name": "TVContigo",
+  "description": "Mira el fútbol en vivo gratis. Mundial 2026 sin suscripción.",
   "start_url": "/",
-  "scope": "/",
   "display": "standalone",
-  "orientation": "any",
-  "background_color": "#08080e",
-  "theme_color": "#e63946",
-  "lang": "es-MX",
-  "categories": ["sports", "entertainment"],
+  "background_color": "#07070f",
+  "theme_color": "#0ea5e9",
+  "orientation": "portrait-primary",
   "icons": [
-    {
-      "src": "icons/icon-72.png",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons/icon-96.png",
-      "sizes": "96x96",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons/icon-128.png",
-      "sizes": "128x128",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons/icon-144.png",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons/icon-152.png",
-      "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icons/icon-384.png",
-      "sizes": "384x384",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icons/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
+    { "src": "icons/icon-72.png",  "sizes": "72x72",   "type": "image/png" },
+    { "src": "icons/icon-96.png",  "sizes": "96x96",   "type": "image/png" },
+    { "src": "icons/icon-128.png", "sizes": "128x128", "type": "image/png" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable any" },
+    { "src": "icons/icon.svg",     "sizes": "any",     "type": "image/svg+xml" }
   ],
   "shortcuts": [
-    {
-      "name": "En vivo ahora",
-      "short_name": "En vivo",
-      "description": "Ver canales en vivo",
-      "url": "/#all-channels",
-      "icons": [{ "src": "icons/icon-96.png", "sizes": "96x96" }]
-    },
-    {
-      "name": "Mi quiniela",
-      "short_name": "Quiniela",
-      "description": "Ver y editar mis picks",
-      "url": "/#quiniela-section",
-      "icons": [{ "src": "icons/icon-96.png", "sizes": "96x96" }]
-    }
+    { "name": "En Vivo", "short_name": "Live", "url": "/#hero-section", "icons": [{ "src": "icons/icon-96.png", "sizes": "96x96" }] },
+    { "name": "Canales", "short_name": "Canales", "url": "/#all-channels", "icons": [{ "src": "icons/icon-96.png", "sizes": "96x96" }] },
+    { "name": "Quiniela", "short_name": "Quiniela", "url": "/#quiniela-section", "icons": [{ "src": "icons/icon-96.png", "sizes": "96x96" }] }
   ],
-  "screenshots": [],
-  "prefer_related_applications": false
+  "categories": ["sports", "entertainment"],
+  "lang": "es"
 }

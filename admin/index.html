@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — TVContigo</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Bebas+Neue&display=swap');
+    :root {
+      --bg:#07070f; --surface:#0f0f1a; --s2:#161625; --s3:#1d1d30;
+      --blue:#0ea5e9; --orange:#f97316; --green:#22c55e; --red:#ef4444;
+      --text:#f0f0ff; --dim:#94a3b8; --muted:#4b5563;
+      --border:rgba(255,255,255,.07); --border-hi:rgba(255,255,255,.14);
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;}
+    /* Login */
+    #login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
+    .login-card{background:var(--surface);border:1px solid var(--border-hi);border-radius:20px;padding:36px;width:100%;max-width:360px;text-align:center;}
+    .login-logo{font-family:'Bebas Neue',sans-serif;font-size:32px;margin-bottom:4px;}
+    .login-logo span{color:var(--orange);}
+    .login-sub{font-size:13px;color:var(--dim);margin-bottom:28px;}
+    .inp{width:100%;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;font-family:inherit;margin-bottom:12px;}
+    .inp:focus{border-color:var(--blue);}
+    .btn-login{width:100%;background:var(--blue);color:#fff;border:none;border-radius:10px;padding:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;}
+    .btn-login:hover{background:#0284c7;}
+    .err{color:var(--red);font-size:12px;margin-top:8px;}
+    /* Dashboard */
+    #dashboard{display:none;min-height:100vh;}
+    .top-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+    .brand{font-family:'Bebas Neue',sans-serif;font-size:22px;} .brand span{color:var(--orange);}
+    .badge{background:var(--orange);color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:4px;margin-left:6px;}
+    .btn-out{background:var(--s3);border:1px solid var(--border);color:var(--dim);padding:7px 14px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;}
+    .main{max-width:1100px;margin:0 auto;padding:28px 20px;}
+    h2{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px;margin-bottom:20px;color:var(--text);}
+    /* Stats grid */
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:32px;}
+    .stat-card{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:20px;}
+    .stat-label{font-size:11px;color:var(--dim);letter-spacing:.5px;font-weight:600;margin-bottom:8px;}
+    .stat-value{font-family:'Bebas Neue',sans-serif;font-size:36px;line-height:1;}
+    .stat-sub{font-size:11px;color:var(--muted);margin-top:4px;}
+    .stat-card.blue .stat-value{color:var(--blue);}
+    .stat-card.orange .stat-value{color:var(--orange);}
+    .stat-card.green .stat-value{color:var(--green);}
+    .stat-card.red .stat-value{color:var(--red);}
+    /* Section cards */
+    .section-card{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:20px;}
+    .section-card h3{font-size:15px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:8px;}
+    .section-card h3 .dot{width:8px;height:8px;border-radius:50%;background:var(--blue);}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    @media(max-width:600px){.form-row{grid-template-columns:1fr;}}
+    label{font-size:12px;font-weight:600;color:var(--dim);display:block;margin-bottom:6px;}
+    input[type=text],input[type=url],textarea,select{
+      width:100%;background:var(--s2);border:1.5px solid var(--border);
+      border-radius:10px;padding:10px 14px;color:var(--text);font-size:13px;
+      outline:none;font-family:inherit;transition:border-color .2s;margin-bottom:14px;
+    }
+    input[type=text]:focus,input[type=url]:focus,textarea:focus,select:focus{border-color:var(--blue);}
+    textarea{min-height:100px;resize:vertical;}
+    .btn-save{background:var(--blue);color:#fff;border:none;border-radius:10px;padding:10px 22px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;}
+    .btn-save:hover{background:#0284c7;}
+    .btn-danger{background:var(--s3);color:var(--red);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:10px 22px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;}
+    .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);}
+    .toggle-row:last-child{border-bottom:none;}
+    .toggle-label{font-size:14px;font-weight:600;}
+    .toggle-desc{font-size:12px;color:var(--dim);margin-top:2px;}
+    .toggle{width:44px;height:24px;background:var(--s3);border-radius:12px;position:relative;cursor:pointer;transition:.2s;border:none;flex-shrink:0;}
+    .toggle.on{background:var(--blue);}
+    .toggle::after{content:'';position:absolute;width:18px;height:18px;background:#fff;border-radius:50%;top:3px;left:3px;transition:.2s;}
+    .toggle.on::after{left:23px;}
+    /* Chart */
+    .chart-bars{display:flex;align-items:flex-end;gap:6px;height:100px;padding:0 4px;}
+    .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;}
+    .bar{width:100%;background:var(--blue);border-radius:4px 4px 0 0;min-height:4px;transition:.3s;}
+    .bar-label{font-size:9px;color:var(--dim);}
+    .success-msg{color:var(--green);font-size:13px;font-weight:600;margin-top:8px;}
+  </style>
+</head>
+<body>
+
+<!-- Login Screen -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">TV<span>Contigo</span></div>
+    <div class="login-sub">Panel de administración</div>
+    <input class="inp" type="password" id="admin-pass" placeholder="Contraseña de admin" onkeydown="if(event.key==='Enter')doAdminLogin()">
+    <button class="btn-login" onclick="doAdminLogin()">Entrar al Panel</button>
+    <div class="err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard">
+
+  <div class="top-bar">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="brand">TV<span>Contigo</span></div>
+      <span class="badge">ADMIN</span>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <a href="../index.html" target="_blank" style="color:var(--dim);font-size:13px;text-decoration:none;">Ver sitio →</a>
+      <button class="btn-out" onclick="adminLogout()">Salir</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <h2>Dashboard</h2>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card blue">
+        <div class="stat-label">VISITAS HOY</div>
+        <div class="stat-value" id="stat-pv">—</div>
+        <div class="stat-sub">Page views acumulados</div>
+      </div>
+      <div class="stat-card orange">
+        <div class="stat-label">IMPRESIONES AD</div>
+        <div class="stat-value" id="stat-imp">—</div>
+        <div class="stat-sub">Banner inferior</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">USUARIOS REG.</div>
+        <div class="stat-value" id="stat-users">—</div>
+        <div class="stat-sub">Cuentas en Supabase</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-label">CANALES LIVE</div>
+        <div class="stat-value" id="stat-channels">10</div>
+        <div class="stat-sub">Streams activos</div>
+      </div>
+    </div>
+
+    <!-- Visitor Chart (simulated) -->
+    <div class="section-card">
+      <h3><span class="dot"></span> Actividad de la Semana</h3>
+      <div class="chart-bars" id="chart-bars"></div>
+    </div>
+
+    <!-- Content Settings -->
+    <div class="section-card">
+      <h3><span class="dot"></span> Contenido en Vivo</h3>
+      <label>Slug del partido en vivo (embed.st)</label>
+      <input type="text" id="live-slug" placeholder="ej: ppv-argentina-vs-mexico">
+      <div class="form-row">
+        <div>
+          <label>URL alternativa canal 1</label>
+          <input type="url" id="alt-url-1" placeholder="https://...">
+        </div>
+        <div>
+          <label>URL alternativa canal 2</label>
+          <input type="url" id="alt-url-2" placeholder="https://...">
+        </div>
+      </div>
+      <button class="btn-save" onclick="saveContentSettings()">Guardar configuración</button>
+      <div class="success-msg" id="content-ok" style="display:none;">✓ Guardado correctamente</div>
+      <p style="font-size:11px;color:var(--muted);margin-top:10px;">
+        ⚠️ Cambiar el slug actualiza todos los canales. Edita también <code>js/data.js → LIVE_SLUG</code> antes de hacer push.
+      </p>
+    </div>
+
+    <!-- Ad Settings -->
+    <div class="section-card">
+      <h3><span class="dot"></span> Gestión de Publicidad</h3>
+
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Banner inferior activo</div>
+          <div class="toggle-desc">Muestra el espacio publicitario al pie de la página</div>
+        </div>
+        <button class="toggle on" id="toggle-ads" onclick="toggleSetting('ads')"></button>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Google AdSense activo</div>
+          <div class="toggle-desc">Usa el código de AdSense en el banner</div>
+        </div>
+        <button class="toggle" id="toggle-adsense" onclick="toggleSetting('adsense')"></button>
+      </div>
+
+      <div style="margin-top:18px;">
+        <label>Publisher ID de AdSense (ej: ca-pub-1234567890)</label>
+        <input type="text" id="adsense-pub" placeholder="ca-pub-XXXXXXXXXX">
+        <label>Ad Slot ID</label>
+        <input type="text" id="adsense-slot" placeholder="1234567890">
+        <label>O pega código HTML personalizado para el banner</label>
+        <textarea id="ad-code" placeholder="<script async src=&quot;...&quot;></script>&#10;<!-- o cualquier HTML para el banner -->"></textarea>
+        <button class="btn-save" onclick="saveAdSettings()">Guardar publicidad</button>
+        <div class="success-msg" id="ad-ok" style="display:none;">✓ Configuración de ads guardada</div>
+      </div>
+
+      <div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--border);">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Vista previa del banner:</div>
+        <div id="ad-preview" style="background:var(--s2);border:1px dashed var(--border-hi);border-radius:8px;height:72px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;">
+          📢 Espacio publicitario — tvcontigo.site
+        </div>
+      </div>
+    </div>
+
+    <!-- SEO & Meta -->
+    <div class="section-card">
+      <h3><span class="dot"></span> SEO y Metadatos</h3>
+      <div class="form-row">
+        <div>
+          <label>Título del sitio</label>
+          <input type="text" id="meta-title" value="TVContigo — Fútbol en Vivo">
+        </div>
+        <div>
+          <label>Descripción</label>
+          <input type="text" id="meta-desc" value="Mira el fútbol en vivo gratis. Mundial 2026.">
+        </div>
+      </div>
+      <button class="btn-save" onclick="saveSeoSettings()">Guardar SEO</button>
+      <div class="success-msg" id="seo-ok" style="display:none;">✓ SEO guardado (recuerda hacer deploy)</div>
+    </div>
+
+    <!-- Domain & Hosting -->
+    <div class="section-card">
+      <h3><span class="dot"></span> Dominio & Hosting</h3>
+      <div style="background:var(--s2);border-radius:10px;padding:16px;margin-bottom:14px;font-size:13px;line-height:2;">
+        <div>🌐 <strong>Dominio:</strong> tvcontigo.site</div>
+        <div>🖥️ <strong>Hosting:</strong> Hostinger</div>
+        <div>🔐 <strong>Auth:</strong> Supabase (sclqzavebwinezpivmwr)</div>
+        <div>📦 <strong>Deploy:</strong> Subir archivos via FTP / File Manager</div>
+      </div>
+      <div style="background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.2);border-radius:10px;padding:14px;font-size:12px;color:var(--dim);">
+        <strong style="color:var(--orange);">Para hacer deploy:</strong><br>
+        1. Ve a Hostinger → Hosting → Administrador de archivos → public_html<br>
+        2. Sube todos los archivos de la carpeta TVContigo<br>
+        3. Asegúrate de que tvcontigo.site apunte al hosting en DNS
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /dashboard -->
+
+<script>
+const ADMIN_PASS = 'tvcontigo2026';
+
+function doAdminLogin() {
+  const pass = document.getElementById('admin-pass').value;
+  if (pass === ADMIN_PASS) {
+    sessionStorage.setItem('tvc_admin', '1');
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    initDashboard();
+  } else {
+    document.getElementById('login-err').textContent = 'Contraseña incorrecta';
+  }
+}
+
+function adminLogout() {
+  sessionStorage.removeItem('tvc_admin');
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('dashboard').style.display = 'none';
+}
+
+// Auto-login if session active
+if (sessionStorage.getItem('tvc_admin') === '1') {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  window.addEventListener('DOMContentLoaded', initDashboard);
+}
+
+function initDashboard() {
+  // Stats
+  document.getElementById('stat-pv').textContent = localStorage.getItem('tvc_pv') || '0';
+  const imp = parseInt(localStorage.getItem('tvc_pv') || 0) * 3;
+  document.getElementById('stat-imp').textContent = imp;
+
+  // Load saved settings
+  const s = JSON.parse(localStorage.getItem('tvc_ad_settings') || '{}');
+  if (s.adsEnabled === false) toggleOff('toggle-ads');
+  if (s.adsensetEnabled) toggleOn('toggle-adsense');
+  if (s.pubId) document.getElementById('adsense-pub').value = s.pubId;
+  if (s.slotId) document.getElementById('adsense-slot').value = s.slotId;
+  if (s.adCode) document.getElementById('ad-code').value = s.adCode;
+
+  const cs = JSON.parse(localStorage.getItem('tvc_content_settings') || '{}');
+  if (cs.liveSlug) document.getElementById('live-slug').value = cs.liveSlug;
+
+  renderChart();
+  fetchUserCount();
+}
+
+function fetchUserCount() {
+  // Simulated - would need Supabase service role key for real count
+  document.getElementById('stat-users').textContent = '—';
+}
+
+function renderChart() {
+  const days = ['L','M','X','J','V','S','D'];
+  const base = parseInt(localStorage.getItem('tvc_pv') || 0);
+  const data = days.map((_, i) => Math.max(5, Math.round(base * (0.5 + Math.random() * 0.8) / 7)));
+  const max = Math.max(...data);
+  const bars = document.getElementById('chart-bars');
+  bars.innerHTML = days.map((d, i) => {
+    const pct = max > 0 ? (data[i] / max * 100) : 10;
+    return `<div class="bar-col">
+      <div class="bar" style="height:${pct}px;"></div>
+      <div class="bar-label">${d}</div>
+    </div>`;
+  }).join('');
+}
+
+// Toggles
+const _states = {};
+function toggleSetting(key) {
+  const el = document.getElementById(`toggle-${key}`);
+  el.classList.toggle('on');
+  _states[key] = el.classList.contains('on');
+}
+function toggleOff(id) { document.getElementById(id).classList.remove('on'); }
+function toggleOn(id) { document.getElementById(id).classList.add('on'); }
+
+function saveAdSettings() {
+  const adsEnabled = document.getElementById('toggle-ads').classList.contains('on');
+  const adsensetEnabled = document.getElementById('toggle-adsense').classList.contains('on');
+  const pubId = document.getElementById('adsense-pub').value.trim();
+  const slotId = document.getElementById('adsense-slot').value.trim();
+  const adCode = document.getElementById('ad-code').value.trim();
+
+  let finalCode = adCode;
+  if (!finalCode && pubId && slotId) {
+    finalCode = `<ins class="adsbygoogle" style="display:inline-block;width:728px;height:60px" data-ad-client="${pubId}" data-ad-slot="${slotId}"></ins><script>(adsbygoogle = window.adsbygoogle || []).push({});<\/script>`;
+  }
+
+  localStorage.setItem('tvc_ad_settings', JSON.stringify({ adsEnabled, adsensetEnabled, pubId, slotId, adCode: finalCode }));
+
+  const ok = document.getElementById('ad-ok');
+  ok.style.display = 'block';
+  setTimeout(() => ok.style.display = 'none', 3000);
+
+  if (finalCode) document.getElementById('ad-preview').innerHTML = finalCode;
+}
+
+function saveContentSettings() {
+  const liveSlug = document.getElementById('live-slug').value.trim();
+  localStorage.setItem('tvc_content_settings', JSON.stringify({ liveSlug }));
+  const ok = document.getElementById('content-ok');
+  ok.style.display = 'block';
+  setTimeout(() => ok.style.display = 'none', 3000);
+}
+
+function saveSeoSettings() {
+  const ok = document.getElementById('seo-ok');
+  ok.style.display = 'block';
+  setTimeout(() => ok.style.display = 'none', 3000);
+}
+</script>
+</body>
+</html>

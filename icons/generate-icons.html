@@ -1,52 +1,136 @@
 <!DOCTYPE html>
-<html>
-<head><title>FutboleroMX — Generar íconos PWA</title></head>
-<body style="background:#08080e;color:#fff;font-family:sans-serif;padding:2rem">
-<h2>Generador de íconos PWA — FutboleroMX</h2>
-<p>Haz clic en cada botón para descargar el ícono en el tamaño indicado.</p>
-<div id="btns" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:1rem"></div>
-<canvas id="c" style="display:none"></canvas>
-<img id="src-img" style="display:none">
-<script>
-const sizes = [72,96,128,144,152,192,384,512];
-const img = document.getElementById('src-img');
-const canvas = document.getElementById('c');
-const ctx = canvas.getContext('2d');
-const btns = document.getElementById('btns');
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Generar Iconos — TVContigo</title>
+  <style>
+    body{background:#07070f;color:#f0f0ff;font-family:sans-serif;padding:30px;text-align:center;}
+    canvas{display:none;} button{background:#0ea5e9;color:#fff;border:none;padding:12px 24px;border-radius:8px;font-size:15px;cursor:pointer;margin:8px;}
+    .preview{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:20px;}
+    .prev-item{background:#0f0f1a;border-radius:8px;padding:12px;text-align:center;font-size:11px;color:#94a3b8;}
+  </style>
+</head>
+<body>
+  <h2>Generador de Iconos — TVContigo</h2>
+  <p style="color:#94a3b8;margin-bottom:20px;">Genera los iconos PNG para el PWA</p>
+  <button onclick="generateAll()">Descargar TODOS los iconos</button>
+  <div class="preview" id="preview"></div>
+  <canvas id="c"></canvas>
 
-img.onload = () => {
-  sizes.forEach(s => {
-    const btn = document.createElement('button');
-    btn.textContent = `Descargar ${s}×${s}`;
-    btn.style.cssText = 'background:#e63946;color:#fff;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-size:14px';
-    btn.onclick = () => {
-      canvas.width = s;
-      canvas.height = s;
-      ctx.clearRect(0, 0, s, s);
-      ctx.drawImage(img, 0, 0, s, s);
-      const a = document.createElement('a');
-      a.download = `icon-${s}.png`;
-      a.href = canvas.toDataURL('image/png');
-      a.click();
-    };
-    btns.appendChild(btn);
-  });
+  <script>
+    const SIZES = [72, 96, 128, 192, 512];
 
-  // Auto-generar todos
-  const autoBtn = document.createElement('button');
-  autoBtn.textContent = '⬇ Descargar TODOS';
-  autoBtn.style.cssText = 'background:#f4a261;color:#000;border:none;padding:10px 22px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700';
-  autoBtn.onclick = () => sizes.forEach((s,i) => setTimeout(() => {
-    canvas.width = s; canvas.height = s;
-    ctx.clearRect(0,0,s,s); ctx.drawImage(img,0,0,s,s);
-    const a = document.createElement('a');
-    a.download = `icon-${s}.png`;
-    a.href = canvas.toDataURL('image/png');
-    a.click();
-  }, i * 300));
-  btns.prepend(autoBtn);
-};
-img.src = 'icon.svg';
-</script>
+    function drawIcon(ctx, size) {
+      const s = size;
+      const r = s * 0.18; // border radius ratio
+
+      // Background
+      const bgGrad = ctx.createRadialGradient(s*.5, s*.4, 0, s*.5, s*.5, s*.7);
+      bgGrad.addColorStop(0, '#0d1a2e');
+      bgGrad.addColorStop(1, '#07070f');
+      roundRect(ctx, 0, 0, s, s, r, bgGrad);
+
+      // Glow
+      const glowGrad = ctx.createRadialGradient(s*.5, s*.4, 0, s*.5, s*.5, s*.5);
+      glowGrad.addColorStop(0, 'rgba(14,165,233,.15)');
+      glowGrad.addColorStop(1, 'rgba(14,165,233,0)');
+      ctx.fillStyle = glowGrad;
+      ctx.beginPath(); ctx.ellipse(s*.5, s*.38, s*.47, s*.32, 0, 0, Math.PI*2); ctx.fill();
+
+      // TV body
+      const tvX = s*.12, tvY = s*.22, tvW = s*.76, tvH = s*.48, tvR = s*.04;
+      ctx.strokeStyle = 'rgba(14,165,233,.5)'; ctx.lineWidth = s*.006;
+      ctx.fillStyle = '#0f1a2e';
+      roundRect(ctx, tvX, tvY, tvW, tvH, tvR, '#0f1a2e', true);
+
+      // TV screen
+      const scX = tvX+s*.04, scY = tvY+s*.04, scW = tvW-s*.08, scH = tvH-s*.08;
+      const screenGrad = ctx.createLinearGradient(scX, scY, scX+scW, scY+scH);
+      screenGrad.addColorStop(0, 'rgba(14,165,233,.15)');
+      screenGrad.addColorStop(1, 'rgba(14,165,233,.04)');
+      roundRect(ctx, scX, scY, scW, scH, s*.02, screenGrad);
+
+      // Play button
+      const cx = s*.5, cy = s*.455, cr = s*.1;
+      ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(14,165,233,.9)'; ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(cx-cr*.3, cy-cr*.5);
+      ctx.lineTo(cx+cr*.55, cy);
+      ctx.lineTo(cx-cr*.3, cy+cr*.5);
+      ctx.closePath(); ctx.fillStyle = '#fff'; ctx.fill();
+
+      // Stand
+      ctx.fillStyle = '#0f1a2e';
+      ctx.fillRect(s*.42, tvY+tvH, s*.16, s*.025);
+      ctx.beginPath();
+      ctx.ellipse(s*.5, tvY+tvH+s*.025, s*.14, s*.016, 0, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(14,165,233,.25)'; ctx.fill();
+
+      // Signal dots
+      ctx.beginPath(); ctx.arc(s*.82, tvY+s*.04, s*.012, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(14,165,233,.7)'; ctx.fill();
+      ctx.beginPath(); ctx.arc(s*.86, tvY+s*.04, s*.012, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(14,165,233,.4)'; ctx.fill();
+      ctx.beginPath(); ctx.arc(s*.9, tvY+s*.04, s*.012, 0, Math.PI*2);
+      ctx.fillStyle = '#f97316'; ctx.fill();
+
+      // Text TVCONTIGO
+      ctx.fillStyle = '#f0f0ff';
+      ctx.font = `900 ${s*.135}px Arial Black,Impact,sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText('TVCONTIGO', s*.5, s*.87);
+
+      // SITE in orange
+      ctx.fillStyle = '#f97316';
+      ctx.font = `700 ${s*.065}px Arial Black,Impact,sans-serif`;
+      ctx.letterSpacing = '3px';
+      ctx.fillText('S I T E', s*.5, s*.95);
+    }
+
+    function roundRect(ctx, x, y, w, h, r, fill, stroke) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+      if (stroke) ctx.stroke();
+    }
+
+    function generateAll() {
+      const preview = document.getElementById('preview');
+      preview.innerHTML = '';
+      SIZES.forEach(size => {
+        const c = document.getElementById('c');
+        c.width = size; c.height = size;
+        const ctx = c.getContext('2d');
+        ctx.clearRect(0, 0, size, size);
+        drawIcon(ctx, size);
+
+        c.toBlob(blob => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = `icon-${size}.png`; a.click();
+
+          const img = document.createElement('img');
+          img.src = url; img.width = Math.min(size, 96); img.height = Math.min(size, 96);
+          img.style.borderRadius = '12px';
+          const div = document.createElement('div');
+          div.className = 'prev-item';
+          div.appendChild(img);
+          div.appendChild(document.createElement('br'));
+          div.appendChild(document.createTextNode(`${size}×${size}`));
+          preview.appendChild(div);
+        }, 'image/png');
+      });
+    }
+  </script>
 </body>
 </html>

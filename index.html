@@ -1,315 +1,227 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FutboleroMX — Copa del Mundo 2026 en vivo</title>
-  <meta name="description" content="Mira el Mundial 2026 en vivo: Telemundo, FOX Sports, BBC One, TSN y más. Gratis. Quiniela y rankings." />
-  <meta property="og:title" content="FutboleroMX — Copa del Mundo 2026" />
-  <meta property="og:description" content="La cancha mayor. El Mundial 2026 en tu pantalla, gratis y sin límites." />
-  <meta property="og:type" content="website" />
-
-  <!-- PWA -->
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#fbbf24" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="FutboleroMX" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
-
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>TVContigo — Fútbol en Vivo</title>
+  <meta name="description" content="Mira el fútbol en vivo gratis. Mundial 2026, canales HD, quiniela y más. Sin suscripción.">
+  <meta name="theme-color" content="#0ea5e9">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <!-- Open Graph -->
+  <meta property="og:title" content="TVContigo — Fútbol en Vivo">
+  <meta property="og:description" content="El Mundial 2026 en tu pantalla. Gratis, sin suscripción.">
+  <meta property="og:image" content="icons/icon-512.png">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<!-- ══ MUNDIAL STRIP ══ -->
+<!-- Mundial Strip -->
 <div class="mundial-strip">
-  <span class="strip-title">⚽ COPA DEL MUNDO 2026</span>
-  <div class="strip-hosts">
-    <span>🇲🇽 México</span>
-    <span class="strip-dot">·</span>
-    <span>🇺🇸 Estados Unidos</span>
-    <span class="strip-dot">·</span>
-    <span>🇨🇦 Canadá</span>
-  </div>
-  <span class="strip-stat">48 selecciones · 104 partidos</span>
+  🇲🇽 🇺🇸 🇨🇦 &nbsp;<strong>Copa Mundial FIFA 2026</strong>&nbsp; · 48 selecciones · 104 partidos · Gratis en TVContigo
 </div>
 
-<!-- ══ COOKIE BANNER ══ -->
-<div id="cookie-banner" class="cookie-banner">
-  <p class="cookie-text">
-    Usamos cookies para mejorar tu experiencia. Al continuar aceptas nuestra
-    <a href="pages/cookies.html">Política de Cookies</a> y <a href="pages/privacidad.html">Privacidad</a>.
-  </p>
-  <div class="cookie-actions">
-    <button class="btn-cookie-decline" onclick="dismissCookie()">Rechazar</button>
-    <button class="btn-cookie-accept" onclick="acceptCookie()">Aceptar</button>
-  </div>
-</div>
-
-<!-- ══ NAV ══ -->
-<nav class="nav">
-  <a href="index.html" class="nav-logo">
-    <span class="ball">⚽</span> FUTBOLERO<span class="mx">MX</span>
+<!-- Top Nav -->
+<nav class="top-nav">
+  <a class="nav-brand" href="#">
+    <span class="nav-logo-text">TV<span>Contigo</span></span>
+    <span class="nav-badge">LIVE</span>
   </a>
-
-  <div class="nav-links">
-    <button class="nav-link active">Inicio</button>
-    <button class="nav-link" onclick="scrollToChannels()">
-      <span class="live-dot"></span> En vivo
-    </button>
-    <button class="nav-link" onclick="scrollToQuiniela()">Mi quiniela</button>
-    <button class="nav-link" onclick="document.getElementById('sidebar-oracle').scrollIntoView({behavior:'smooth'})">Oráculo</button>
-    <button class="nav-link" onclick="switchTab('results');document.getElementById('tab-results').scrollIntoView({behavior:'smooth'})">Marcadores</button>
+  <div class="nav-center">
+    <input class="nav-search" type="search" placeholder="Buscar partido o canal..." id="nav-search-input">
   </div>
-
-  <div class="nav-right">
-    <div id="nav-guest" style="display:flex;gap:8px">
-      <button class="btn-login" onclick="openLogin()">Entrar</button>
-      <button class="btn-register" onclick="openRegister()">Registrarse</button>
+  <div class="nav-actions">
+    <div id="nav-guest">
+      <button class="btn btn-sm btn-ghost" onclick="openModal('login-modal')">Entrar</button>
+      <button class="btn btn-sm btn-orange" onclick="openModal('register-modal')">Registrarse</button>
     </div>
-    <div id="nav-user" class="nav-user">
-      <div class="nav-avatar" id="nav-avatar">--</div>
-      <span class="nav-username" id="nav-username"></span>
-      <button class="btn-logout" onclick="logout()">Salir</button>
+    <div id="nav-user">
+      <span id="nav-username" style="font-size:13px;color:var(--text-dim)"></span>
+      <div class="nav-avatar" id="nav-avatar" title="Mi cuenta">??</div>
+      <button class="btn btn-sm btn-ghost" onclick="logout()">Salir</button>
     </div>
   </div>
 </nav>
 
-<!-- ══ MODAL: LOGIN ══ -->
-<div id="modal-login" class="modal-overlay">
-  <div class="modal">
-    <button class="modal-close" onclick="closeAll()">✕</button>
-    <div class="modal-logo-text">⚽ FUTBOLERO<span class="mx">MX</span></div>
-    <div class="modal-title">Bienvenido de vuelta</div>
-    <div class="modal-sub">Inicia sesión para tu quiniela y ranking</div>
+<!-- Hero: Live Stream -->
+<section class="hero" id="hero-section">
+  <div class="hero-no-live" id="hero-placeholder">
+    <div class="big-icon">📺</div>
+    <h2>Cargando transmisión...</h2>
+    <p>Buscando el partido en vivo</p>
+  </div>
+</section>
 
+<!-- Channel Selector Strip -->
+<div class="channel-strip" id="channel-strip">
+  <!-- rendered by app.js -->
+</div>
+
+<!-- ── Row: Partidos en Vivo / Próximos ─────────────────────────────────── -->
+<section class="content-section">
+  <div class="section-header">
+    <div class="section-title"><span class="dot"></span> PARTIDOS MUNDIAL 2026</div>
+    <span class="section-see-all" onclick="scrollToSection('quiniela-section')">Ver quiniela →</span>
+  </div>
+  <div class="scroll-row" id="matches-row">
+    <!-- rendered by app.js -->
+  </div>
+</section>
+
+<!-- ── Row: Todos los Canales ────────────────────────────────────────────── -->
+<section class="content-section" id="all-channels">
+  <div class="section-header">
+    <div class="section-title"><span class="dot"></span> TODOS LOS CANALES</div>
+    <span class="section-see-all">HD disponible</span>
+  </div>
+  <div class="channels-grid" id="channels-grid">
+    <!-- rendered by app.js -->
+  </div>
+</section>
+
+<!-- ── Row: Resultados ───────────────────────────────────────────────────── -->
+<section class="content-section">
+  <div class="section-header">
+    <div class="section-title"><span class="dot"></span> RESULTADOS JORNADA 1</div>
+  </div>
+  <div class="scroll-row" id="results-row">
+    <!-- rendered by app.js -->
+  </div>
+</section>
+
+<!-- ── Row: Trivia ───────────────────────────────────────────────────────── -->
+<section class="content-section">
+  <div class="section-header">
+    <div class="section-title"><span class="dot"></span> TRIVIA MUNDIAL</div>
+  </div>
+  <div class="scroll-row" id="trivia-row">
+    <!-- rendered by app.js -->
+  </div>
+</section>
+
+<!-- ── Quiniela Section ───────────────────────────────────────────────────── -->
+<section class="content-section" id="quiniela-section">
+  <div class="section-header">
+    <div class="section-title"><span class="dot"></span> MI QUINIELA</div>
+  </div>
+  <div style="padding: 0 20px;" id="quiniela-container">
+    <!-- rendered by app.js -->
+  </div>
+</section>
+
+<!-- ── Ranking ────────────────────────────────────────────────────────────── -->
+<section class="content-section">
+  <div class="section-header">
+    <div class="section-title"><span class="dot"></span> RANKING GLOBAL</div>
+  </div>
+  <div style="padding: 0 20px;" id="ranking-container">
+    <!-- rendered by app.js -->
+  </div>
+</section>
+
+<!-- ── Footer ────────────────────────────────────────────────────────────── -->
+<footer style="padding: 24px 20px; border-top: 1px solid var(--border); margin-top: 20px; text-align: center; color: var(--text-muted); font-size: 12px; line-height: 1.8;">
+  <div style="font-family:'Bebas Neue',sans-serif; font-size:18px; color:var(--text-dim); margin-bottom:4px;">TV<span style="color:var(--orange)">Contigo</span></div>
+  <div>TVContigo no aloja ni transmite ningún contenido. Solo ofrece enlaces disponibles públicamente.</div>
+  <div style="margin-top:8px; display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
+    <a href="pages/privacidad.html" style="color:var(--text-muted)">Privacidad</a>
+    <a href="pages/terminos.html" style="color:var(--text-muted)">Términos</a>
+    <a href="pages/dmca.html" style="color:var(--text-muted)">DMCA</a>
+    <a href="admin/" style="color:var(--text-muted)">Admin</a>
+  </div>
+</footer>
+
+<!-- Ad Bar -->
+<div class="ad-bar" id="ad-bar">
+  <button class="ad-close" onclick="closeAd()" title="Cerrar">✕</button>
+  <div class="ad-label">Publicidad</div>
+  <div class="ad-content" id="ad-content">
+    <div class="ad-placeholder">📢 Espacio publicitario — tvcontigo.site</div>
+  </div>
+</div>
+
+<!-- Bottom Nav -->
+<nav class="bottom-nav">
+  <button class="nav-item active" onclick="scrollToTop(this)">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m3 12 2-2m0 0 7-7 7 7M5 10v10a1 1 0 0 0 1 1h3m10-11 2 2m-2-2v10a1 1 0 0 1-1 1h-3m-6 0a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1m-6 0h6"/></svg>
+    Inicio
+  </button>
+  <button class="nav-item" onclick="scrollToSection('hero-section', this)">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polygon points="10,8 16,12 10,16 10,8" fill="currentColor" stroke="none"/></svg>
+    En Vivo
+  </button>
+  <button class="nav-item" onclick="scrollToSection('all-channels', this)">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+    Canales
+  </button>
+  <button class="nav-item" onclick="scrollToSection('quiniela-section', this)">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/></svg>
+    Quiniela
+  </button>
+  <button class="nav-item" onclick="Auth.isLoggedIn() ? null : openModal('login-modal')">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/></svg>
+    Mi Cuenta
+  </button>
+</nav>
+
+<!-- ── Login Modal ────────────────────────────────────────────────────────── -->
+<div class="modal-backdrop" id="login-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('login-modal')">×</button>
+    <div class="modal-title">Entrar a <span>TVContigo</span></div>
     <button class="btn-google" onclick="signInWithGoogle()">
-      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-      </svg>
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"/><path fill="#34A853" d="M6.3 14.7l7 5.1C15.1 16.1 19.2 13 24 13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 16.3 2 9.7 7.4 6.3 14.7z"/><path fill="#FBBC05" d="M24 46c5.5 0 10.5-1.9 14.3-5l-6.6-5.4C29.8 37 27 38 24 38c-6 0-10.7-3-11.8-7.3l-7 5.4C8.7 42.2 15.7 46 24 46z"/><path fill="#EA4335" d="M44.5 20H24v8.5h11.8c-.6 2.3-2 4.3-3.8 5.8l6.6 5.4C42.1 36.2 45 30.5 45 24c0-1.3-.2-2.7-.5-4z"/></svg>
       Continuar con Google
     </button>
     <div class="modal-divider"><span>o con correo</span></div>
-
-    <div id="login-error" class="form-error"></div>
     <form onsubmit="doLogin(event)">
       <div class="form-group">
-        <label class="form-label">Correo electrónico</label>
-        <input id="login-email" class="form-input" type="email" placeholder="tu@correo.com" required autocomplete="email" />
+        <label class="form-label">Correo</label>
+        <input class="form-input" type="email" id="login-email" required placeholder="tu@correo.com">
       </div>
       <div class="form-group">
         <label class="form-label">Contraseña</label>
-        <input id="login-password" class="form-input" type="password" placeholder="••••••••" required autocomplete="current-password" />
+        <input class="form-input" type="password" id="login-pass" required placeholder="••••••••">
       </div>
-      <button type="submit" class="btn-form">Iniciar sesión</button>
+      <div class="form-error" id="login-error"></div>
+      <button class="btn-full btn-blue-full" type="submit" id="login-btn">Entrar</button>
     </form>
-    <div class="form-switch">
-      ¿No tienes cuenta? <button onclick="openRegister()">Regístrate gratis</button>
-    </div>
+    <div class="modal-switch">¿No tienes cuenta? <a onclick="switchModal('login-modal','register-modal')">Regístrate gratis</a></div>
   </div>
 </div>
 
-<!-- ══ MODAL: REGISTER ══ -->
-<div id="modal-register" class="modal-overlay">
+<!-- ── Register Modal ─────────────────────────────────────────────────────── -->
+<div class="modal-backdrop" id="register-modal">
   <div class="modal">
-    <button class="modal-close" onclick="closeAll()">✕</button>
-    <div class="modal-logo-text">⚽ FUTBOLERO<span class="mx">MX</span></div>
-    <div class="modal-title">Crea tu cuenta</div>
-    <div class="modal-sub">Únete gratis y compite en el Mundial 2026</div>
-
+    <button class="modal-close" onclick="closeModal('register-modal')">×</button>
+    <div class="modal-title">Únete a <span>TVContigo</span></div>
     <button class="btn-google" onclick="signInWithGoogle()">
-      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-      </svg>
-      Registrarse con Google
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"/><path fill="#34A853" d="M6.3 14.7l7 5.1C15.1 16.1 19.2 13 24 13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 16.3 2 9.7 7.4 6.3 14.7z"/><path fill="#FBBC05" d="M24 46c5.5 0 10.5-1.9 14.3-5l-6.6-5.4C29.8 37 27 38 24 38c-6 0-10.7-3-11.8-7.3l-7 5.4C8.7 42.2 15.7 46 24 46z"/><path fill="#EA4335" d="M44.5 20H24v8.5h11.8c-.6 2.3-2 4.3-3.8 5.8l6.6 5.4C42.1 36.2 45 30.5 45 24c0-1.3-.2-2.7-.5-4z"/></svg>
+      Continuar con Google
     </button>
     <div class="modal-divider"><span>o con correo</span></div>
-
-    <div id="reg-error" class="form-error"></div>
     <form onsubmit="doRegister(event)">
       <div class="form-group">
-        <label class="form-label">Tu nombre</label>
-        <input id="reg-name" class="form-input" type="text" placeholder="Nombre de usuario" required autocomplete="name" />
+        <label class="form-label">Nombre</label>
+        <input class="form-input" type="text" id="reg-name" required placeholder="Tu nombre">
       </div>
       <div class="form-group">
-        <label class="form-label">Correo electrónico</label>
-        <input id="reg-email" class="form-input" type="email" placeholder="tu@correo.com" required autocomplete="email" />
+        <label class="form-label">Correo</label>
+        <input class="form-input" type="email" id="reg-email" required placeholder="tu@correo.com">
       </div>
       <div class="form-group">
         <label class="form-label">Contraseña</label>
-        <input id="reg-password" class="form-input" type="password" placeholder="Mínimo 6 caracteres" required autocomplete="new-password" />
+        <input class="form-input" type="password" id="reg-pass" required placeholder="Mínimo 6 caracteres">
       </div>
-      <div class="form-group">
-        <label class="form-label">Confirmar contraseña</label>
-        <input id="reg-confirm" class="form-input" type="password" placeholder="Repite tu contraseña" required autocomplete="new-password" />
-      </div>
-      <button type="submit" class="btn-form">Crear cuenta</button>
+      <div class="form-error" id="reg-error"></div>
+      <button class="btn-full btn-blue-full" type="submit" id="reg-btn">Crear cuenta gratis</button>
     </form>
-    <div class="form-switch">
-      ¿Ya tienes cuenta? <button onclick="openLogin()">Inicia sesión</button>
-    </div>
-    <p style="font-size:11px;color:var(--text-3);text-align:center;margin-top:1rem;line-height:1.7">
-      Al registrarte aceptas nuestros
-      <a href="pages/terminos.html" style="color:var(--gold)">Términos</a> y
-      <a href="pages/privacidad.html" style="color:var(--gold)">Privacidad</a>.
-    </p>
+    <div class="modal-switch">¿Ya tienes cuenta? <a onclick="switchModal('register-modal','login-modal')">Entra aquí</a></div>
   </div>
 </div>
 
-<!-- ══ MODAL: CANAL ══ -->
-<div id="ch-modal" class="modal-overlay">
-  <div class="modal" style="max-width:400px;padding:1.75rem 1.5rem">
-    <button class="modal-close" onclick="closeChModal()">✕</button>
-    <div style="font-size:10px;font-weight:700;color:var(--text-3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">Ver partido</div>
-    <div id="ch-modal-match" style="font-size:17px;font-weight:800;color:#fff;margin-bottom:.25rem"></div>
-    <div style="font-size:12px;color:var(--text-3);margin-bottom:.875rem">Selecciona tu emisora:</div>
-    <div id="ch-modal-list" class="ch-modal-list"></div>
-  </div>
-</div>
-
-<!-- ══ MAIN ══ -->
-<main class="layout">
-
-  <!-- COLUMNA PRINCIPAL -->
-  <div>
-    <div id="hero-card" class="hero-card"></div>
-
-    <div id="player" class="player-wrap">
-      <div class="player-top">
-        <span class="player-label">
-          <span style="width:7px;height:7px;border-radius:50%;background:var(--red);box-shadow:0 0 6px var(--red);display:inline-block;animation:pulse-dot 1.2s ease-in-out infinite"></span>
-          <span id="player-label-text">EN VIVO</span>
-        </span>
-        <button class="player-close" onclick="closePlayer()" aria-label="Cerrar reproductor">✕</button>
-      </div>
-      <iframe id="player-frame" src="" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture"></iframe>
-    </div>
-
-    <div id="live-channel-selector" class="channels-section" style="display:none">
-      <div class="ch-selector-label">
-        <span class="section-title">📡 Canales disponibles</span>
-        <button onclick="closePlayer()" style="font-size:12px;color:var(--text-3);background:none;border:none;cursor:pointer">Cerrar ✕</button>
-      </div>
-      <div id="ch-selector-tabs" class="ch-selector-tabs"></div>
-    </div>
-
-    <div class="channels-section" id="all-channels">
-      <div class="section-header">
-        <span class="section-title">📡 Emisoras en vivo</span>
-        <span style="font-size:12px;color:var(--text-3)">Haz clic para ver</span>
-      </div>
-      <div id="channels-grid" class="channels-grid"></div>
-    </div>
-
-    <div class="tabs">
-      <button class="tab active" data-tab="upcoming" onclick="switchTab('upcoming')">Próximos partidos</button>
-      <button class="tab" data-tab="results" onclick="switchTab('results')">Resultados</button>
-    </div>
-
-    <div id="tab-upcoming">
-      <div id="matches-list" class="match-list"></div>
-    </div>
-    <div id="tab-results" style="display:none">
-      <div id="results-grid" class="results-grid"></div>
-    </div>
-
-    <div id="quiniela-section" style="margin-top:1.125rem"></div>
-
-    <div class="cta-card">
-      <h3>LA CANCHA MAYOR</h3>
-      <p>El Mundial 2026 está aquí. Regístrate gratis, predice resultados y compite con miles de futboleros en el ranking semanal.</p>
-      <button class="btn-cta" onclick="openRegister()">Unirme gratis</button>
-    </div>
-  </div>
-
-  <!-- SIDEBAR -->
-  <aside>
-    <div class="sidebar-card">
-      <div class="section-header">
-        <span class="section-title">En vivo ahora</span>
-        <span class="badge-live" style="font-size:10px"><span class="pulse"></span>LIVE</span>
-      </div>
-      <div id="live-sidebar" class="match-list"></div>
-    </div>
-
-    <div class="sidebar-card">
-      <div class="section-header">
-        <span class="section-title">Ranking semanal</span>
-        <button class="section-more">Ver todo</button>
-      </div>
-      <div id="ranking-list" class="rank-list"></div>
-    </div>
-
-    <div class="sidebar-card" id="sidebar-oracle">
-      <div class="section-header">
-        <span class="section-title">El Oráculo</span>
-      </div>
-      <div id="oracle-box"></div>
-    </div>
-
-    <div class="sidebar-card">
-      <div class="section-header">
-        <span class="section-title">¿Sabías que…?</span>
-        <button class="section-more" onclick="nextTrivia()">Siguiente →</button>
-      </div>
-      <div class="trivia-box" id="trivia-text"></div>
-    </div>
-  </aside>
-</main>
-
-<!-- ══ FOOTER ══ -->
-<footer>
-  <div class="footer-inner">
-    <div class="footer-top">
-      <div class="footer-brand">
-        <div class="logo">⚽ FUTBOLERO<span class="mx">MX</span></div>
-        <p>La cancha mayor. El Mundial 2026 en tu pantalla con Telemundo, FOX Sports, BBC One, TSN, ORF 1 y más. Quinielas y rankings gratis.</p>
-        <div class="footer-hosts">
-          <span>🇲🇽 México</span>
-          <span>·</span>
-          <span>🇺🇸 USA</span>
-          <span>·</span>
-          <span>🇨🇦 Canadá</span>
-        </div>
-      </div>
-      <div class="footer-col">
-        <h4>Navegación</h4>
-        <a href="index.html">Inicio</a>
-        <a href="#" onclick="scrollToChannels();return false">En vivo</a>
-        <a href="#" onclick="scrollToQuiniela();return false">Mi quiniela</a>
-        <a href="#" onclick="switchTab('results');return false">Marcadores</a>
-      </div>
-      <div class="footer-col">
-        <h4>Legal</h4>
-        <a href="pages/terminos.html">Términos y Condiciones</a>
-        <a href="pages/privacidad.html">Política de Privacidad</a>
-        <a href="pages/cookies.html">Política de Cookies</a>
-        <a href="pages/dmca.html">DMCA y Terceros</a>
-      </div>
-      <div class="footer-col">
-        <h4>Contacto</h4>
-        <a href="mailto:hola@futbolerомx.com">hola@futbolerомx.com</a>
-        <a href="https://github.com/EleevateMX/FutboleroMX" target="_blank" rel="noopener">GitHub ↗</a>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <p>© 2026 FutboleroMX. Todos los derechos reservados.</p>
-      <p class="footer-disclaimer">FutboleroMX no aloja ni transmite directamente señales de terceros. No tiene afiliación con ningún organismo oficial de fútbol.</p>
-    </div>
-  </div>
-</footer>
+<!-- Toast -->
+<div id="toast"></div>
 
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -317,11 +229,13 @@
 <script src="js/auth.js"></script>
 <script src="js/app.js"></script>
 <script>
+  // Service Worker
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () =>
-      navigator.serviceWorker.register('/sw.js').catch(() => {})
-    );
+    navigator.serviceWorker.register('sw.js').catch(() => {});
   }
+  // Track page view
+  const pv = parseInt(localStorage.getItem('tvc_pv') || '0') + 1;
+  localStorage.setItem('tvc_pv', pv);
 </script>
 </body>
 </html>
