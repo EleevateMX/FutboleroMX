@@ -1,5 +1,5 @@
 // ── TVContigo — Supabase Auth ─────────────────────────────────────────────
-const SUPA_URL = 'https://sclqzavebwinezpivmwr.supabase.co';
+const SUPA_URL = 'https://auth.tvcontigo.site';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNjbHF6YXZlYndpbmV6cGl2bXdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2NDMzNjUsImV4cCI6MjA5NzIxOTM2NX0.khNF90QxEqh1jEOxdtseREfWLmGAW-3cVJpots4VbTc';
 
 const { createClient } = supabase;
