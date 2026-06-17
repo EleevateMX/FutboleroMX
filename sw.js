@@ -1,7 +1,7 @@
-const CACHE = 'tvc-v3';
+const CACHE = 'tvc-v4';
 const STATIC = [
   '/', '/index.html', '/quiniela.html', '/perfil.html', '/css/style.css',
-  '/js/data.js', '/js/auth.js', '/js/app.js', '/js/quiniela.js', '/js/perfil.js',
+  '/js/data.js', '/js/auth.js', '/js/app.js', '/js/quiniela.js', '/js/perfil.js', '/js/push.js',
   '/manifest.json', '/icons/icon.svg', '/icons/icon-192.png', '/icons/icon-512.png',
 ];
 
@@ -40,5 +40,33 @@ self.addEventListener('fetch', e => {
       }
       return res;
     }))
+  );
+});
+
+// ── Notificaciones Push ─────────────────────────────────────────────────────
+self.addEventListener('push', (e) => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (_) { d = { body: e.data && e.data.text() }; }
+  const title = d.title || 'TVContigo';
+  const options = {
+    body: d.body || '',
+    icon: d.icon || '/icons/icon-192.png',
+    badge: '/icons/icon-96.png',
+    data: { url: d.url || '/' },
+    vibrate: [80, 40, 80],
+    tag: d.tag || 'tvcontigo',
+    renotify: true,
+  };
+  e.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || '/';
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const c of list) { if ('focus' in c) { c.navigate(url); return c.focus(); } }
+      if (clients.openWindow) return clients.openWindow(url);
+    })
   );
 });

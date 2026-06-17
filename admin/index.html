@@ -291,6 +291,36 @@
       </div>
     </div>
 
+    <!-- Notificaciones Push -->
+    <div class="section-card">
+      <h3><span class="dot"></span> 🔔 Notificaciones push</h3>
+      <div style="background:rgba(14,165,233,.08);border:1px solid rgba(14,165,233,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--dim);margin-bottom:16px;">
+        Envía un aviso a todos los que activaron notificaciones (PWA instalada o navegador). Útil para "partido por empezar", promociones, etc. Requiere la clave de operación.
+      </div>
+
+      <div class="stats-grid" style="margin-bottom:16px;">
+        <div class="stat-card blue"><div class="stat-label">SUSCRIPTORES</div><div class="stat-value" id="push-subs">—</div><div class="stat-sub">Avisos activos</div></div>
+        <div class="stat-card green"><div class="stat-label">INSTALACIONES PWA</div><div class="stat-value" id="push-installs">—</div><div class="stat-sub">App instalada</div></div>
+      </div>
+
+      <label>Título</label>
+      <input type="text" id="push-title" placeholder="¡Partido por empezar!" value="¡Partido por empezar!">
+      <label>Mensaje</label>
+      <textarea id="push-body" placeholder="Argentina vs Brasil arranca en 15 min. Míralo en vivo." style="min-height:70px;"></textarea>
+      <label>Enlace al tocar (a dónde lleva)</label>
+      <input type="url" id="push-url" placeholder="https://tvcontigo.site/" value="https://tvcontigo.site/">
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;">
+        <button class="btn-out" style="font-size:12px;" onclick="fillPush('match')">⚽ Partido</button>
+        <button class="btn-out" style="font-size:12px;" onclick="fillPush('quiniela')">🏆 Quiniela</button>
+        <button class="btn-out" style="font-size:12px;" onclick="fillPush('promo')">🎁 Promoción</button>
+      </div>
+
+      <button class="btn-save" onclick="sendPush()">Enviar a todos</button>
+      <div class="success-msg" id="push-ok" style="display:none;"></div>
+      <div class="err" id="push-err" style="display:none;"></div>
+    </div>
+
     <!-- Ad Settings (global, PC + móvil) -->
     <div class="section-card">
       <h3><span class="dot"></span> 📢 Publicidad (PC y móvil)</h3>
@@ -406,8 +436,50 @@ function initDashboard() {
   loadAds();
   loadLiveConfigAdmin();
   loadQuinielaAdmin();
+  loadPushStats();
   renderChart();
   fetchUserCount();
+}
+
+// ── Notificaciones push (admin) ───────────────────────────────────────────
+async function loadPushStats() {
+  try {
+    const [{ data: cnt }, { data: stats }] = await Promise.all([
+      sb.rpc('push_count'),
+      sb.from('app_stats').select('installs').eq('id', 1).single(),
+    ]);
+    document.getElementById('push-subs').textContent = (cnt ?? 0);
+    document.getElementById('push-installs').textContent = (stats ? stats.installs : 0);
+  } catch (e) {}
+}
+
+function fillPush(kind) {
+  const t = document.getElementById('push-title'), b = document.getElementById('push-body'), u = document.getElementById('push-url');
+  if (kind === 'match') { t.value = '¡Partido por empezar! ⚽'; b.value = 'Tu partido arranca pronto. Míralo en vivo gratis en TVContigo.'; u.value = 'https://tvcontigo.site/'; }
+  if (kind === 'quiniela') { t.value = '🏆 Quiniela Mundialista'; b.value = 'El bote está creciendo. Predice al campeón y participa antes de que cierre.'; u.value = 'https://tvcontigo.site/quiniela.html'; }
+  if (kind === 'promo') { t.value = '🎁 TVContigo'; b.value = 'Tenemos algo para ti. Entra y descúbrelo.'; u.value = 'https://tvcontigo.site/'; }
+}
+
+async function sendPush() {
+  const ok = document.getElementById('push-ok'), err = document.getElementById('push-err');
+  ok.style.display = 'none'; err.style.display = 'none';
+  if (!qKey()) { err.textContent = 'Ingresa la clave de operación (arriba).'; err.style.display = 'block'; return; }
+  const title = document.getElementById('push-title').value.trim();
+  const body = document.getElementById('push-body').value.trim();
+  const url = document.getElementById('push-url').value.trim();
+  if (!title || !body) { err.textContent = 'Pon título y mensaje.'; err.style.display = 'block'; return; }
+  if (!confirm('¿Enviar esta notificación a todos los suscriptores?')) return;
+
+  try {
+    const { data, error } = await sb.functions.invoke('send-push', { body: { pass: qKey(), title, body, url } });
+    if (error) throw error;
+    if (data && data.error) throw new Error(data.error);
+    ok.textContent = `✓ Enviado: ${data.sent} entregados${data.removed ? ', ' + data.removed + ' bajas limpiadas' : ''} (de ${data.total}).`;
+    ok.style.display = 'block';
+  } catch (e) {
+    err.textContent = 'Error: ' + (e.message || e);
+    err.style.display = 'block';
+  }
 }
 
 async function loadAds() {

@@ -28,7 +28,7 @@
 
 <!-- Mundial Strip -->
 <div class="mundial-strip">
-  🇲🇽 🇺🇸 🇨🇦 &nbsp;<strong>Copa Mundial FIFA 2026</strong>&nbsp; · 48 selecciones · 104 partidos · Gratis en TVContigo
+  🇲🇽 🇺🇸 🇨🇦 &nbsp;<strong>El Mundial 2026</strong>&nbsp; · 48 selecciones · 104 partidos · Gratis en TVContigo
 </div>
 
 <!-- Top Nav -->
@@ -136,10 +136,16 @@
   </div>
 </section>
 
-<!-- ── Mi Quiniela (predicciones gratis) ──────────────────────────────────── -->
+<!-- ── Juego amistoso (predicciones gratis, sin dinero) ───────────────────── -->
 <section class="content-section">
   <div class="section-header">
-    <div class="section-title"><span class="dot"></span> MIS PREDICCIONES (GRATIS)</div>
+    <div class="section-title"><span class="dot"></span> JUEGO AMISTOSO · GRATIS</div>
+    <span class="section-see-all" style="cursor:default;">Sin dinero</span>
+  </div>
+  <div style="padding: 0 20px 8px;">
+    <div style="font-size:12px;color:var(--text-dim);background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;">
+      🎮 ¿No quieres entrar a la quiniela con dinero? Juega gratis: predice los partidos, suma puntos y compite en el ranking. Solo por diversión.
+    </div>
   </div>
   <div style="padding: 0 20px;" id="quiniela-container">
     <!-- rendered by app.js -->
@@ -192,7 +198,7 @@
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
     Canales
   </button>
-  <button class="nav-item" onclick="scrollToSection('quiniela-section', this)">
+  <button class="nav-item" onclick="location.href='quiniela.html'">
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/></svg>
     Quiniela
   </button>
@@ -262,8 +268,13 @@
 <div id="toast"></div>
 
 <!-- Botón flotante: Instalar app -->
-<button id="install-btn" style="display:none;position:fixed;right:14px;bottom:calc(var(--nav-h) + var(--ad-h) + 14px);z-index:300;background:var(--orange);color:#fff;border:none;border-radius:24px;padding:10px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 8px 24px rgba(249,115,22,.4);display:none;align-items:center;gap:6px;">
+<button id="install-btn" style="display:none;position:fixed;right:14px;bottom:calc(var(--nav-h) + var(--ad-h) + 14px);z-index:300;background:var(--orange);color:#fff;border:none;border-radius:24px;padding:10px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 8px 24px rgba(249,115,22,.4);align-items:center;gap:6px;">
   ⬇️ Instalar app
+</button>
+
+<!-- Botón flotante: Activar notificaciones -->
+<button id="notify-btn" style="display:none;position:fixed;left:14px;bottom:calc(var(--nav-h) + var(--ad-h) + 14px);z-index:300;background:var(--blue);color:#fff;border:none;border-radius:24px;padding:10px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 8px 24px rgba(14,165,233,.4);align-items:center;gap:6px;">
+  🔔 Activar avisos
 </button>
 
 <!-- Modal instrucciones iOS -->
@@ -285,6 +296,7 @@
 <script src="js/data.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/app.js"></script>
+<script src="js/push.js"></script>
 <script>
   // Service Worker
   if ('serviceWorker' in navigator) {
@@ -314,7 +326,11 @@
     }
   });
 
-  window.addEventListener('appinstalled', () => { installBtn.style.display = 'none'; });
+  window.addEventListener('appinstalled', () => {
+    installBtn.style.display = 'none';
+    try { sb.rpc('increment_install'); } catch (e) {}
+    localStorage.setItem('tvc_installed', '1');
+  });
 
   // iOS: no soporta beforeinstallprompt → mostrar instrucciones
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
