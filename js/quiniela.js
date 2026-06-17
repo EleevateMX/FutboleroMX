@@ -1,13 +1,14 @@
 // ── TVContigo — Quiniela Mundialista (multi-pool) ─────────────────────────
 
-const Q_TEAMS = [
-  { name:'Argentina', flag:'🇦🇷' }, { name:'Brasil', flag:'🇧🇷' }, { name:'Francia', flag:'🇫🇷' },
-  { name:'España', flag:'🇪🇸' }, { name:'Inglaterra', flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿' }, { name:'Alemania', flag:'🇩🇪' },
-  { name:'Portugal', flag:'🇵🇹' }, { name:'Países Bajos', flag:'🇳🇱' }, { name:'México', flag:'🇲🇽' },
-  { name:'EE.UU.', flag:'🇺🇸' }, { name:'Bélgica', flag:'🇧🇪' }, { name:'Uruguay', flag:'🇺🇾' },
-  { name:'Croacia', flag:'🇭🇷' }, { name:'Colombia', flag:'🇨🇴' }, { name:'Marruecos', flag:'🇲🇦' },
-  { name:'Japón', flag:'🇯🇵' }, { name:'Noruega', flag:'🇳🇴' },
-];
+// Todos los países del Mundial 2026 — derivados de los partidos reales (data.js)
+const Q_TEAMS = (() => {
+  const map = new Map();
+  (typeof MATCHES !== 'undefined' ? MATCHES : []).forEach(m => {
+    if (!map.has(m.home.name)) map.set(m.home.name, m.home.flag);
+    if (!map.has(m.away.name)) map.set(m.away.name, m.away.flag);
+  });
+  return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0], 'es')).map(([name, flag]) => ({ name, flag }));
+})();
 
 let _pools = [], _pay = {}, _stats = {}, _myEntries = [];
 let _selectedPool = null, _pickedChampion = null, _payMethod = 'nat';
@@ -253,7 +254,43 @@ function renderMyEntry(p, e) {
       <p style="color:var(--text-dim);font-size:12px;margin:4px 0 12px;">Tu pronóstico de campeón</p>
       <div class="status-pill ${sm.c}">${sm.t}</div>
       ${e.payment_status === 'pending' ? `<p style="font-size:11px;color:var(--text-muted);margin-top:10px;">Folio: ${e.payment_ref || '—'}</p>` : ''}
+      ${p.status === 'open' ? `
+        <div id="edit-pick-box" style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
+          <p style="font-size:12px;color:var(--text-dim);margin-bottom:10px;">🔓 Puedes cambiar tu elección hasta que termine la fase de grupos.</p>
+          <button class="btn btn-ghost" onclick="toggleEditPick()">Cambiar mi elección</button>
+          <div id="edit-pick-grid" style="display:none;margin-top:12px;">
+            <div class="team-grid">
+              ${Q_TEAMS.map(t => `<div class="team-opt ${t.name===e.champion_pick?'sel':''}" onclick="reSelectChampion('${t.name.replace(/'/g,"\\'")}', this)"><span class="f">${t.flag}</span>${t.name}</div>`).join('')}
+            </div>
+            <button class="btn-full btn-orange" style="background:var(--orange);color:#fff;margin-top:12px;" onclick="saveNewPick(${p.id})">Guardar nueva elección</button>
+            <div class="form-error" id="edit-pick-err"></div>
+          </div>
+        </div>` : ''}
     </div>`;
+}
+
+let _reChampion = null;
+function toggleEditPick() {
+  const g = document.getElementById('edit-pick-grid');
+  if (g) g.style.display = g.style.display === 'none' ? 'block' : 'none';
+}
+function reSelectChampion(name, el) {
+  _reChampion = name;
+  document.querySelectorAll('#edit-pick-grid .team-opt').forEach(t => t.classList.remove('sel'));
+  el.classList.add('sel');
+}
+async function saveNewPick(poolId) {
+  const err = document.getElementById('edit-pick-err');
+  err.textContent = '';
+  if (!_reChampion) { err.textContent = 'Elige un equipo.'; return; }
+  const { data, error } = await sb.rpc('update_my_pick', { p_pool_id: poolId, p_champion: _reChampion, p_tiebreak: 12 });
+  if (error) { err.textContent = 'Error: ' + error.message; return; }
+  if (data && !data.ok) { err.textContent = data.msg; return; }
+  _showToast('Elección actualizada ⚽', 'var(--green)');
+  _reChampion = null;
+  await loadAll();
+  _selectedPool = _pools.find(x => x.id === poolId);
+  renderApp();
 }
 
 function renderBounty(p) {

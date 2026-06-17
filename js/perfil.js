@@ -1,14 +1,14 @@
 // ── TVContigo — Perfil del usuario ────────────────────────────────────────
 
-const P_TEAMS = [
-  { name:'Argentina', flag:'🇦🇷' }, { name:'Brasil', flag:'🇧🇷' }, { name:'Francia', flag:'🇫🇷' },
-  { name:'España', flag:'🇪🇸' }, { name:'Inglaterra', flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿' }, { name:'Alemania', flag:'🇩🇪' },
-  { name:'Portugal', flag:'🇵🇹' }, { name:'Países Bajos', flag:'🇳🇱' }, { name:'México', flag:'🇲🇽' },
-  { name:'EE.UU.', flag:'🇺🇸' }, { name:'Bélgica', flag:'🇧🇪' }, { name:'Uruguay', flag:'🇺🇾' },
-  { name:'Croacia', flag:'🇭🇷' }, { name:'Colombia', flag:'🇨🇴' }, { name:'Marruecos', flag:'🇲🇦' },
-  { name:'Japón', flag:'🇯🇵' }, { name:'Noruega', flag:'🇳🇴' },
-];
-function flagOf(name) { const t = P_TEAMS.find(x => x.name === name); return t ? t.flag : '🏳️'; }
+// Banderas de todos los países — derivadas de los partidos reales (data.js)
+const _FLAGS = (() => {
+  const m = new Map();
+  (typeof MATCHES !== 'undefined' ? MATCHES : []).forEach(x => {
+    m.set(x.home.name, x.home.flag); m.set(x.away.name, x.away.flag);
+  });
+  return m;
+})();
+function flagOf(name) { return _FLAGS.get(name) || '🏳️'; }
 
 let _pools = [], _stats = {}, _myEntries = [];
 

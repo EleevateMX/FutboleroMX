@@ -114,7 +114,7 @@ function renderHero() {
       <div class="hero-info">
         <div class="hero-meta">
           <div class="hero-live-badge"><span style="width:6px;height:6px;border-radius:50%;background:#fff;display:inline-block;"></span> EN VIVO · ${_activeChannel.name}</div>
-          <div class="hero-title">${match.home.flag} ${match.home.name} ${match.hs}-${match.as} ${match.away.name} ${match.away.flag}</div>
+          <div class="hero-title">${match.home.flag} ${match.home.name} <span id="hero-score">${match.hs}-${match.as}</span> ${match.away.name} ${match.away.flag}</div>
           <div class="hero-subtitle">📍 ${venueLine} · ${match.comp}</div>
         </div>
       </div>`;
@@ -130,6 +130,30 @@ function renderHero() {
 
   // Aviso de iframe (estilo lacancha.tv)
   renderIframeNotice(isLive);
+
+  if (isLive) startLiveScorePolling();
+}
+
+// Actualiza el marcador en vivo cada 25s sin recargar la transmisión
+let _scorePoll = null;
+function startLiveScorePolling() {
+  if (_scorePoll) return;
+  _scorePoll = setInterval(async () => {
+    const scoreEl = document.getElementById('hero-score');
+    if (!scoreEl) { clearInterval(_scorePoll); _scorePoll = null; return; }
+    try {
+      const { data } = await sb.from('live_config').select('status, hs, as_').eq('id', 1).single();
+      if (!data || data.status !== 'live') { return; }
+      const nv = `${data.hs ?? 0}-${data.as_ ?? 0}`;
+      if (scoreEl.textContent !== nv) {
+        scoreEl.textContent = nv;
+        scoreEl.style.transition = 'transform .25s';
+        scoreEl.style.transform = 'scale(1.25)';
+        setTimeout(() => { scoreEl.style.transform = 'scale(1)'; }, 250);
+        if (LIVE_MATCH) { LIVE_MATCH.hs = data.hs; LIVE_MATCH.as = data.as_; }
+      }
+    } catch (e) {}
+  }, 25000);
 }
 
 function renderIframeNotice(isLive) {
@@ -273,7 +297,7 @@ function renderQuinielaSection() {
     return;
   }
 
-  const upcoming = MATCHES.filter(m => m.status === 'scheduled').slice(0, 10);
+  const upcoming = MATCHES.filter(m => m.status === 'scheduled');
   container.innerHTML = upcoming.map(m => {
     const pick = Auth.getPick(m.id);
     const ft = fmtMatchTime(m.kickoff);

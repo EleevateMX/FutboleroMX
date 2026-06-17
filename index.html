@@ -68,6 +68,9 @@
   </div>
 </section>
 
+<!-- Aviso para evitar confusión con el anuncio del reproductor -->
+<div class="play-hint">▶ Solo salta el anuncio del reproductor y disfruta la transmisión 😊</div>
+
 <!-- Channel Selector Strip -->
 <div class="channel-strip" id="channel-strip">
   <!-- rendered by app.js -->
@@ -196,6 +199,7 @@
 <!-- Ad Bar -->
 <div class="ad-bar" id="ad-bar">
   <button class="ad-close" onclick="closeAd()" title="Cerrar">✕</button>
+  <div class="ad-hint">Solo salta un anuncio y disfruta 😊</div>
   <div class="ad-label">Publicidad</div>
   <div class="ad-content" id="ad-content">
     <div class="ad-placeholder">📢 Espacio publicitario — tvcontigo.site</div>
@@ -286,12 +290,12 @@
 <div id="toast"></div>
 
 <!-- Botón flotante: Instalar app -->
-<button id="install-btn" style="display:none;position:fixed;right:14px;bottom:calc(var(--nav-h) + var(--ad-h) + 14px);z-index:300;background:var(--orange);color:#fff;border:none;border-radius:24px;padding:10px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 8px 24px rgba(249,115,22,.4);align-items:center;gap:6px;">
+<button id="install-btn" style="display:none;position:fixed;right:14px;bottom:calc(var(--nav-h) + var(--ad-h) + 14px + env(safe-area-inset-bottom, 0px));z-index:300;background:var(--orange);color:#fff;border:none;border-radius:24px;padding:10px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 8px 24px rgba(249,115,22,.4);align-items:center;gap:6px;">
   ⬇️ Instalar app
 </button>
 
 <!-- Botón flotante: Activar notificaciones -->
-<button id="notify-btn" style="display:none;position:fixed;left:14px;bottom:calc(var(--nav-h) + var(--ad-h) + 14px);z-index:300;background:var(--blue);color:#fff;border:none;border-radius:24px;padding:10px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 8px 24px rgba(14,165,233,.4);align-items:center;gap:6px;">
+<button id="notify-btn" style="display:none;position:fixed;left:14px;bottom:calc(var(--nav-h) + var(--ad-h) + 14px + env(safe-area-inset-bottom, 0px));z-index:300;background:var(--blue);color:#fff;border:none;border-radius:24px;padding:10px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 8px 24px rgba(14,165,233,.4);align-items:center;gap:6px;">
   🔔 Activar avisos
 </button>
 
