@@ -1,10 +1,11 @@
+// ── FutboleroMX — App ─────────────────────────────────────────────────────────
 let triviaIdx = 0;
 let activeChannelId = null;
 let currentMatchChannels = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
   initCookieBanner();
-  await authInit();          // Supabase: restaurar sesión antes de renderizar
+  await authInit();
   renderHero();
   renderChannelsGrid();
   renderMatches();
@@ -17,49 +18,56 @@ document.addEventListener('DOMContentLoaded', async () => {
   startTimers();
 });
 
-// ── COOKIE BANNER ──────────────────────────
+// ── COOKIE BANNER ─────────────────────────────────────────────────────────────
 function initCookieBanner() {
-  const accepted = localStorage.getItem('fmx_cookies');
-  if (accepted) document.getElementById('cookie-banner').classList.add('hidden');
+  if (localStorage.getItem('fmx_cookies')) {
+    document.getElementById('cookie-banner').classList.add('hidden');
+  }
 }
 function acceptCookie() {
-  localStorage.setItem('fmx_cookies', 'accepted');
+  localStorage.setItem('fmx_cookies', '1');
   document.getElementById('cookie-banner').classList.add('hidden');
 }
 function dismissCookie() {
   document.getElementById('cookie-banner').classList.add('hidden');
 }
 
-// ── NAV ────────────────────────────────────
-function updateNav() {
-  const user = Auth.getUser();
-  const guestEl = document.getElementById('nav-guest');
-  const userEl  = document.getElementById('nav-user');
-  if (user) {
-    guestEl.style.display = 'none';
-    userEl.classList.add('visible');
-    document.getElementById('nav-username').textContent = user.name;
-    document.getElementById('nav-avatar').textContent   = user.name.slice(0,2).toUpperCase();
-  } else {
-    guestEl.style.display = 'flex';
-    userEl.classList.remove('visible');
-  }
-}
+// ── NAV HELPERS ───────────────────────────────────────────────────────────────
 async function logout() { await Auth.logout(); }
 
 function scrollToChannels() {
   document.getElementById('all-channels').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 function scrollToQuiniela() {
-  const user = Auth.getUser();
-  if (!user) { openRegister(); return; }
+  if (!Auth.isLoggedIn()) { openRegister(); return; }
   document.getElementById('quiniela-section').scrollIntoView({ behavior: 'smooth' });
 }
 
-// ── HERO ───────────────────────────────────
+// ── HERO ──────────────────────────────────────────────────────────────────────
 function renderHero() {
   const m = MATCHES.find(m => m.status === 'live');
-  if (!m) return;
+  if (!m) {
+    // No live match — show next upcoming
+    const next = MATCHES.find(m => m.status === 'upcoming');
+    if (!next) return;
+    document.getElementById('hero-card').innerHTML = `
+      <div class="hero-meta">
+        <span class="badge-comp">${next.competition}</span>
+        <span class="hero-venue">📍 ${next.venue}</span>
+      </div>
+      <div class="match-teams">
+        <div class="team"><div class="team-flag">${next.home.flag}</div><div class="team-name">${next.home.name}</div></div>
+        <div class="match-score">
+          <div class="score-nums" style="font-size:40px;color:var(--text-2)">${next.time}</div>
+          <div class="score-min" style="color:var(--text-3)">PRÓXIMO</div>
+        </div>
+        <div class="team"><div class="team-flag">${next.away.flag}</div><div class="team-name">${next.away.name}</div></div>
+      </div>
+      <div class="hero-actions">
+        <button class="btn-predict" onclick="scrollToQuiniela()">⚡ Pronosticar</button>
+      </div>`;
+    return;
+  }
   document.getElementById('hero-card').innerHTML = `
     <div class="hero-meta">
       <span class="badge-live"><span class="pulse"></span>EN VIVO</span>
@@ -67,18 +75,12 @@ function renderHero() {
       <span class="hero-venue">📍 ${m.venue}</span>
     </div>
     <div class="match-teams">
-      <div class="team">
-        <div class="team-flag">${m.home.flag}</div>
-        <div class="team-name">${m.home.name}</div>
-      </div>
+      <div class="team"><div class="team-flag">${m.home.flag}</div><div class="team-name">${m.home.name}</div></div>
       <div class="match-score">
         <div class="score-nums" id="hero-score">${m.home.score} · ${m.away.score}</div>
         <div class="score-min" id="hero-min">⏱ ${m.minute}'</div>
       </div>
-      <div class="team">
-        <div class="team-flag">${m.away.flag}</div>
-        <div class="team-name">${m.away.name}</div>
-      </div>
+      <div class="team"><div class="team-flag">${m.away.flag}</div><div class="team-name">${m.away.name}</div></div>
     </div>
     <div class="hero-actions">
       <button class="btn-watch" onclick="watchMatch(${m.id})">▶ Ver en vivo</button>
@@ -86,10 +88,10 @@ function renderHero() {
     </div>`;
 }
 
-// ── CHANNELS GRID ──────────────────────────
+// ── CHANNELS GRID ─────────────────────────────────────────────────────────────
 function renderChannelsGrid() {
   document.getElementById('channels-grid').innerHTML = CHANNELS.map(ch => `
-    <div class="ch-card" id="ch-${ch.id}" onclick="playChannel('${ch.id}')" role="button" aria-label="Ver ${ch.name} opción ${ch.option}">
+    <div class="ch-card" id="ch-${ch.id}" onclick="playChannel('${ch.id}')" role="button" aria-label="${ch.name} opción ${ch.option}">
       <div class="ch-icon">${ch.icon}</div>
       <div class="ch-name">${ch.name}</div>
       <div class="ch-sub">${ch.sub}</div>
@@ -98,23 +100,20 @@ function renderChannelsGrid() {
     </div>`).join('');
 }
 
-// ── PLAYER ─────────────────────────────────
+// ── PLAYER ────────────────────────────────────────────────────────────────────
 function playChannel(id) {
   const ch = CHANNELS.find(c => c.id === id);
   if (!ch) return;
-
   document.querySelectorAll('.ch-card').forEach(c => c.classList.remove('playing'));
   document.getElementById('ch-' + id)?.classList.add('playing');
-
-  // update selector tabs
-  document.querySelectorAll('.ch-selector-tab').forEach(t => {
-    t.classList.toggle('active', t.dataset.chId === id);
-  });
-
+  document.querySelectorAll('.ch-selector-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.chId === id)
+  );
   activeChannelId = id;
   const player = document.getElementById('player');
   player.classList.add('active');
-  document.getElementById('player-label-text').textContent = `${ch.name}${ch.option > 1 ? ' — Opción ' + ch.option : ''} · EN VIVO`;
+  document.getElementById('player-label-text').textContent =
+    `${ch.name}${ch.option > 1 ? ' — Opción ' + ch.option : ''} · EN VIVO`;
   document.getElementById('player-frame').src = ch.embedUrl;
   player.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -129,14 +128,12 @@ function closePlayer() {
   currentMatchChannels = [];
 }
 
-// ── WATCH MATCH (selector estilo lacancha.tv) ──
+// ── WATCH MATCH (selector estilo lacancha.tv) ─────────────────────────────────
 function watchMatch(matchId) {
   const m = MATCHES.find(x => x.id === matchId);
   if (!m) return;
-
-  const modal = document.getElementById('ch-modal');
-  document.getElementById('ch-modal-match').textContent = `${m.home.flag} ${m.home.name}  vs  ${m.away.name} ${m.away.flag}`;
-
+  document.getElementById('ch-modal-match').textContent =
+    `${m.home.flag} ${m.home.name}  vs  ${m.away.name} ${m.away.flag}`;
   document.getElementById('ch-modal-list').innerHTML = m.channels.map(cid => {
     const ch = CHANNELS.find(c => c.id === cid);
     if (!ch) return '';
@@ -151,17 +148,11 @@ function watchMatch(matchId) {
         ${ch.free ? '<span class="badge-free">GRATIS</span>' : ''}
       </div>`;
   }).join('');
-
-  modal.classList.add('open');
+  document.getElementById('ch-modal').classList.add('open');
 }
 
 function selectModalChannel(id) {
   closeChModal();
-  // show inline tabs for this match's channels
-  const ch = CHANNELS.find(c => c.id === id);
-  if (!ch) return;
-
-  // find which match this channel belongs to
   const m = MATCHES.find(match => match.channels.includes(id));
   if (m) showSelectorTabs(m.channels, id);
   playChannel(id);
@@ -172,12 +163,12 @@ function showSelectorTabs(channelIds, activeId) {
   const selectorEl = document.getElementById('live-channel-selector');
   const tabsEl = document.getElementById('ch-selector-tabs');
   selectorEl.style.display = '';
-
   tabsEl.innerHTML = channelIds.map(cid => {
     const ch = CHANNELS.find(c => c.id === cid);
     if (!ch) return '';
     return `
-      <button class="ch-selector-tab ${cid === activeId ? 'active' : ''}" data-ch-id="${cid}" onclick="playChannel('${cid}')">
+      <button class="ch-selector-tab ${cid === activeId ? 'active' : ''}"
+        data-ch-id="${cid}" onclick="playChannel('${cid}')">
         <div class="ch-logo">${ch.icon}</div>
         ${ch.name}
         ${ch.option > 1 ? `<span class="ch-option">Op.${ch.option}</span>` : ''}
@@ -187,14 +178,16 @@ function showSelectorTabs(channelIds, activeId) {
 
 function closeChModal() { document.getElementById('ch-modal').classList.remove('open'); }
 
-// ── TABS ───────────────────────────────────
+// ── TABS ──────────────────────────────────────────────────────────────────────
 function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.tab === tab)
+  );
   document.getElementById('tab-upcoming').style.display = tab === 'upcoming' ? '' : 'none';
   document.getElementById('tab-results').style.display  = tab === 'results'  ? '' : 'none';
 }
 
-// ── MATCHES ────────────────────────────────
+// ── MATCHES ───────────────────────────────────────────────────────────────────
 function renderMatches() {
   const list = MATCHES.filter(m => m.status !== 'finished');
   document.getElementById('matches-list').innerHTML = list.map(m => {
@@ -205,12 +198,12 @@ function renderMatches() {
     const scoreEl = isLive
       ? `<span class="match-row-score">${m.home.score} · ${m.away.score}</span>`
       : `<span class="match-row-score" style="color:var(--text-3)">vs</span>`;
-    const pills = m.channels.slice(0,3).map(id => {
+    const pills = m.channels.slice(0, 3).map(id => {
       const ch = CHANNELS.find(c => c.id === id);
-      return ch ? `<span class="ch-pill">${ch.name}${ch.option > 1 ? ' '+ch.option : ''}</span>` : '';
+      return ch ? `<span class="ch-pill">${ch.name}${ch.option > 1 ? ' ' + ch.option : ''}</span>` : '';
     }).join('');
     return `
-      <div class="match-row" onclick="watchMatch(${m.id})" role="button" aria-label="Ver ${m.home.name} vs ${m.away.name}">
+      <div class="match-row" onclick="watchMatch(${m.id})" role="button" aria-label="${m.home.name} vs ${m.away.name}">
         ${timeEl}
         <div class="match-row-teams">
           <strong>${m.home.name} ${m.home.flag}</strong>
@@ -223,21 +216,21 @@ function renderMatches() {
   }).join('');
 }
 
-// ── RESULTS ────────────────────────────────
+// ── RESULTS ───────────────────────────────────────────────────────────────────
 function renderResults() {
   document.getElementById('results-grid').innerHTML = RESULTS.map(r => `
     <div class="result-card">
       <div class="result-comp">${r.competition}</div>
-      <div class="result-team ${r.winner==='home'?'winner':'loser'}">
+      <div class="result-team ${r.winner === 'home' ? 'winner' : 'loser'}">
         <span>${r.home.flag} ${r.home.name}</span><span class="score">${r.home.score}</span>
       </div>
-      <div class="result-team ${r.winner==='away'?'winner':'loser'}">
+      <div class="result-team ${r.winner === 'away' ? 'winner' : r.winner === 'draw' ? '' : 'loser'}">
         <span>${r.away.flag} ${r.away.name}</span><span class="score">${r.away.score}</span>
       </div>
     </div>`).join('');
 }
 
-// ── RANKING ────────────────────────────────
+// ── RANKING ───────────────────────────────────────────────────────────────────
 function renderRanking() {
   document.getElementById('ranking-list').innerHTML = RANKING.map(r => `
     <div class="rank-item">
@@ -248,7 +241,7 @@ function renderRanking() {
     </div>`).join('');
 }
 
-// ── ORACLE ─────────────────────────────────
+// ── ORACLE ────────────────────────────────────────────────────────────────────
 function renderOracle() {
   const m = MATCHES.find(m => m.status === 'upcoming');
   if (!m) return;
@@ -260,9 +253,9 @@ function renderOracle() {
       <div class="oracle-match-name">${m.home.name} vs ${m.away.name} · ${m.time}</div>
       <div class="oracle-tip">El Oráculo predice: <strong>${m.home.name} gana</strong></div>
       <div class="oracle-btns">
-        <button class="oracle-btn selected" onclick="pickOracle(this)" aria-label="Local">${m.home.flag}</button>
-        <button class="oracle-btn" onclick="pickOracle(this)" aria-label="Empate">X</button>
-        <button class="oracle-btn" onclick="pickOracle(this)" aria-label="Visitante">${m.away.flag}</button>
+        <button class="oracle-btn selected" onclick="pickOracle(this)">${m.home.flag}</button>
+        <button class="oracle-btn" onclick="pickOracle(this)">X</button>
+        <button class="oracle-btn" onclick="pickOracle(this)">${m.away.flag}</button>
       </div>
     </div>`;
 }
@@ -271,12 +264,12 @@ function pickOracle(btn) {
   btn.classList.add('selected');
 }
 
-// ── LIVE SIDEBAR ───────────────────────────
+// ── LIVE SIDEBAR ──────────────────────────────────────────────────────────────
 function renderLiveSidebar() {
   const live = MATCHES.filter(m => m.status === 'live');
   const el = document.getElementById('live-sidebar');
   if (!live.length) {
-    el.innerHTML = '<p style="font-size:13px;color:var(--text-3)">Sin partidos en vivo en este momento.</p>';
+    el.innerHTML = '<p style="font-size:13px;color:var(--text-3);padding:4px 0">Sin partidos en vivo ahora.</p>';
     return;
   }
   el.innerHTML = live.map(m => `
@@ -285,39 +278,35 @@ function renderLiveSidebar() {
       <div class="match-row-teams" style="font-size:12px">
         <strong>${m.home.name}</strong><span class="vs">vs</span><strong>${m.away.name}</strong>
       </div>
-      <span class="match-row-score" style="font-size:13px">${m.home.score} · ${m.away.score}</span>
+      <span class="match-row-score" style="font-size:14px">${m.home.score} · ${m.away.score}</span>
     </div>`).join('');
 }
 
-// ── TRIVIA ─────────────────────────────────
+// ── TRIVIA ────────────────────────────────────────────────────────────────────
 function renderTrivia() {
   const el = document.getElementById('trivia-text');
   if (!el) return;
   el.style.opacity = '0';
   el.style.transition = 'opacity .3s';
-  setTimeout(() => {
-    el.innerHTML = TRIVIA[triviaIdx];
-    el.style.opacity = '1';
-  }, 150);
+  setTimeout(() => { el.innerHTML = TRIVIA[triviaIdx]; el.style.opacity = '1'; }, 150);
 }
 function nextTrivia() {
   triviaIdx = (triviaIdx + 1) % TRIVIA.length;
   renderTrivia();
 }
 
-// ── QUINIELA ───────────────────────────────
+// ── QUINIELA ─────────────────────────────────────────────────────────────────
 function renderQuinielaSection() {
-  const user = Auth.getUser();
   const el = document.getElementById('quiniela-section');
   if (!el) return;
-  if (!user) {
+  if (!Auth.isLoggedIn()) {
     el.innerHTML = `
       <div class="quiniela-cta">
-        <h4>🏆 Mi Quiniela</h4>
-        <p>Regístrate para guardar tus predicciones y subir al ranking semanal.</p>
+        <h4>🏆 Mi Quiniela Mundial</h4>
+        <p>Registrate gratis, predice los partidos del Mundial 2026 y sube al ranking semanal.</p>
         <button class="btn-quiniela" onclick="openRegister()">Crear cuenta gratis</button>
-        <div style="margin-top:10px">
-          <button onclick="openLogin()" style="background:none;border:none;color:var(--text-3);font-size:12px;cursor:pointer;">
+        <div style="margin-top:12px">
+          <button onclick="openLogin()" style="background:none;border:none;color:var(--text-3);font-size:12px;cursor:pointer">
             ¿Ya tienes cuenta? Inicia sesión
           </button>
         </div>
@@ -332,7 +321,7 @@ function renderQuiniela() {
   const el = document.getElementById('quiniela-section');
   el.innerHTML = `
     <div class="section-header" style="margin-bottom:.875rem">
-      <span class="section-title">🏆 Mi Quiniela</span>
+      <span class="section-title">🏆 Mi Quiniela Mundial</span>
       <span class="badge-gold">+3 pts por acierto</span>
     </div>
     <div class="quiniela-grid">
@@ -347,9 +336,9 @@ function renderQuiniela() {
               <strong>${m.away.name}</strong> ${m.away.flag}
             </div>
             <div class="q-picks">
-              <button class="q-pick ${saved==='home'?'picked-home':''}" onclick="savePick(${m.id},'home',this)">${m.home.flag}</button>
-              <button class="q-pick ${saved==='draw'?'picked-draw':''}" onclick="savePick(${m.id},'draw',this)">X</button>
-              <button class="q-pick ${saved==='away'?'picked-away':''}" onclick="savePick(${m.id},'away',this)">${m.away.flag}</button>
+              <button class="q-pick ${saved === 'home' ? 'picked-home' : ''}" onclick="savePick(${m.id},'home',this)">${m.home.flag}</button>
+              <button class="q-pick ${saved === 'draw' ? 'picked-draw' : ''}" onclick="savePick(${m.id},'draw',this)">X</button>
+              <button class="q-pick ${saved === 'away' ? 'picked-away' : ''}" onclick="savePick(${m.id},'away',this)">${m.away.flag}</button>
             </div>
             <span class="q-pts" id="qpts-${m.id}">${saved ? '<strong>+3 pts</strong>' : '—'}</span>
           </div>`;
@@ -370,15 +359,13 @@ function submitQuiniela() {
   const btn = document.querySelector('.quiniela-submit');
   btn.textContent = '✅ ¡Quiniela guardada!';
   btn.style.background = '#16a34a';
-  btn.style.boxShadow = '0 4px 20px rgba(22,163,74,.3)';
   setTimeout(() => {
     btn.textContent = '💾 Guardar quiniela';
     btn.style.background = '';
-    btn.style.boxShadow = '';
   }, 2800);
 }
 
-// ── AUTH MODALS ────────────────────────────
+// ── AUTH MODALS ───────────────────────────────────────────────────────────────
 function openLogin()    { closeAll(); document.getElementById('modal-login').classList.add('open'); }
 function openRegister() { closeAll(); document.getElementById('modal-register').classList.add('open'); }
 function closeAll() {
@@ -396,7 +383,7 @@ async function doLogin(e) {
   const email    = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
   if (btn) { btn.disabled = true; btn.textContent = 'Entrando…'; }
-  const result   = await Auth.login(email, password);
+  const result = await Auth.login(email, password);
   if (btn) { btn.disabled = false; btn.textContent = 'Iniciar sesión'; }
   if (!result.ok) { showError('login-error', result.msg); return; }
   closeAll();
@@ -416,15 +403,21 @@ async function doRegister(e) {
   if (btn) { btn.disabled = false; btn.textContent = 'Crear cuenta'; }
   if (!result.ok) { showError('reg-error', result.msg); return; }
   closeAll();
-  // Supabase envía email de confirmación — avisar al usuario
-  const info = document.createElement('div');
-  info.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#16a34a;color:#fff;padding:14px 24px;border-radius:12px;font-size:14px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.4)';
-  info.textContent = '✅ ¡Cuenta creada! Revisa tu correo para confirmarla.';
-  document.body.appendChild(info);
-  setTimeout(() => info.remove(), 4500);
+  _showToast('✅ ¡Cuenta creada! Revisa tu correo para confirmarla.', 'green');
 }
 
-// close modals on overlay click
+function _showToast(msg, color = 'green') {
+  const t = document.createElement('div');
+  t.style.cssText = `position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
+    background:${color === 'green' ? '#16a34a' : '#ef4444'};color:#fff;
+    padding:13px 24px;border-radius:12px;font-size:14px;font-weight:600;
+    z-index:9999;box-shadow:0 4px 24px rgba(0,0,0,.45);white-space:nowrap`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 4500);
+}
+
+// Close on overlay click or Escape
 document.addEventListener('click', e => {
   if (e.target.classList.contains('modal-overlay')) closeAll();
 });
@@ -432,7 +425,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { closeAll(); closeChModal(); }
 });
 
-// ── TIMERS ─────────────────────────────────
+// ── TIMERS ────────────────────────────────────────────────────────────────────
 function startTimers() {
   setInterval(() => {
     MATCHES.forEach(m => { if (m.status === 'live' && m.minute < 90) m.minute++; });
@@ -444,6 +437,5 @@ function startTimers() {
     renderLiveSidebar();
     renderMatches();
   }, 60000);
-
   setInterval(nextTrivia, 14000);
 }

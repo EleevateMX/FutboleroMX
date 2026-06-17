@@ -1,57 +1,52 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <radialGradient id="bg" cx="50%" cy="40%" r="60%">
-      <stop offset="0%" stop-color="#1a1a2e"/>
-      <stop offset="100%" stop-color="#08080e"/>
+    <radialGradient id="bg" cx="50%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#0d1930"/>
+      <stop offset="100%" stop-color="#030711"/>
     </radialGradient>
-    <radialGradient id="ball" cx="38%" cy="35%" r="55%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="100%" stop-color="#cccccc"/>
+    <radialGradient id="glow" cx="50%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#fbbf24" stop-opacity=".12"/>
+      <stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/>
     </radialGradient>
-    <filter id="glow">
-      <feGaussianBlur stdDeviation="6" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-    <filter id="shadow">
-      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#e63946" flood-opacity="0.4"/>
-    </filter>
   </defs>
 
   <!-- Background -->
   <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- Gold glow -->
+  <ellipse cx="256" cy="180" rx="220" ry="140" fill="url(#glow)"/>
 
-  <!-- Red accent glow top -->
-  <ellipse cx="256" cy="80" rx="180" ry="60" fill="#e63946" opacity="0.08"/>
+  <!-- Globe lines (subtle) -->
+  <circle cx="256" cy="200" r="148" fill="none" stroke="#fbbf24" stroke-width="1" opacity=".12"/>
+  <ellipse cx="256" cy="200" rx="148" ry="55" fill="none" stroke="#fbbf24" stroke-width="1" opacity=".1"/>
+  <ellipse cx="256" cy="200" rx="90" ry="148" fill="none" stroke="#fbbf24" stroke-width="1" opacity=".08"/>
+  <line x1="108" y1="200" x2="404" y2="200" stroke="#fbbf24" stroke-width="1" opacity=".08"/>
+  <line x1="256" y1="52" x2="256" y2="348" stroke="#fbbf24" stroke-width="1" opacity=".08"/>
 
   <!-- Soccer ball -->
-  <circle cx="256" cy="230" r="130" fill="url(#ball)" filter="url(#shadow)"/>
+  <circle cx="256" cy="200" r="110" fill="#f8fafc"/>
 
-  <!-- Pentagon patches -->
-  <!-- Center pentagon -->
-  <polygon points="256,168 289,191 277,228 235,228 223,191" fill="#1a1a1a"/>
-  <!-- Top right -->
-  <polygon points="289,191 330,178 348,215 318,238 277,228" fill="#1a1a1a"/>
-  <!-- Right -->
-  <polygon points="318,238 348,215 370,248 355,285 316,278" fill="#1a1a1a"/>
-  <!-- Bottom right -->
-  <polygon points="277,228 316,278 300,315 261,315 245,278" fill="#1a1a1a"/>
-  <!-- Bottom left -->
-  <polygon points="235,228 245,278 209,293 185,265 196,232" fill="#1a1a1a"/>
-  <!-- Left -->
-  <polygon points="223,191 196,232 162,222 158,183 192,163" fill="#1a1a1a"/>
-  <!-- Top -->
-  <polygon points="256,168 223,191 192,163 206,128 256,120" fill="#1a1a1a"/>
-  <!-- Top right 2 -->
-  <polygon points="256,168 289,191 316,163 306,128 256,120" fill="#1a1a1a"/>
+  <!-- Pentagon patches (black) -->
+  <polygon points="256,124 292,149 279,190 233,190 220,149" fill="#111"/>
+  <polygon points="292,149 337,135 354,175 324,203 279,190" fill="#111"/>
+  <polygon points="324,203 354,175 376,213 360,252 319,248" fill="#111"/>
+  <polygon points="279,190 319,248 302,283 260,283 243,252" fill="#111"/>
+  <polygon points="233,190 243,252 206,270 181,242 193,202" fill="#111"/>
+  <polygon points="220,149 193,202 155,194 151,154 186,130" fill="#111"/>
+  <polygon points="256,124 220,149 186,130 200,94 256,84" fill="#111"/>
+  <polygon points="256,124 292,149 322,130 312,94 256,84" fill="#111"/>
 
-  <!-- Red stripe bar below ball -->
-  <rect x="96" y="382" width="320" height="6" rx="3" fill="#e63946" opacity="0.6"/>
+  <!-- Gold accent bar -->
+  <rect x="88" y="364" width="336" height="4" rx="2" fill="#fbbf24" opacity=".5"/>
 
-  <!-- FUTBOLERO text -->
-  <text x="256" y="440" font-family="Arial Black, sans-serif" font-size="52" font-weight="900"
-        fill="#ffffff" text-anchor="middle" letter-spacing="1">FUTBOLERO</text>
+  <!-- FUTBOLERO -->
+  <text x="256" y="430" font-family="Arial Black,Impact,sans-serif" font-size="50"
+        font-weight="900" fill="#f0f4ff" text-anchor="middle" letter-spacing="-1">FUTBOLERO</text>
 
-  <!-- MX accent -->
-  <text x="256" y="490" font-family="Arial Black, sans-serif" font-size="38" font-weight="900"
-        fill="#e63946" text-anchor="middle" letter-spacing="4">MX</text>
+  <!-- MX gold -->
+  <text x="256" y="482" font-family="Arial Black,Impact,sans-serif" font-size="42"
+        font-weight="900" fill="#fbbf24" text-anchor="middle" letter-spacing="8">MX</text>
+
+  <!-- 2026 subtle -->
+  <text x="256" y="352" font-family="Arial,sans-serif" font-size="18"
+        font-weight="700" fill="#fbbf24" text-anchor="middle" opacity=".4" letter-spacing="5">2026</text>
 </svg>
