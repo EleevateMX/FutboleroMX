@@ -197,6 +197,75 @@
       </p>
     </div>
 
+    <!-- Quiniela Mundialista -->
+    <div class="section-card">
+      <h3><span class="dot"></span> 🏆 Quiniela Mundialista (dinero real)</h3>
+
+      <div style="background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--dim);margin-bottom:16px;">
+        <strong style="color:var(--orange);">Clave de operación</strong> — necesaria para verificar pagos y liquidar. No se guarda en el sitio; tú la conservas en privado.
+      </div>
+      <label>Clave de operación</label>
+      <input type="password" id="q-op-key" placeholder="Clave secreta de la quiniela">
+
+      <!-- Stats pozo -->
+      <div class="stats-grid" style="margin:16px 0;">
+        <div class="stat-card orange"><div class="stat-label">POZO ACTUAL</div><div class="stat-value" id="q-pot">—</div></div>
+        <div class="stat-card green"><div class="stat-label">VERIFICADOS</div><div class="stat-value" id="q-verified">—</div></div>
+        <div class="stat-card blue"><div class="stat-label">PENDIENTES</div><div class="stat-value" id="q-pending">—</div></div>
+      </div>
+
+      <!-- Config del pozo -->
+      <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;">Configuración del pozo</div>
+        <div class="form-row">
+          <div><label>Nombre</label><input type="text" id="q-name"></div>
+          <div><label>Moneda</label><input type="text" id="q-currency" placeholder="MXN"></div>
+        </div>
+        <div class="form-row">
+          <div><label>Boleto total</label><input type="text" id="q-entry" placeholder="100"></div>
+          <div><label>Comisión app</label><input type="text" id="q-fee" placeholder="20"></div>
+        </div>
+        <div class="form-row">
+          <div><label>Estado</label>
+            <select id="q-status">
+              <option value="open">🟢 Abierta (acepta boletos)</option>
+              <option value="closed">🔒 Cerrada (sin nuevos boletos)</option>
+              <option value="settled">🏆 Liquidada</option>
+            </select>
+          </div>
+          <div><label>Banco</label><input type="text" id="q-bank" placeholder="BBVA"></div>
+        </div>
+        <div class="form-row">
+          <div><label>Titular de la cuenta</label><input type="text" id="q-holder" placeholder="Nombre completo"></div>
+          <div><label>CLABE (18 dígitos)</label><input type="text" id="q-clabe" placeholder="012345678901234567"></div>
+        </div>
+        <label>Link de pago opcional (MercadoPago / Stripe Payment Link / PayPal.me)</label>
+        <input type="url" id="q-link" placeholder="https://mpago.la/...">
+        <button class="btn-save" onclick="saveQuinielaPool()">Guardar configuración del pozo</button>
+        <div class="success-msg" id="q-pool-ok" style="display:none;">✓ Pozo actualizado</div>
+        <div class="err" id="q-pool-err" style="display:none;"></div>
+      </div>
+
+      <!-- Boletos / verificación de pagos -->
+      <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:16px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;">
+          <span>Boletos y verificación de pagos</span>
+          <button class="btn-out" onclick="loadQuinielaAdmin()">↻ Recargar</button>
+        </div>
+        <div id="q-entries-list"><p style="font-size:12px;color:var(--muted);">Ingresa la clave y recarga para ver boletos.</p></div>
+      </div>
+
+      <!-- Liquidación -->
+      <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:16px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;">Liquidar quiniela (al terminar el Mundial)</div>
+        <label>Campeón real (nombre exacto, ej. Argentina)</label>
+        <input type="text" id="q-champion" placeholder="Argentina">
+        <button class="btn-save" onclick="settleQuiniela()" style="background:var(--orange);">Liquidar y calcular ganadores</button>
+        <div class="err" id="q-settle-err" style="display:none;"></div>
+        <div id="q-winners" style="margin-top:14px;"></div>
+      </div>
+    </div>
+
     <!-- Ad Settings -->
     <div class="section-card">
       <h3><span class="dot"></span> Gestión de Publicidad</h3>
@@ -321,6 +390,7 @@ function initDashboard() {
   if (s.adCode) document.getElementById('ad-code').value = s.adCode;
 
   loadLiveConfigAdmin();
+  loadQuinielaAdmin();
   renderChart();
   fetchUserCount();
 }
@@ -383,6 +453,125 @@ async function saveLiveConfig() {
 
 function fetchUserCount() {
   document.getElementById('stat-users').textContent = '—';
+}
+
+// ── Quiniela Mundialista (admin) ──────────────────────────────────────────
+let _qPool = null, _qEntries = [];
+
+function qKey() { return document.getElementById('q-op-key').value.trim(); }
+function qMoney(n) { return '$' + Number(n).toLocaleString('es-MX') + ' ' + (_qPool?.currency || 'MXN'); }
+
+async function loadQuinielaAdmin() {
+  const [{ data: pool }, { data: entries }] = await Promise.all([
+    sb.from('quiniela_pool').select('*').eq('id', 1).single(),
+    sb.from('quiniela_entries').select('*').order('created_at', { ascending: false }),
+  ]);
+  _qPool = pool || {};
+  _qEntries = entries || [];
+
+  // Config
+  document.getElementById('q-name').value = _qPool.name || '';
+  document.getElementById('q-currency').value = _qPool.currency || 'MXN';
+  document.getElementById('q-entry').value = _qPool.entry_amount ?? 100;
+  document.getElementById('q-fee').value = _qPool.service_fee ?? 20;
+  document.getElementById('q-status').value = _qPool.status || 'open';
+  document.getElementById('q-bank').value = _qPool.bank_name || '';
+  document.getElementById('q-holder').value = _qPool.bank_holder || '';
+  document.getElementById('q-clabe').value = _qPool.bank_clabe || '';
+  document.getElementById('q-link').value = _qPool.payment_link || '';
+
+  // Stats
+  const verified = _qEntries.filter(e => e.payment_status === 'verified');
+  const pending = _qEntries.filter(e => e.payment_status === 'pending');
+  const poolPer = (_qPool.entry_amount ?? 100) - (_qPool.service_fee ?? 20);
+  document.getElementById('q-pot').textContent = qMoney(verified.length * poolPer);
+  document.getElementById('q-verified').textContent = verified.length;
+  document.getElementById('q-pending').textContent = pending.length;
+
+  renderEntriesList();
+}
+
+function renderEntriesList() {
+  const el = document.getElementById('q-entries-list');
+  if (!_qEntries.length) { el.innerHTML = '<p style="font-size:12px;color:var(--muted);">No hay boletos todavía.</p>'; return; }
+  const badge = { pending:'#f97316', verified:'#22c55e', rejected:'#ef4444' };
+  el.innerHTML = _qEntries.map(e => `
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div>
+          <div style="font-weight:700;font-size:13px;">${e.user_name || 'Usuario'} — ${e.champion_pick}</div>
+          <div style="font-size:11px;color:var(--dim);">Folio: ${e.payment_ref || '—'} · ${e.payment_method} · <span style="color:${badge[e.payment_status]}">${e.payment_status}</span></div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          ${e.payment_status !== 'verified' ? `<button class="btn-save" style="padding:6px 12px;font-size:12px;" onclick="qVerify('${e.id}')">✓ Verificar</button>` : ''}
+          ${e.payment_status !== 'rejected' ? `<button class="btn-danger" style="padding:6px 12px;font-size:12px;" onclick="qReject('${e.id}')">✕ Rechazar</button>` : ''}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+async function qVerify(id) {
+  if (!qKey()) { alert('Ingresa la clave de operación primero.'); return; }
+  const { error } = await sb.rpc('qadmin_verify', { p_entry: id, p_pass: qKey() });
+  if (error) { alert('Error: ' + error.message); return; }
+  await loadQuinielaAdmin();
+}
+
+async function qReject(id) {
+  if (!qKey()) { alert('Ingresa la clave de operación primero.'); return; }
+  const { error } = await sb.rpc('qadmin_reject', { p_entry: id, p_pass: qKey() });
+  if (error) { alert('Error: ' + error.message); return; }
+  await loadQuinielaAdmin();
+}
+
+async function saveQuinielaPool() {
+  const err = document.getElementById('q-pool-err'); const ok = document.getElementById('q-pool-ok');
+  err.style.display = 'none'; ok.style.display = 'none';
+  if (!qKey()) { err.textContent = 'Ingresa la clave de operación.'; err.style.display = 'block'; return; }
+  const { error } = await sb.rpc('qadmin_update_pool', {
+    p_pass: qKey(),
+    p_name: document.getElementById('q-name').value.trim(),
+    p_entry: parseFloat(document.getElementById('q-entry').value) || 100,
+    p_fee: parseFloat(document.getElementById('q-fee').value) || 20,
+    p_currency: document.getElementById('q-currency').value.trim() || 'MXN',
+    p_status: document.getElementById('q-status').value,
+    p_bank_name: document.getElementById('q-bank').value.trim(),
+    p_clabe: document.getElementById('q-clabe').value.trim(),
+    p_holder: document.getElementById('q-holder').value.trim(),
+    p_link: document.getElementById('q-link').value.trim(),
+  });
+  if (error) { err.textContent = 'Error: ' + error.message; err.style.display = 'block'; return; }
+  ok.style.display = 'block'; setTimeout(() => ok.style.display = 'none', 4000);
+  loadQuinielaAdmin();
+}
+
+async function settleQuiniela() {
+  const err = document.getElementById('q-settle-err'); err.style.display = 'none';
+  const champ = document.getElementById('q-champion').value.trim();
+  if (!qKey()) { err.textContent = 'Ingresa la clave de operación.'; err.style.display = 'block'; return; }
+  if (!champ) { err.textContent = 'Escribe el nombre del campeón.'; err.style.display = 'block'; return; }
+  if (!confirm(`¿Liquidar la quiniela con ${champ} como campeón? Esto cierra la quiniela.`)) return;
+  const { error } = await sb.rpc('qadmin_settle', { p_champion: champ, p_pass: qKey() });
+  if (error) { err.textContent = 'Error: ' + error.message; err.style.display = 'block'; return; }
+  await loadQuinielaAdmin();
+  renderWinners(champ);
+}
+
+function renderWinners(champ) {
+  const verified = _qEntries.filter(e => e.payment_status === 'verified');
+  const winners = verified.filter(e => e.champion_pick === champ);
+  const poolPer = (_qPool.entry_amount ?? 100) - (_qPool.service_fee ?? 20);
+  const total = verified.length * poolPer;
+  const per = winners.length ? total / winners.length : 0;
+  const el = document.getElementById('q-winners');
+  el.innerHTML = `
+    <div style="background:var(--s2);border-radius:10px;padding:14px;">
+      <div style="font-size:13px;color:var(--dim);">Pozo total: <strong>${qMoney(total)}</strong> · Ganadores: <strong>${winners.length}</strong></div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--green);margin:6px 0;">${qMoney(per)} por ganador</div>
+      ${winners.length ? '<div style="font-size:12px;color:var(--dim);margin-top:8px;">Pagar a:</div>' + winners.map(w =>
+        `<div style="font-size:13px;padding:4px 0;border-bottom:1px solid var(--border);">${w.user_name} — folio ${w.payment_ref || '—'}</div>`).join('')
+        : '<div style="font-size:13px;color:var(--orange);">Nadie acertó al campeón. Revisa el reglamento para el reparto alternativo.</div>'}
+    </div>`;
 }
 
 function renderChart() {
