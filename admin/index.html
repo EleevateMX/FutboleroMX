@@ -132,10 +132,20 @@
       </div>
     </div>
 
-    <!-- Visitor Chart (simulated) -->
+    <!-- Tráfico real (global) -->
     <div class="section-card">
-      <h3><span class="dot"></span> Actividad de la Semana</h3>
+      <h3><span class="dot"></span> 📊 Tráfico del sitio (Mundial)</h3>
+      <div class="stats-grid" style="margin-bottom:16px;">
+        <div class="stat-card blue"><div class="stat-label">VISITAS TOTALES</div><div class="stat-value" id="t-total">—</div></div>
+        <div class="stat-card green"><div class="stat-label">VISITAS HOY</div><div class="stat-value" id="t-today">—</div></div>
+        <div class="stat-card orange"><div class="stat-label">VISITANTES ÚNICOS</div><div class="stat-value" id="t-unique">—</div><div class="stat-sub"><span id="t-unique-today">—</span> hoy</div></div>
+        <div class="stat-card red"><div class="stat-label">VIERON EN VIVO</div><div class="stat-value" id="t-live">—</div><div class="stat-sub">aperturas de canal</div></div>
+      </div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px;">Visitas últimos 7 días</div>
       <div class="chart-bars" id="chart-bars"></div>
+      <div style="font-size:13px;font-weight:700;margin:18px 0 8px;">Canales más vistos</div>
+      <div id="t-channels" style="font-size:13px;"></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:10px;">Datos globales reales (todos los visitantes). Visitas a la quiniela: <span id="t-quiniela">—</span></div>
     </div>
 
     <!-- Live Match Settings (conectado a Supabase live_config) -->
@@ -356,6 +366,14 @@
       </div>
     </div>
 
+    <!-- Moderación del muro de la afición -->
+    <div class="section-card">
+      <h3><span class="dot"></span> 💬 Muro de la afición (moderar)</h3>
+      <div style="font-size:12px;color:var(--dim);margin-bottom:12px;">Los mensajes con insultos se bloquean automáticamente. Aquí puedes borrar cualquier mensaje. Requiere la clave de operación.</div>
+      <div style="text-align:right;margin-bottom:8px;"><button class="btn-out" onclick="loadFanModeration()">↻ Recargar</button></div>
+      <div id="fan-mod-list"><p style="font-size:12px;color:var(--muted);">Cargando...</p></div>
+    </div>
+
     <!-- SEO & Meta -->
     <div class="section-card">
       <h3><span class="dot"></span> SEO y Metadatos</h3>
@@ -428,17 +446,73 @@ if (sessionStorage.getItem('tvc_admin') === '1') {
 }
 
 function initDashboard() {
-  // Stats
   document.getElementById('stat-pv').textContent = localStorage.getItem('tvc_pv') || '0';
-  const imp = parseInt(localStorage.getItem('tvc_pv') || 0) * 3;
-  document.getElementById('stat-imp').textContent = imp;
+  document.getElementById('stat-imp').textContent = parseInt(localStorage.getItem('tvc_pv') || 0) * 3;
 
+  loadTraffic();
   loadAds();
   loadLiveConfigAdmin();
   loadQuinielaAdmin();
   loadPushStats();
-  renderChart();
+  loadFanModeration();
   fetchUserCount();
+}
+
+// ── Tráfico real ──────────────────────────────────────────────────────────
+async function loadTraffic() {
+  try {
+    const { data } = await sb.rpc('traffic_summary');
+    if (!data) return;
+    document.getElementById('t-total').textContent = data.total_views ?? 0;
+    document.getElementById('t-today').textContent = data.today_views ?? 0;
+    document.getElementById('t-unique').textContent = data.unique_total ?? 0;
+    document.getElementById('t-unique-today').textContent = data.unique_today ?? 0;
+    document.getElementById('t-live').textContent = data.live_views ?? 0;
+    document.getElementById('t-quiniela').textContent = data.quiniela_views ?? 0;
+    document.getElementById('stat-pv').textContent = data.total_views ?? 0;
+    document.getElementById('stat-imp').textContent = data.live_views ?? 0;
+
+    // Chart 7 días
+    const byDay = data.by_day || [];
+    const max = Math.max(1, ...byDay.map(d => d.views));
+    const bars = document.getElementById('chart-bars');
+    if (byDay.length) {
+      bars.innerHTML = byDay.map(d => {
+        const pct = Math.round(d.views / max * 100);
+        const lbl = d.day.slice(5);
+        return `<div class="bar-col"><div class="bar" style="height:${pct}px;" title="${d.views} visitas"></div><div class="bar-label">${lbl}</div></div>`;
+      }).join('');
+    } else { bars.innerHTML = '<p style="font-size:12px;color:var(--muted);">Aún sin datos de visitas.</p>'; }
+
+    // Top canales
+    const ch = data.top_channels || [];
+    const cmax = Math.max(1, ...ch.map(c => c.views));
+    document.getElementById('t-channels').innerHTML = ch.length ? ch.map(c => `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span style="width:120px;font-size:12px;">${c.name}</span>
+        <div style="flex:1;height:8px;background:var(--s3);border-radius:4px;overflow:hidden;"><div style="height:100%;width:${Math.round(c.views/cmax*100)}%;background:var(--blue);"></div></div>
+        <strong style="font-size:12px;width:36px;text-align:right;">${c.views}</strong>
+      </div>`).join('') : '<p style="font-size:12px;color:var(--muted);">Aún sin aperturas de canal.</p>';
+  } catch (e) {}
+}
+
+// ── Moderación del muro ───────────────────────────────────────────────────
+async function loadFanModeration() {
+  const el = document.getElementById('fan-mod-list');
+  if (!el) return;
+  const { data } = await sb.from('fan_messages').select('id, name, message, created_at').order('created_at', { ascending: false }).limit(50);
+  if (!data || !data.length) { el.innerHTML = '<p style="font-size:12px;color:var(--muted);">Sin mensajes.</p>'; return; }
+  el.innerHTML = data.map(m => `
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+      <div style="font-size:13px;"><strong>${m.name}:</strong> ${m.message.replace(/</g,'&lt;')}</div>
+      <button class="btn-danger" style="padding:5px 10px;font-size:11px;flex-shrink:0;" onclick="delFanMsg('${m.id}')">Borrar</button>
+    </div>`).join('');
+}
+async function delFanMsg(id) {
+  if (!qKey()) { alert('Ingresa la clave de operación (sección de pago).'); return; }
+  const { error } = await sb.rpc('qadmin_delete_message', { p_id: id, p_pass: qKey() });
+  if (error) { alert('Error: ' + error.message); return; }
+  loadFanModeration();
 }
 
 // ── Notificaciones push (admin) ───────────────────────────────────────────

@@ -8,6 +8,16 @@ const sb = createClient(SUPA_URL, SUPA_KEY);
 let _user  = null;
 let _picks = {};
 
+// ── Analítica de tráfico (anónima) ──────────────────────────────────────────
+function _visitorId() {
+  let v = localStorage.getItem('tvc_vid');
+  if (!v) { v = 'v' + Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('tvc_vid', v); }
+  return v;
+}
+function trackEvent(kind, label) {
+  try { sb.from('traffic').insert({ kind, label: label || null, visitor: _visitorId() }); } catch (e) {}
+}
+
 async function authInit() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) await _loadProfile(session.user);

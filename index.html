@@ -162,6 +162,24 @@
   </div>
 </section>
 
+<!-- ── Muro de la afición ─────────────────────────────────────────────────── -->
+<section class="content-section" id="fan-wall">
+  <div class="section-header">
+    <div class="section-title"><span class="dot"></span> MURO DE LA AFICIÓN</div>
+    <span class="section-see-all" style="cursor:default;">Con respeto ⚽</span>
+  </div>
+  <div style="padding: 0 20px;">
+    <div id="fan-post-box" style="margin-bottom:12px;">
+      <div style="display:flex;gap:8px;">
+        <input class="form-input" id="fan-input" maxlength="180" placeholder="Escribe tu porra... (sin insultos)" style="flex:1;">
+        <button class="btn btn-orange" style="padding:0 16px;white-space:nowrap;" onclick="postFanMessage()">Enviar</button>
+      </div>
+      <div class="form-error" id="fan-err" style="min-height:0;"></div>
+    </div>
+    <div id="fan-list"></div>
+  </div>
+</section>
+
 <!-- ── Footer ────────────────────────────────────────────────────────────── -->
 <footer style="padding: 24px 20px; border-top: 1px solid var(--border); margin-top: 20px; text-align: center; color: var(--text-muted); font-size: 12px; line-height: 1.8;">
   <div style="font-family:'Bebas Neue',sans-serif; font-size:18px; color:var(--text-dim); margin-bottom:4px;">TV<span style="color:var(--orange)">Contigo</span></div>

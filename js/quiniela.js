@@ -14,6 +14,8 @@ let _selectedPool = null, _pickedChampion = null, _payMethod = 'nat';
 
 document.addEventListener('DOMContentLoaded', async () => {
   await authInit();
+  trackEvent('page', 'quiniela');
+  trackEvent('quiniela', 'visit');
   await loadAll();
 });
 

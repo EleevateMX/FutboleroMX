@@ -4,6 +4,7 @@ let _activeChannel = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   await authInit();
+  trackEvent('page', 'home');
   await loadLiveConfig();   // partido en vivo desde Supabase (editable en admin)
   renderHero();
   renderChannelStrip();
@@ -13,8 +14,51 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderTriviaRow();
   renderQuinielaSection();
   renderRanking();
+  loadFanWall();
   loadAdSettings();
 });
+
+// ── Muro de la afición ──────────────────────────────────────────────────────
+async function loadFanWall() {
+  const list = document.getElementById('fan-list');
+  if (!list) return;
+  const { data } = await sb.from('fan_messages')
+    .select('name, avatar, message, created_at')
+    .eq('approved', true)
+    .order('created_at', { ascending: false })
+    .limit(40);
+  if (!data || !data.length) { list.innerHTML = '<p style="color:var(--text-dim);font-size:13px;">Sé el primero en dejar tu porra.</p>'; return; }
+  list.innerHTML = data.map(m => {
+    const ini = (m.name || '?').slice(0, 2).toUpperCase();
+    const av = m.avatar
+      ? `<div style="width:34px;height:34px;border-radius:50%;background-image:url('${m.avatar}');background-size:cover;background-position:center;flex-shrink:0;"></div>`
+      : `<div style="width:34px;height:34px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">${ini}</div>`;
+    return `<div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
+      ${av}
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12px;font-weight:700;color:var(--text-dim);">${esc(m.name)}</div>
+        <div style="font-size:14px;word-wrap:break-word;">${esc(m.message)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function esc(s) { return (s || '').replace(/[<>&"]/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;' }[c])); }
+
+async function postFanMessage() {
+  const err = document.getElementById('fan-err');
+  err.textContent = '';
+  if (!Auth.isLoggedIn()) { openModal('login-modal'); return; }
+  const input = document.getElementById('fan-input');
+  const msg = input.value.trim();
+  if (!msg) { err.textContent = 'Escribe algo.'; return; }
+  const { data, error } = await sb.rpc('post_fan_message', { p_message: msg });
+  if (error) { err.textContent = 'Error: ' + error.message; return; }
+  if (data && !data.ok) { err.textContent = data.msg; return; }
+  input.value = '';
+  _showToast('¡Mensaje publicado! ⚽', 'var(--green)');
+  loadFanWall();
+}
 
 // ── Carga el partido en vivo desde Supabase (live_config) ─────────────────
 async function loadLiveConfig() {
@@ -133,6 +177,8 @@ function switchChannel(channelId, el) {
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
   _showToast(`📺 ${ch.name} ${ch.option}`, 'var(--blue)');
+  trackEvent('channel', ch.name);
+  trackEvent('live', 'watch');
 }
 
 // ── Matches Row (en vivo + próximos) ──────────────────────────────────────
