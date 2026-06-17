@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (Auth.isLoggedIn()) applyReferralIfAny();
   trackEvent('page', 'home');
   await loadLiveConfig();   // partido en vivo desde Supabase (editable en admin)
+  await loadMatchResults(); // resultados finales desde Supabase (auto-sync cada 10 min)
   renderHero();
   renderChannelStrip();
   renderMatchesRow();
@@ -144,6 +145,19 @@ async function loadLiveConfig() {
   LIVE_MATCH = null;
   CHANNELS = [];
   _curSlug = null;
+}
+
+// ── Resultados finales desde Supabase (overlay sobre MATCHES estático) ───
+async function loadMatchResults() {
+  try {
+    const { data } = await sb.from('match_results').select('kickoff, hs, as_, status');
+    if (!data || !data.length) return;
+    data.forEach(r => {
+      const kt = new Date(r.kickoff).getTime();
+      const m = MATCHES.find(x => Math.abs(new Date(x.kickoff).getTime() - kt) < 60000);
+      if (m) { m.hs = r.hs; m.as = r.as_; m.status = r.status; }
+    });
+  } catch (e) {}
 }
 
 // ── Auto-refresco autónomo: la página se actualiza sola cuando cambia el ──
