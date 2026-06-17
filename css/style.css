@@ -558,6 +558,65 @@ body {
 .trivia-q { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
 .trivia-a { font-size: 12px; color: var(--orange); font-weight: 600; }
 
+/* ── Hero Match Preview Card (sin iframe hasta que el usuario hace clic) ── */
+.hero-match-preview {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  height: 100%; gap: 18px; padding: 28px 20px;
+  background: linear-gradient(160deg, #0b0b18 0%, #0d1225 60%, #0a0a16 100%);
+  text-align: center;
+}
+.hmp-badge {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.3);
+  color: var(--red); font-size: 10px; font-weight: 800; letter-spacing: 1.5px;
+  padding: 5px 12px; border-radius: 20px;
+}
+.hmp-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--red); display: inline-block;
+  animation: pulse 1.4s infinite;
+  flex-shrink: 0;
+}
+.hmp-teams {
+  display: flex; align-items: center; justify-content: center;
+  gap: 20px; width: 100%; max-width: 500px;
+}
+.hmp-team { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.hmp-flag { font-size: clamp(36px, 8vw, 56px); line-height: 1; }
+.hmp-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(13px, 2.8vw, 20px); letter-spacing: 1px; color: var(--text);
+}
+.hmp-center { flex-shrink: 0; text-align: center; }
+.hmp-score {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(52px, 12vw, 88px); letter-spacing: 8px; line-height: 1; color: var(--text);
+}
+.hmp-live-label {
+  font-size: 10px; font-weight: 800; letter-spacing: 2px;
+  color: var(--red); margin-top: 2px; animation: pulse 1.4s infinite;
+}
+.hmp-venue { font-size: 11px; color: var(--text-dim); }
+.hmp-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 4px; }
+.hmp-btn-watch {
+  background: var(--blue); color: #fff;
+  border: none; border-radius: 10px;
+  padding: 13px 28px; font-size: 15px; font-weight: 700;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+  font-family: inherit; transition: background .18s; white-space: nowrap;
+  box-shadow: 0 0 20px var(--blue-glow);
+}
+.hmp-btn-watch:hover { background: var(--blue-dim); }
+.hmp-btn-quiniela {
+  background: transparent; color: var(--orange);
+  border: 1.5px solid var(--orange); border-radius: 10px;
+  padding: 12px 24px; font-size: 15px; font-weight: 700;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+  font-family: inherit; transition: all .18s; white-space: nowrap;
+}
+.hmp-btn-quiniela:hover { background: rgba(249,115,22,.1); }
+
 /* ── Match Live Tabs ─────────────────────────────────────────────────────── */
 .tabs-bar {
   display: flex; background: var(--surface);
@@ -582,6 +641,7 @@ body {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 0; border-bottom: 1px solid var(--border);
 }
+.crono-row.crono-goal { background: rgba(14,165,233,.05); border-radius: 8px; padding: 10px 8px; }
 .crono-min {
   font-family: 'Bebas Neue', sans-serif; font-size: 16px;
   color: var(--orange); width: 38px; flex-shrink: 0; text-align: right;
@@ -592,6 +652,7 @@ body {
   display: block; font-size: 11px; font-weight: 400;
   color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+.crono-flag { font-size: 20px; flex-shrink: 0; }
 
 /* Estadísticas */
 .stats-header {

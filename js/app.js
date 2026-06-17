@@ -183,6 +183,8 @@ function renderHero() {
         <h2>Sin partidos ahora</h2>
         <p>Próximamente más fútbol en vivo</p>
       </div>`;
+    renderIframeNotice(false);
+    showMatchTabs(false);
     return;
   }
 
@@ -196,23 +198,32 @@ function renderHero() {
 
   if (isLive) {
     hero.innerHTML = `
-      <iframe id="live-frame" src="${_activeChannel.url}" allowfullscreen allow="autoplay; fullscreen; encrypted-media"
-        onload="onStreamLoaded()" onerror="onStreamError()"
-        style="width:100%;height:100%;border:none;display:block;background:#000;"></iframe>
-      <div id="stream-status" class="stream-status">
-        <div class="ss-spinner"></div>
-        <div class="ss-text">Conectando con la transmisión…</div>
-      </div>
-      <div class="hero-overlay"></div>
-      <div class="hero-info">
-        <div class="hero-meta">
-          <div class="hero-live-badge"><span style="width:6px;height:6px;border-radius:50%;background:#fff;display:inline-block;"></span> EN VIVO · <span id="hero-ch-name">${_activeChannel.name}</span></div>
-          <div class="hero-title">${match.home.flag} ${match.home.name} <span id="hero-score">${match.hs}-${match.as}</span> ${match.away.name} ${match.away.flag}</div>
-          <div class="hero-subtitle">📍 ${venueLine} · ${match.comp}</div>
+      <div class="hero-match-preview">
+        <div class="hmp-badge"><span class="hmp-dot"></span> EN VIVO · ${match.comp}</div>
+        <div class="hmp-teams">
+          <div class="hmp-team">
+            <div class="hmp-flag">${match.home.flag}</div>
+            <div class="hmp-name">${match.home.name.toUpperCase()}</div>
+          </div>
+          <div class="hmp-center">
+            <div class="hmp-score" id="hero-score">${match.hs ?? 0} - ${match.as ?? 0}</div>
+            <div class="hmp-live-label">● EN VIVO</div>
+          </div>
+          <div class="hmp-team">
+            <div class="hmp-flag">${match.away.flag}</div>
+            <div class="hmp-name">${match.away.name.toUpperCase()}</div>
+          </div>
+        </div>
+        <div class="hmp-venue">📍 ${venueLine}</div>
+        <div class="hmp-actions">
+          <button class="hmp-btn-watch" onclick="openLiveStream()">▶ Ver en vivo</button>
+          <button class="hmp-btn-quiniela" onclick="location.href='quiniela.html'">🏆 La quiniela</button>
         </div>
       </div>`;
-    armStreamWatchdog();   // si no carga, avisa "No está disponible la plataforma de streaming"
-    armHeroAutoHide();     // estilo Netflix: el rótulo se desvanece a los 5s
+    renderIframeNotice(false);
+    startLiveScorePolling();
+    startMatchDataPolling();
+    showMatchTabs(true);
   } else {
     hero.innerHTML = `
       <div class="hero-no-live">
@@ -221,18 +232,42 @@ function renderHero() {
         <p>${ft.day} ${ft.time} · ${match.comp}</p>
         <p style="font-size:11px;">📍 ${venueLine}</p>
       </div>`;
-  }
-
-  // Aviso de iframe (estilo lacancha.tv)
-  renderIframeNotice(isLive);
-
-  if (isLive) {
-    startLiveScorePolling();
-    startMatchDataPolling();
-    showMatchTabs(true);
-  } else {
+    renderIframeNotice(false);
     showMatchTabs(false);
   }
+}
+
+// ── Abre el stream (lazy — solo cuando el usuario hace clic) ──────────────
+function openLiveStream() {
+  if (!LIVE_MATCH) return;
+  if (!CHANNELS.length) {
+    _showToast('📡 Sin canales disponibles', 'var(--red)');
+    return;
+  }
+  const ch = _activeChannel || CHANNELS[0];
+  const m  = LIVE_MATCH;
+  const hero = document.getElementById('hero-section');
+  hero.innerHTML = `
+    <iframe id="live-frame" src="${ch.url}" allowfullscreen allow="autoplay; fullscreen; encrypted-media"
+      onload="onStreamLoaded()" onerror="onStreamError()"
+      style="width:100%;height:100%;border:none;display:block;background:#000;"></iframe>
+    <div id="stream-status" class="stream-status">
+      <div class="ss-spinner"></div>
+      <div class="ss-text">Conectando con la transmisión…</div>
+    </div>
+    <div class="hero-overlay"></div>
+    <div class="hero-info">
+      <div class="hero-meta">
+        <div class="hero-live-badge"><span style="width:6px;height:6px;border-radius:50%;background:#fff;display:inline-block;"></span> EN VIVO · <span id="hero-ch-name">${ch.name}</span></div>
+        <div class="hero-title">${m.home.flag} ${m.home.name} <span id="hero-score">${m.hs ?? 0}-${m.as ?? 0}</span> ${m.away.name} ${m.away.flag}</div>
+        <div class="hero-subtitle">📍 ${m.venue || m.comp || ''}</div>
+      </div>
+    </div>`;
+  armStreamWatchdog();
+  armHeroAutoHide();
+  renderIframeNotice(true);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  trackEvent('live', 'watch');
 }
 
 // Actualiza el marcador en vivo cada 25s sin recargar la transmisión
@@ -378,11 +413,7 @@ function switchChannel(channelId, el) {
     if (nm) nm.textContent = ch.name;
     iframe.src = ch.url;
   } else {
-    renderHero();                              // arma el watchdog dentro
-    setTimeout(() => {
-      const f = document.getElementById('live-frame');
-      if (f) f.src = ch.url;
-    }, 50);
+    openLiveStream();
   }
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -769,6 +800,8 @@ function renderCrono(data) {
     el.innerHTML = '<div class="tab-empty">Sin eventos registrados aún.</div>';
     return;
   }
+  const homeId = data?.home_team_id ?? null;
+  const awayId = data?.away_team_id ?? null;
   const sorted = [...events].sort((a, b) => {
     const ma = +(a.time?.elapsed ?? a.minute ?? 0);
     const mb = +(b.time?.elapsed ?? b.minute ?? 0);
@@ -781,10 +814,28 @@ function renderCrono(data) {
     const detail  = ev.detail || '';
     const player  = ev.player?.name || ev.player_name || ev.player || '';
     const icon    = _iconForEvent(type, detail);
-    return `<div class="crono-row">
+    // Determinar bandera del equipo
+    const evTeamId = ev.team?.id ?? null;
+    let teamFlag = '';
+    if (homeId !== null && evTeamId !== null && evTeamId === homeId) {
+      teamFlag = LIVE_MATCH?.home?.flag || '';
+    } else if (awayId !== null && evTeamId !== null && evTeamId === awayId) {
+      teamFlag = LIVE_MATCH?.away?.flag || '';
+    } else if (ev.team?.name) {
+      // Fallback: comparación parcial de nombre (español vs inglés)
+      const tn = (ev.team.name || '').toLowerCase();
+      const hn = (LIVE_MATCH?.home?.name || '').toLowerCase();
+      const firstWord = hn.split(' ')[0];
+      teamFlag = (firstWord && tn.includes(firstWord))
+        ? (LIVE_MATCH?.home?.flag || '')
+        : (LIVE_MATCH?.away?.flag || '');
+    }
+    const isGoal = type.toLowerCase().includes('goal') || detail.toLowerCase().includes('goal');
+    return `<div class="crono-row${isGoal ? ' crono-goal' : ''}">
       <div class="crono-min">${elapsed}${extra}'</div>
       <div class="crono-icon">${icon}</div>
       <div class="crono-player">${esc(player)}<span class="crono-detail">${esc(detail || type)}</span></div>
+      <div class="crono-flag">${teamFlag}</div>
     </div>`;
   }).join('');
 }
