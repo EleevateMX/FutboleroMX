@@ -18,10 +18,21 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="TVContigo">
   <meta name="application-name" content="TVContigo">
-  <!-- Open Graph -->
-  <meta property="og:title" content="TVContigo — Fútbol en Vivo">
-  <meta property="og:description" content="El Mundial 2026 en tu pantalla. Gratis, sin suscripción.">
-  <meta property="og:image" content="icons/icon-512.png">
+  <!-- Open Graph (WhatsApp / Facebook) -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="TVContigo">
+  <meta property="og:url" content="https://tvcontigo.site/">
+  <meta property="og:title" content="TVContigo — Fútbol en Vivo GRATIS">
+  <meta property="og:description" content="Mira el Mundial 2026 en vivo gratis. Canales HD, quiniela con premios y más. Sin suscripción.">
+  <meta property="og:image" content="https://tvcontigo.site/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_MX">
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="TVContigo — Fútbol en Vivo GRATIS">
+  <meta name="twitter:description" content="El Mundial 2026 en vivo, gratis. Canales HD + quiniela con premios.">
+  <meta name="twitter:image" content="https://tvcontigo.site/og-image.png">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -289,15 +300,18 @@
 <!-- Toast -->
 <div id="toast"></div>
 
-<!-- Botón flotante: Instalar app -->
-<button id="install-btn" style="display:none;position:fixed;right:14px;bottom:calc(var(--nav-h) + var(--ad-h) + 14px + env(safe-area-inset-bottom, 0px));z-index:300;background:var(--orange);color:#fff;border:none;border-radius:24px;padding:10px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 8px 24px rgba(249,115,22,.4);align-items:center;gap:6px;">
-  ⬇️ Instalar app
-</button>
-
-<!-- Botón flotante: Activar notificaciones -->
-<button id="notify-btn" style="display:none;position:fixed;left:14px;bottom:calc(var(--nav-h) + var(--ad-h) + 14px + env(safe-area-inset-bottom, 0px));z-index:300;background:var(--blue);color:#fff;border:none;border-radius:24px;padding:10px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 8px 24px rgba(14,165,233,.4);align-items:center;gap:6px;">
-  🔔 Activar avisos
-</button>
+<!-- Pila de botones flotantes (no se enciman) -->
+<div id="fab-stack" style="position:fixed;right:14px;bottom:calc(var(--nav-h) + var(--ad-h) + 14px + env(safe-area-inset-bottom, 0px));z-index:300;display:flex;flex-direction:column;gap:10px;align-items:flex-end;">
+  <button id="share-btn" style="display:flex;background:var(--surface-3);color:#fff;border:1px solid var(--border-hi);border-radius:24px;padding:10px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.5);align-items:center;gap:6px;">
+    🔗 Compartir
+  </button>
+  <button id="notify-btn" style="display:none;background:var(--blue);color:#fff;border:none;border-radius:24px;padding:10px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 8px 24px rgba(14,165,233,.4);align-items:center;gap:6px;">
+    🔔 Activar avisos
+  </button>
+  <button id="install-btn" style="display:none;background:var(--orange);color:#fff;border:none;border-radius:24px;padding:10px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 8px 24px rgba(249,115,22,.4);align-items:center;gap:6px;">
+    ⬇️ Instalar app
+  </button>
+</div>
 
 <!-- Modal instrucciones iOS -->
 <div class="modal-backdrop" id="ios-install-modal">
@@ -360,6 +374,25 @@
     installBtn.style.display = 'flex';
     installBtn.addEventListener('click', () => openModal('ios-install-modal'));
   }
+
+  // ── Compartir ────────────────────────────────────────────────────────────
+  const shareData = {
+    title: 'TVContigo — Fútbol en vivo gratis',
+    text: '⚽ Mira el Mundial 2026 en vivo GRATIS + quiniela con premios:',
+    url: 'https://tvcontigo.site/',
+  };
+  document.getElementById('share-btn').addEventListener('click', async () => {
+    if (navigator.share) {
+      try { await navigator.share(shareData); } catch (e) {}
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareData.url);
+        _showToast('🔗 Enlace copiado. ¡Compártelo!', 'var(--green)');
+      } catch (e) {
+        window.open('https://wa.me/?text=' + encodeURIComponent(shareData.text + ' ' + shareData.url), '_blank');
+      }
+    }
+  });
 </script>
 </body>
 </html>
