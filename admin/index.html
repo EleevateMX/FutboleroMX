@@ -533,6 +533,13 @@ function showTab(name, btn) {
 
 function initDashboard() {
   buildTabs();
+  // Recuerda la clave de operación durante la sesión del admin
+  const opEl = document.getElementById('q-op-key');
+  if (opEl) {
+    const saved = sessionStorage.getItem('tvc_opkey');
+    if (saved) opEl.value = saved;
+    opEl.addEventListener('input', () => sessionStorage.setItem('tvc_opkey', opEl.value));
+  }
   document.getElementById('stat-pv').textContent = localStorage.getItem('tvc_pv') || '0';
   document.getElementById('stat-imp').textContent = parseInt(localStorage.getItem('tvc_pv') || 0) * 3;
 
@@ -776,8 +783,11 @@ async function saveLiveConfig() {
   setTimeout(() => ok.style.display = 'none', 4000);
 }
 
-function fetchUserCount() {
-  document.getElementById('stat-users').textContent = '—';
+async function fetchUserCount() {
+  try {
+    const { data } = await sb.rpc('user_count');
+    document.getElementById('stat-users').textContent = (data ?? 0);
+  } catch (e) { document.getElementById('stat-users').textContent = '—'; }
 }
 
 // ── Quiniela Mundialista (admin, multi-pool) ──────────────────────────────
