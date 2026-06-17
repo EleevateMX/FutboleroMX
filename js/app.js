@@ -253,18 +253,7 @@ function renderHero() {
     startLiveScorePolling();
     startMatchDataPolling();
     showMatchTabs(true);
-  } else {
-    hero.innerHTML = `
-      <div class="hero-no-live">
-        <div style="font-size:13px;color:var(--orange);font-weight:700;letter-spacing:1px;">PRÓXIMO PARTIDO</div>
-        <div style="font-size:34px;font-family:'Bebas Neue',sans-serif;letter-spacing:1px;">${match.home.flag} ${match.home.name} <span style="color:var(--text-muted)">vs</span> ${match.away.name} ${match.away.flag}</div>
-        <p>${ft.day} ${ft.time} · ${match.comp}</p>
-        <p style="font-size:11px;">📍 ${venueLine}</p>
-      </div>`;
-    renderIframeNotice(false);
-    showMatchTabs(false);
   } else if (isRecent) {
-    const venueLine = match.venue ? `${match.venue} · ${match.city}` : match.comp;
     hero.innerHTML = `
       <div class="hero-match-preview">
         <div class="hmp-badge hmp-badge-result">✓ RESULTADO FINAL · ${match.comp}</div>
@@ -287,6 +276,16 @@ function renderHero() {
           <button class="hmp-btn-watch" style="background:var(--surface-3);color:var(--text-dim);" onclick="scrollToSection('standings-section')">📊 Ver tabla de grupos</button>
           <button class="hmp-btn-quiniela" onclick="location.href='quiniela.html'">🏆 La quiniela</button>
         </div>
+      </div>`;
+    renderIframeNotice(false);
+    showMatchTabs(false);
+  } else {
+    hero.innerHTML = `
+      <div class="hero-no-live">
+        <div style="font-size:13px;color:var(--orange);font-weight:700;letter-spacing:1px;">PRÓXIMO PARTIDO</div>
+        <div style="font-size:34px;font-family:'Bebas Neue',sans-serif;letter-spacing:1px;">${match.home.flag} ${match.home.name} <span style="color:var(--text-muted)">vs</span> ${match.away.name} ${match.away.flag}</div>
+        <p>${ft.day} ${ft.time} · ${match.comp}</p>
+        <p style="font-size:11px;">📍 ${venueLine}</p>
       </div>`;
     renderIframeNotice(false);
     showMatchTabs(false);

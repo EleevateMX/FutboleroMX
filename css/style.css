@@ -728,7 +728,7 @@ body {
 .std-td-pos { width: 20px; color: var(--text-muted); font-size: 11px; }
 .std-td-pts { font-weight: 700; color: var(--text); }
 .std-table tbody tr { border-top: 1px solid rgba(255,255,255,.04); }
-.std-qualify { border-left: 2px solid var(--green); }
+.std-qualify td:first-child { border-left: 2px solid var(--green); }
 .std-qualify .std-td-pos { color: var(--green); }
 .std-td-team {
   white-space: nowrap;
