@@ -1,7 +1,7 @@
 // ── Supabase Auth ──────────────────────────────────────────────────────────────
 // Las keys se llenan automáticamente cuando el proyecto FutboleroMX esté creado
-const SUPA_URL  = '__SUPABASE_URL__';
-const SUPA_KEY  = '__SUPABASE_ANON_KEY__';
+const SUPA_URL  = 'https://sclqzavebwinezpivmwr.supabase.co';
+const SUPA_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNjbHF6YXZlYndpbmV6cGl2bXdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2NDMzNjUsImV4cCI6MjA5NzIxOTM2NX0.khNF90QxEqh1jEOxdtseREfWLmGAW-3cVJpots4VbTc';
 
 const { createClient } = supabase;
 const sb = createClient(SUPA_URL, SUPA_KEY);
