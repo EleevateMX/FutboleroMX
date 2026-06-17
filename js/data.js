@@ -142,6 +142,22 @@ const RANKING = [
   { name: 'TVFan2026',   pts: 14 },
 ];
 
+// Tabla de grupos: equipo → letra del grupo (A-L, derivados del calendario)
+const MATCH_GROUPS = {
+  'México':'A','Corea del Sur':'A','Chequia':'A','Sudáfrica':'A',
+  'EE.UU.':'B','Paraguay':'B','Australia':'B','Turquía':'B',
+  'Catar':'C','Suiza':'C','Canadá':'C',
+  'Brasil':'D','Marruecos':'D','Haití':'D','Escocia':'D',
+  'Alemania':'E','Curazao':'E','Costa de Marfil':'E','Ecuador':'E',
+  'Países Bajos':'F','Japón':'F','Suecia':'F','Túnez':'F',
+  'España':'G','Cabo Verde':'G','Arabia Saudita':'G','Uruguay':'G',
+  'Bélgica':'H','Egipto':'H','Irán':'H','Nueva Zelanda':'H',
+  'Francia':'I','Senegal':'I','Irak':'I','Noruega':'I',
+  'Argentina':'J','Argelia':'J','Austria':'J','Jordania':'J',
+  'Portugal':'K','RD Congo':'K','Uzbekistán':'K','Colombia':'K',
+  'Inglaterra':'L','Croacia':'L','Ghana':'L','Panamá':'L',
+};
+
 // ── Helpers de formato ─────────────────────────────────────────────────────
 function fmtMatchTime(iso) {
   const d = new Date(iso);

@@ -2,6 +2,7 @@
 
 let _activeChannel = null;
 let MATCH_LIVE_DATA = null;
+let RECENT_RESULT   = null;
 let _matchTab = 'crono';
 let _matchDataPoll = null;
 
@@ -18,6 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderMatchesRow();
   renderChannelsGrid();
   renderResultsRow();
+  renderStandings();
   renderTriviaRow();
   renderQuinielaSection();
   renderRanking();
@@ -151,13 +153,22 @@ async function loadLiveConfig() {
 async function loadMatchResults() {
   try {
     const { data } = await sb.from('match_results').select('kickoff, hs, as_, status');
-    if (!data || !data.length) return;
-    data.forEach(r => {
-      const kt = new Date(r.kickoff).getTime();
-      const m = MATCHES.find(x => Math.abs(new Date(x.kickoff).getTime() - kt) < 60000);
-      if (m) { m.hs = r.hs; m.as = r.as_; m.status = r.status; }
-    });
+    if (data && data.length) {
+      data.forEach(r => {
+        const kt = new Date(r.kickoff).getTime();
+        const m = MATCHES.find(x => Math.abs(new Date(x.kickoff).getTime() - kt) < 60000);
+        if (m) { m.hs = r.hs; m.as = r.as_; m.status = r.status; }
+      });
+    }
   } catch (e) {}
+  // Resultado reciente: partido terminado con kickoff en las últimas 6h
+  const nowTs = Date.now();
+  const fresh = MATCHES
+    .filter(m => m.status === 'finished' && m.hs != null
+               && new Date(m.kickoff).getTime() < nowTs
+               && new Date(m.kickoff).getTime() > nowTs - 6 * 3600000)
+    .sort((a, b) => new Date(b.kickoff) - new Date(a.kickoff));
+  RECENT_RESULT = fresh[0] || null;
 }
 
 // ── Auto-refresco autónomo: la página se actualiza sola cuando cambia el ──
@@ -170,25 +181,28 @@ function startLiveRefresh() {
 async function refreshLiveConfig() {
   const before = _curSlug;
   await loadLiveConfig();
+  await loadMatchResults();
   if (_curSlug !== before) {
-    // Cambió el partido (o terminó / empezó otro) → re-render sin recargar la página
     _activeChannel = null;
     if (_matchDataPoll) { clearInterval(_matchDataPoll); _matchDataPoll = null; }
     MATCH_LIVE_DATA = null;
     renderHero();
     renderChannelStrip();
     renderChannelsGrid();
-    renderMatchesRow();
   }
+  renderMatchesRow();
+  renderResultsRow();
+  renderStandings();
 }
 
 // ── Hero ──────────────────────────────────────────────────────────────────
 function renderHero() {
   const hero = document.getElementById('hero-section');
   const now = Date.now();
-  const live = (LIVE_MATCH && LIVE_MATCH.status === 'live') ? LIVE_MATCH : null;
-  const next = MATCHES.filter(m => m.status === 'scheduled' && new Date(m.kickoff).getTime() > now)[0];
-  const match = live || next;
+  const live   = (LIVE_MATCH && LIVE_MATCH.status === 'live') ? LIVE_MATCH : null;
+  const recent = (!live && RECENT_RESULT) ? RECENT_RESULT : null;
+  const next   = MATCHES.filter(m => m.status === 'scheduled' && new Date(m.kickoff).getTime() > now)[0];
+  const match  = live || recent || next;
 
   if (!match) {
     hero.innerHTML = `
@@ -202,7 +216,8 @@ function renderHero() {
     return;
   }
 
-  const isLive = match.status === 'live';
+  const isLive   = match.status === 'live';
+  const isRecent = !isLive && match === recent;
   if (isLive && CHANNELS.length) {
     _activeChannel = CHANNELS.find(c => c.id === match.defaultChannel) || CHANNELS[0];
   }
@@ -245,6 +260,33 @@ function renderHero() {
         <div style="font-size:34px;font-family:'Bebas Neue',sans-serif;letter-spacing:1px;">${match.home.flag} ${match.home.name} <span style="color:var(--text-muted)">vs</span> ${match.away.name} ${match.away.flag}</div>
         <p>${ft.day} ${ft.time} · ${match.comp}</p>
         <p style="font-size:11px;">📍 ${venueLine}</p>
+      </div>`;
+    renderIframeNotice(false);
+    showMatchTabs(false);
+  } else if (isRecent) {
+    const venueLine = match.venue ? `${match.venue} · ${match.city}` : match.comp;
+    hero.innerHTML = `
+      <div class="hero-match-preview">
+        <div class="hmp-badge hmp-badge-result">✓ RESULTADO FINAL · ${match.comp}</div>
+        <div class="hmp-teams">
+          <div class="hmp-team">
+            <div class="hmp-flag">${match.home.flag}</div>
+            <div class="hmp-name">${match.home.name.toUpperCase()}</div>
+          </div>
+          <div class="hmp-center">
+            <div class="hmp-score">${match.hs ?? 0} - ${match.as ?? 0}</div>
+            <div class="hmp-live-label" style="color:var(--text-muted);letter-spacing:2px;">FINAL</div>
+          </div>
+          <div class="hmp-team">
+            <div class="hmp-flag">${match.away.flag}</div>
+            <div class="hmp-name">${match.away.name.toUpperCase()}</div>
+          </div>
+        </div>
+        <div class="hmp-venue">📍 ${venueLine}</div>
+        <div class="hmp-actions">
+          <button class="hmp-btn-watch" style="background:var(--surface-3);color:var(--text-dim);" onclick="scrollToSection('standings-section')">📊 Ver tabla de grupos</button>
+          <button class="hmp-btn-quiniela" onclick="location.href='quiniela.html'">🏆 La quiniela</button>
+        </div>
       </div>`;
     renderIframeNotice(false);
     showMatchTabs(false);
@@ -436,24 +478,34 @@ function switchChannel(channelId, el) {
   trackEvent('live', 'watch');
 }
 
-// ── Matches Row (en vivo + próximos) ──────────────────────────────────────
+// ── Matches Row (terminados recientes + en vivo + próximos) ──────────────
 function renderMatchesRow() {
   const row = document.getElementById('matches-row');
   const now = Date.now();
   const live = (LIVE_MATCH && LIVE_MATCH.status === 'live') ? [LIVE_MATCH] : [];
-  const upcoming = MATCHES.filter(m => m.status === 'scheduled' && new Date(m.kickoff).getTime() > now).slice(0, 14);
-  const list = [...live, ...upcoming];
+  const recentDone = MATCHES
+    .filter(m => m.status === 'finished' && m.hs != null
+               && new Date(m.kickoff).getTime() < now
+               && new Date(m.kickoff).getTime() > now - 10 * 3600000)
+    .slice(-4);
+  const upcoming = MATCHES.filter(m => m.status === 'scheduled' && new Date(m.kickoff).getTime() > now).slice(0, 12);
+  const list = [...recentDone, ...live, ...upcoming];
 
   row.innerHTML = list.map(m => {
-    const isLive = m.status === 'live';
+    const isLive     = m.status === 'live';
+    const isFinished = m.status === 'finished';
     const ft = fmtMatchTime(m.kickoff);
+    const statusLabel = isLive
+      ? '● EN VIVO'
+      : (isFinished ? '✓ FINAL' : '⏰ ' + ft.day + ' ' + ft.time);
+    const scoreLabel  = (isLive || isFinished) ? `${m.hs ?? 0}-${m.as ?? 0}` : 'vs';
     const click = isLive
       ? `switchChannel('${m.defaultChannel || (CHANNELS[0] && CHANNELS[0].id) || ''}')`
-      : `openMatchInfo('${m.id}')`;   // partido próximo → cuenta regresiva + avísame
+      : (isFinished ? `scrollToSection('standings-section')` : `openMatchInfo('${m.id}')`);
     return `
-    <div class="match-card ${isLive ? 'live' : ''}" onclick="${click}">
-      <div class="mc-status ${isLive ? 'live' : 'upcoming'}">
-        ${isLive ? '● EN VIVO' : '⏰ ' + ft.day + ' ' + ft.time}
+    <div class="match-card ${isLive ? 'live' : ''} ${isFinished ? 'finished' : ''}" onclick="${click}">
+      <div class="mc-status ${isLive ? 'live' : isFinished ? '' : 'upcoming'}">
+        ${statusLabel}
       </div>
       <div class="mc-teams">
         <div class="mc-team">
@@ -461,7 +513,7 @@ function renderMatchesRow() {
           <div class="mc-team-name">${m.home.name}</div>
         </div>
         <div class="mc-score-block">
-          <div class="mc-score">${isLive ? `${m.hs}-${m.as}` : 'vs'}</div>
+          <div class="mc-score">${scoreLabel}</div>
         </div>
         <div class="mc-team">
           <div class="mc-flag">${m.away.flag}</div>
@@ -583,6 +635,60 @@ function renderResultsRow() {
       </div>
     </div>
   `).join('');
+  // Título dinámico según última jornada con resultados
+  if (results.length) {
+    const titleEl = document.getElementById('results-section-title');
+    if (titleEl) titleEl.innerHTML = `<span class="dot"></span> RESULTADOS · ${results[0].comp.toUpperCase()}`;
+  }
+}
+
+// ── Tabla de Grupos (clasificación calculada desde MATCHES) ───────────────
+function renderStandings() {
+  const el = document.getElementById('standings-groups');
+  if (!el) return;
+
+  // Acumular stats por grupo y equipo
+  const groups = {};
+  MATCHES.forEach(m => {
+    [['home', m.home], ['away', m.away]].forEach(([side, t]) => {
+      const g = MATCH_GROUPS[t.name];
+      if (!g) return;
+      if (!groups[g]) groups[g] = {};
+      if (!groups[g][t.name]) groups[g][t.name] = { name: t.name, flag: t.flag, p:0, w:0, d:0, l:0, gf:0, ga:0 };
+    });
+    const g = MATCH_GROUPS[m.home.name];
+    if (!g || m.status !== 'finished' || m.hs == null || m.as == null) return;
+    const h = groups[g][m.home.name];
+    const a = groups[g][m.away.name];
+    if (!h || !a) return;
+    h.p++; a.p++; h.gf += m.hs; h.ga += m.as; a.gf += m.as; a.ga += m.hs;
+    if (m.hs > m.as)      { h.w++; a.l++; }
+    else if (m.hs < m.as) { h.l++; a.w++; }
+    else                  { h.d++; a.d++; }
+  });
+
+  el.innerHTML = 'ABCDEFGHIJKL'.split('').map(g => {
+    if (!groups[g]) return '';
+    const teams = Object.values(groups[g])
+      .map(t => ({ ...t, pts: t.w * 3 + t.d, gd: t.gf - t.ga }))
+      .sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
+    return `<div class="std-group">
+      <div class="std-group-hdr">GRUPO ${g}</div>
+      <table class="std-table">
+        <thead><tr>
+          <th class="std-th-pos">#</th><th class="std-th-team">Equipo</th>
+          <th>J</th><th>G</th><th>E</th><th>P</th><th>GD</th><th>Pts</th>
+        </tr></thead>
+        <tbody>${teams.map((t, i) => `<tr class="${i < 2 ? 'std-qualify' : ''}">
+          <td class="std-td-pos">${i + 1}</td>
+          <td class="std-td-team">${t.flag} ${t.name}</td>
+          <td>${t.p}</td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td>
+          <td>${t.gd > 0 ? '+' + t.gd : t.gd}</td>
+          <td class="std-td-pts">${t.pts}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+  }).join('');
 }
 
 // ── Trivia Row ────────────────────────────────────────────────────────────

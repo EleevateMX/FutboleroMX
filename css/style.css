@@ -684,6 +684,69 @@ body {
 .stat-bar-home { background: var(--blue); flex-shrink: 0; }
 .stat-bar-away { background: var(--surface-2); flex-shrink: 0; }
 
+/* ── Tabla de Grupos ──────────────────────────────────────────────────────── */
+#standings-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+  padding: 0 16px 8px;
+}
+.std-group {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.std-group-hdr {
+  background: var(--surface-3);
+  color: var(--orange);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.std-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.std-table thead th {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 6px 6px 4px;
+  text-align: center;
+}
+.std-table td {
+  padding: 6px 6px;
+  text-align: center;
+  color: var(--text-dim);
+}
+.std-th-team, .std-td-team { text-align: left !important; }
+.std-td-pos { width: 20px; color: var(--text-muted); font-size: 11px; }
+.std-td-pts { font-weight: 700; color: var(--text); }
+.std-table tbody tr { border-top: 1px solid rgba(255,255,255,.04); }
+.std-qualify { border-left: 2px solid var(--green); }
+.std-qualify .std-td-pos { color: var(--green); }
+.std-td-team {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 130px;
+  color: var(--text);
+}
+/* Hero resultado final */
+.hmp-badge-result {
+  background: rgba(34,197,94,.1);
+  color: #22c55e;
+  border-color: rgba(34,197,94,.2);
+}
+/* Match card — terminado */
+.match-card.finished .mc-status { color: var(--text-muted); }
+.match-card.finished .mc-score { color: var(--text); }
+
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 @media (min-width: 640px) {
   .top-nav { padding: 0 32px; }
