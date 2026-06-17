@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderRanking();
   loadFanWall();
   loadAdSettings();
+  startLiveRefresh();   // la página se mantiene al día sola (cambio de partido/canales)
 });
 
 // ── Referidos ───────────────────────────────────────────────────────────────
@@ -117,26 +118,49 @@ function flagFor(name) {
 }
 
 // ── Carga el partido en vivo desde Supabase (live_config) ─────────────────
+let _curSlug = null;   // slug del partido actualmente cargado (para detectar cambios)
 async function loadLiveConfig() {
   try {
     const { data } = await sb.from('live_config').select('*').eq('id', 1).single();
     if (data && data.status === 'live' && data.slug && Array.isArray(data.channels) && data.channels.length) {
-      CHANNELS = buildChannels(data.slug, data.channels);
+      CHANNELS = buildChannels(data.slug, data.channels);  // ya viene Telemundo primero
       LIVE_MATCH = {
-        id: 'live',
+        id: 'live', slug: data.slug,
         home: { name: data.home_name, flag: data.home_flag || flagFor(data.home_name) },
         away: { name: data.away_name, flag: data.away_flag || flagFor(data.away_name) },
         kickoff: new Date().toISOString(), status: 'live',
         hs: data.hs ?? 0, as: data.as_ ?? 0,
         venue: data.venue || '', city: data.city || '', comp: data.comp || 'En vivo',
-        defaultChannel: CHANNELS[0]?.id,
+        defaultChannel: CHANNELS[0]?.id,   // Telemundo
       };
+      _curSlug = data.slug;
       return;
     }
   } catch (e) { /* sin partido en vivo */ }
   // No hay partido en vivo: no mostramos canales viejos
   LIVE_MATCH = null;
   CHANNELS = [];
+  _curSlug = null;
+}
+
+// ── Auto-refresco autónomo: la página se actualiza sola cuando cambia el ──
+// ── partido o sus canales, sin recargar ni que nadie toque nada ───────────
+let _liveRefresh = null;
+function startLiveRefresh() {
+  if (_liveRefresh) return;
+  _liveRefresh = setInterval(refreshLiveConfig, 60000);  // cada 60s
+}
+async function refreshLiveConfig() {
+  const before = _curSlug;
+  await loadLiveConfig();
+  if (_curSlug !== before) {
+    // Cambió el partido (o terminó / empezó otro) → re-render sin recargar la página
+    _activeChannel = null;
+    renderHero();
+    renderChannelStrip();
+    renderChannelsGrid();
+    renderMatchesRow();
+  }
 }
 
 // ── Hero ──────────────────────────────────────────────────────────────────
@@ -167,16 +191,22 @@ function renderHero() {
 
   if (isLive) {
     hero.innerHTML = `
-      <iframe src="${_activeChannel.url}" allowfullscreen allow="autoplay; fullscreen; encrypted-media"
-        style="width:100%;height:100%;border:none;display:block;"></iframe>
+      <iframe id="live-frame" src="${_activeChannel.url}" allowfullscreen allow="autoplay; fullscreen; encrypted-media"
+        onload="onStreamLoaded()" onerror="onStreamError()"
+        style="width:100%;height:100%;border:none;display:block;background:#000;"></iframe>
+      <div id="stream-status" class="stream-status">
+        <div class="ss-spinner"></div>
+        <div class="ss-text">Conectando con la transmisión…</div>
+      </div>
       <div class="hero-overlay"></div>
       <div class="hero-info">
         <div class="hero-meta">
-          <div class="hero-live-badge"><span style="width:6px;height:6px;border-radius:50%;background:#fff;display:inline-block;"></span> EN VIVO · ${_activeChannel.name}</div>
+          <div class="hero-live-badge"><span style="width:6px;height:6px;border-radius:50%;background:#fff;display:inline-block;"></span> EN VIVO · <span id="hero-ch-name">${_activeChannel.name}</span></div>
           <div class="hero-title">${match.home.flag} ${match.home.name} <span id="hero-score">${match.hs}-${match.as}</span> ${match.away.name} ${match.away.flag}</div>
           <div class="hero-subtitle">📍 ${venueLine} · ${match.comp}</div>
         </div>
       </div>`;
+    armStreamWatchdog();   // si no carga, avisa "No está disponible la plataforma de streaming"
   } else {
     hero.innerHTML = `
       <div class="hero-no-live">
@@ -215,6 +245,57 @@ function startLiveScorePolling() {
   }, 25000);
 }
 
+// ── Estado de la transmisión (carga / no disponible) ──────────────────────
+let _streamWatchdog = null;
+function _clearWatchdog() { if (_streamWatchdog) { clearTimeout(_streamWatchdog); _streamWatchdog = null; } }
+
+// Muestra el spinner y arranca un temporizador: si el iframe no carga, avisa.
+function armStreamWatchdog() {
+  _clearWatchdog();
+  const ss = document.getElementById('stream-status');
+  if (ss) {
+    ss.className = 'stream-status';
+    ss.innerHTML = `<div class="ss-spinner"></div><div class="ss-text">Conectando con la transmisión…</div>`;
+  }
+  // 14s sin que el iframe dispare "load" = la plataforma no respondió
+  _streamWatchdog = setTimeout(() => showStreamUnavailable(), 14000);
+}
+
+// El iframe cargó: ocultamos el aviso (no podemos saber cross-origin si el video
+// se ve, pero al menos confirmamos que la plataforma respondió).
+function onStreamLoaded() {
+  _clearWatchdog();
+  const ss = document.getElementById('stream-status');
+  if (ss) ss.classList.add('hidden');
+}
+
+function onStreamError() { showStreamUnavailable(); }
+
+// Aviso claro + recuperación: "No está disponible la plataforma de streaming"
+function showStreamUnavailable() {
+  _clearWatchdog();
+  const ss = document.getElementById('stream-status');
+  if (!ss) return;
+  ss.className = 'stream-status err';
+  ss.innerHTML = `
+    <div class="ss-icon">📡</div>
+    <div class="ss-title">No está disponible la plataforma de streaming</div>
+    <div class="ss-sub">Esta opción no respondió. Prueba con otra de las opciones de abajo.</div>
+    <button class="ss-btn" onclick="retryStream()">↻ Reintentar</button>`;
+}
+
+function retryStream() {
+  const iframe = document.getElementById('live-frame');
+  if (iframe && _activeChannel) {
+    armStreamWatchdog();
+    const u = _activeChannel.url;
+    iframe.src = 'about:blank';
+    setTimeout(() => { iframe.src = u; }, 60);
+  } else {
+    renderHero();
+  }
+}
+
 function renderIframeNotice(isLive) {
   const el = document.getElementById('iframe-notice');
   if (!el) return;
@@ -237,7 +318,12 @@ function renderChannelStrip() {
 
 function switchChannel(channelId, el) {
   const ch = CHANNELS.find(c => c.id === channelId);
-  if (!ch) return;
+  // Canal inexistente o sin transmisión → avisamos y no rompemos nada
+  if (!ch || !ch.url) {
+    _showToast('📡 No está disponible la plataforma de streaming', 'var(--red)');
+    showStreamUnavailable();
+    return;
+  }
   _activeChannel = ch;
 
   document.querySelectorAll('.channel-chip').forEach(c => c.classList.remove('active'));
@@ -251,11 +337,14 @@ function switchChannel(channelId, el) {
   const hero = document.getElementById('hero-section');
   const iframe = hero.querySelector('iframe');
   if (iframe) {
+    armStreamWatchdog();                       // muestra "Conectando…" y vigila
+    const nm = document.getElementById('hero-ch-name');
+    if (nm) nm.textContent = ch.name;
     iframe.src = ch.url;
   } else {
-    renderHero();
+    renderHero();                              // arma el watchdog dentro
     setTimeout(() => {
-      const f = hero.querySelector('iframe');
+      const f = document.getElementById('live-frame');
       if (f) f.src = ch.url;
     }, 50);
   }

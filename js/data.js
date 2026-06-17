@@ -5,12 +5,26 @@
 const LIVE_SLUG = 'ppv-austria-vs-jordan';
 const ES = (n) => `https://embed.st/embed/admin/${LIVE_SLUG}/${n}`;
 
+// Telemundo SIEMPRE primero (canal en español que ofrecemos de entrada), HD antes que SD
+function chRank(c) {
+  const nm = String(c.name || '').toUpperCase();
+  const opt = String(c.option || '').toUpperCase();
+  const sd = opt.includes('SD') || opt.includes('2');
+  return (nm.includes('TELEMUNDO') ? 0 : 100) + (sd ? 1 : 0);
+}
+function sortChannels(list) {
+  return list.map((c, i) => ({ c, i }))
+    .sort((a, b) => (chRank(a.c) - chRank(b.c)) || (a.i - b.i))
+    .map(x => x.c);
+}
+
 // Construye la lista de canales desde un slug + definición (usado por live_config)
 function buildChannels(slug, list) {
-  return list.map(c => ({
+  const built = list.map(c => ({
     id: c.id, name: c.name, option: c.option, tag: c.tag || '',
     url: `https://embed.st/embed/admin/${slug}/${c.n}`, live: true,
   }));
+  return sortChannels(built);
 }
 
 // Canales reales actuales (default — se sobrescribe con Supabase live_config)
