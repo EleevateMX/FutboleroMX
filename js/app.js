@@ -1,6 +1,9 @@
 // ── TVContigo — App Logic ─────────────────────────────────────────────────
 
 let _activeChannel = null;
+let MATCH_LIVE_DATA = null;
+let _matchTab = 'crono';
+let _matchDataPoll = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   captureReferral();
@@ -156,6 +159,8 @@ async function refreshLiveConfig() {
   if (_curSlug !== before) {
     // Cambió el partido (o terminó / empezó otro) → re-render sin recargar la página
     _activeChannel = null;
+    if (_matchDataPoll) { clearInterval(_matchDataPoll); _matchDataPoll = null; }
+    MATCH_LIVE_DATA = null;
     renderHero();
     renderChannelStrip();
     renderChannelsGrid();
@@ -221,7 +226,13 @@ function renderHero() {
   // Aviso de iframe (estilo lacancha.tv)
   renderIframeNotice(isLive);
 
-  if (isLive) startLiveScorePolling();
+  if (isLive) {
+    startLiveScorePolling();
+    startMatchDataPolling();
+    showMatchTabs(true);
+  } else {
+    showMatchTabs(false);
+  }
 }
 
 // Actualiza el marcador en vivo cada 25s sin recargar la transmisión
@@ -718,4 +729,128 @@ function _showToast(msg, color = 'var(--surface-3)') {
   t.style.borderColor = color;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Match Live Tabs (Cronología / Estadísticas) ───────────────────────────
+function showMatchTabs(show) {
+  const sec = document.getElementById('match-tabs-section');
+  if (sec) sec.style.display = show ? '' : 'none';
+}
+
+function setTab(name) {
+  _matchTab = name;
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === name);
+  });
+  const crono = document.getElementById('tab-crono');
+  const stats  = document.getElementById('tab-stats');
+  if (crono) crono.style.display = name === 'crono' ? '' : 'none';
+  if (stats)  stats.style.display  = name === 'stats'  ? '' : 'none';
+}
+
+function _iconForEvent(type, detail) {
+  const t = ((type || '') + ' ' + (detail || '')).toLowerCase();
+  if (t.includes('own goal'))    return '⚽🔄';
+  if (t.includes('penalty'))     return '⚽⚡';
+  if (t.includes('goal'))        return '⚽';
+  if (t.includes('yellow'))      return '🟨';
+  if (t.includes('red'))         return '🟥';
+  if (t.includes('substitut') || t.includes(' sub')) return '🔄';
+  if (t.includes('var'))         return '📺';
+  if (t.includes('offside'))     return '🚩';
+  return '📋';
+}
+
+function renderCrono(data) {
+  const el = document.getElementById('tab-crono');
+  if (!el) return;
+  const events = Array.isArray(data?.events) ? data.events : [];
+  if (!events.length) {
+    el.innerHTML = '<div class="tab-empty">Sin eventos registrados aún.</div>';
+    return;
+  }
+  const sorted = [...events].sort((a, b) => {
+    const ma = +(a.time?.elapsed ?? a.minute ?? 0);
+    const mb = +(b.time?.elapsed ?? b.minute ?? 0);
+    return mb - ma;
+  });
+  el.innerHTML = sorted.map(ev => {
+    const elapsed = ev.time?.elapsed ?? ev.minute ?? '?';
+    const extra   = ev.time?.extra ? `+${ev.time.extra}` : '';
+    const type    = ev.type   || ev.event_type || '';
+    const detail  = ev.detail || '';
+    const player  = ev.player?.name || ev.player_name || ev.player || '';
+    const icon    = _iconForEvent(type, detail);
+    return `<div class="crono-row">
+      <div class="crono-min">${elapsed}${extra}'</div>
+      <div class="crono-icon">${icon}</div>
+      <div class="crono-player">${esc(player)}<span class="crono-detail">${esc(detail || type)}</span></div>
+    </div>`;
+  }).join('');
+}
+
+function renderStatsTab(data) {
+  const el = document.getElementById('tab-stats');
+  if (!el) return;
+  const stats = Array.isArray(data?.stats) ? data.stats : [];
+  const minute = data?.minute;
+  const homeName = LIVE_MATCH?.home?.name || 'Local';
+  const awayName = LIVE_MATCH?.away?.name || 'Visita';
+  if (!stats.length) {
+    el.innerHTML = '<div class="tab-empty">Estadísticas no disponibles.</div>';
+    return;
+  }
+  const statMap = {
+    'Ball Possession':'Posesión','Shots on Goal':'Tiros al arco',
+    'Shots off Goal':'Tiros fuera','Total Shots':'Tiros totales',
+    'Blocked Shots':'Tiros bloqueados','Corner Kicks':'Corners',
+    'Fouls':'Faltas','Yellow Cards':'Amarillas','Red Cards':'Rojas',
+    'Offsides':'Fuera de lugar','Passes':'Pases','Passes %':'Precisión pases',
+    'Goalkeeper Saves':'Atajadas','Expected Goals':'Goles esperados',
+  };
+  const header = `<div class="stats-header">
+    <span>${esc(homeName)}</span>
+    ${minute ? `<span class="stats-min">${minute}'</span>` : '<span></span>'}
+    <span>${esc(awayName)}</span>
+  </div>`;
+  const rows = stats.map(s => {
+    const label = statMap[s.type] || s.type || '';
+    const hv = s.home ?? '';
+    const av = s.away ?? '';
+    const hNum = parseFloat(String(hv).replace(/[^0-9.]/g,'')) || 0;
+    const aNum = parseFloat(String(av).replace(/[^0-9.]/g,'')) || 0;
+    const total = hNum + aNum || 1;
+    const hPct = Math.round(hNum / total * 100);
+    return `<div class="stat-row">
+      <div class="stat-val home">${esc(String(hv))}</div>
+      <div class="stat-label">${esc(label)}</div>
+      <div class="stat-val away">${esc(String(av))}</div>
+      <div class="stat-bar-wrap">
+        <div class="stat-bar-home" style="width:${hPct}%"></div>
+        <div class="stat-bar-away" style="width:${100 - hPct}%"></div>
+      </div>
+    </div>`;
+  }).join('');
+  el.innerHTML = header + rows;
+}
+
+async function loadMatchLiveData() {
+  if (!LIVE_MATCH) return;
+  try {
+    const { data } = await sb.from('match_live_data').select('*').eq('id', 'current').single();
+    if (data) {
+      MATCH_LIVE_DATA = data;
+      if (_matchTab === 'crono') renderCrono(data);
+      else renderStatsTab(data);
+      // Always keep both tabs up to date
+      renderCrono(data);
+      renderStatsTab(data);
+    }
+  } catch (e) {}
+}
+
+function startMatchDataPolling() {
+  if (_matchDataPoll) return;
+  loadMatchLiveData();
+  _matchDataPoll = setInterval(loadMatchLiveData, 30000);
 }

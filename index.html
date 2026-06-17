@@ -114,6 +114,17 @@
   <button class="cw-close" onclick="this.parentElement.style.display='none'">✕</button>
 </div>
 
+<!-- ── Tabs: Cronología / Estadísticas / Quiniela ────────────────────────── -->
+<div id="match-tabs-section" style="display:none">
+  <div class="tabs-bar">
+    <button class="tab-btn active" data-tab="crono" onclick="setTab('crono')">⏱ Cronología</button>
+    <button class="tab-btn" data-tab="stats" onclick="setTab('stats')">📊 Estadísticas</button>
+    <button class="tab-btn" onclick="location.href='quiniela.html'">🏆 Quiniela</button>
+  </div>
+  <div id="tab-crono" class="tab-content"></div>
+  <div id="tab-stats" class="tab-content" style="display:none"></div>
+</div>
+
 <!-- ── Row: Partidos en Vivo / Próximos ─────────────────────────────────── -->
 <section class="content-section">
   <div class="section-header">

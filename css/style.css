@@ -558,6 +558,71 @@ body {
 .trivia-q { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
 .trivia-a { font-size: 12px; color: var(--orange); font-weight: 600; }
 
+/* ── Match Live Tabs ─────────────────────────────────────────────────────── */
+.tabs-bar {
+  display: flex; background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto; padding: 0 8px;
+}
+.tabs-bar::-webkit-scrollbar { height: 0; }
+.tab-btn {
+  flex-shrink: 0; background: none; border: none;
+  border-bottom: 2.5px solid transparent;
+  color: var(--text-dim); font-size: 12px; font-weight: 700; letter-spacing: .3px;
+  cursor: pointer; font-family: inherit;
+  padding: 12px 16px; transition: color .15s, border-color .15s;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+.tab-content { padding: 4px 20px 16px; }
+.tab-empty { color: var(--text-dim); font-size: 13px; padding: 24px; text-align: center; }
+
+/* Cronología */
+.crono-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.crono-min {
+  font-family: 'Bebas Neue', sans-serif; font-size: 16px;
+  color: var(--orange); width: 38px; flex-shrink: 0; text-align: right;
+}
+.crono-icon { font-size: 18px; flex-shrink: 0; width: 26px; text-align: center; }
+.crono-player { flex: 1; font-size: 13px; font-weight: 600; min-width: 0; }
+.crono-detail {
+  display: block; font-size: 11px; font-weight: 400;
+  color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Estadísticas */
+.stats-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0 10px; font-size: 11px; font-weight: 700; color: var(--text-dim);
+  border-bottom: 1px solid var(--border); margin-bottom: 6px;
+}
+.stats-min {
+  font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--green);
+}
+.stat-row {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  grid-template-rows: auto 5px;
+  column-gap: 8px; row-gap: 4px;
+  align-items: center; padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.stat-val { font-size: 13px; font-weight: 700; font-family: 'Bebas Neue', sans-serif; }
+.stat-val.home { text-align: left; color: var(--blue); }
+.stat-val.away { text-align: right; color: var(--text-dim); }
+.stat-label {
+  text-align: center; font-size: 10px; color: var(--text-dim); letter-spacing: .3px;
+}
+.stat-bar-wrap {
+  grid-column: 1 / -1; display: flex; height: 5px;
+  border-radius: 3px; overflow: hidden; background: var(--surface-3);
+}
+.stat-bar-home { background: var(--blue); flex-shrink: 0; }
+.stat-bar-away { background: var(--surface-2); flex-shrink: 0; }
+
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 @media (min-width: 640px) {
   .top-nav { padding: 0 32px; }
