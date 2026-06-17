@@ -309,7 +309,14 @@ function armHeroAutoHide() {
   }, 5000);
   if (!_heroListenersSet) {
     const show = () => armHeroAutoHide();
-    ['mousemove', 'touchstart', 'click'].forEach(ev => hero.addEventListener(ev, show, { passive: true }));
+    // Escuchamos en TODO el documento: mover el mouse sobre el iframe no llega a
+    // la página (es otro dominio), así que cualquier actividad reaparece el rótulo.
+    ['mousemove', 'touchstart', 'keydown'].forEach(ev => document.addEventListener(ev, show, { passive: true }));
+    // Clic dentro del reproductor (ej. saltar el anuncio) → el iframe toma el foco;
+    // lo detectamos para volver a mostrar el rótulo un momento.
+    window.addEventListener('blur', () => {
+      if (document.activeElement && document.activeElement.id === 'live-frame') show();
+    });
     _heroListenersSet = true;
   }
 }
