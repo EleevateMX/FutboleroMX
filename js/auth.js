@@ -28,21 +28,22 @@ async function authInit() {
 async function _loadProfile(supaUser) {
   const { data } = await sb
     .from('profiles')
-    .select('name, pts, picks')
+    .select('name, pts, picks, avatar_url')
     .eq('id', supaUser.id)
     .single();
 
+  const googleAvatar = supaUser.user_metadata?.avatar_url || supaUser.user_metadata?.picture || null;
+  const googleName = supaUser.user_metadata?.full_name || supaUser.user_metadata?.name || null;
+
   if (!data) {
-    const name = supaUser.user_metadata?.full_name
-      || supaUser.user_metadata?.name
-      || supaUser.email.split('@')[0];
-    await sb.from('profiles').insert({ id: supaUser.id, name, pts: 0, picks: {} });
-    _user  = { id: supaUser.id, email: supaUser.email, name, pts: 0 };
+    const name = googleName || supaUser.email.split('@')[0];
+    await sb.from('profiles').insert({ id: supaUser.id, name, pts: 0, picks: {}, avatar_url: googleAvatar });
+    _user  = { id: supaUser.id, email: supaUser.email, name, pts: 0, avatar: googleAvatar, googleName };
     _picks = {};
     return;
   }
 
-  _user  = { id: supaUser.id, email: supaUser.email, name: data.name, pts: data.pts };
+  _user  = { id: supaUser.id, email: supaUser.email, name: data.name, pts: data.pts, avatar: data.avatar_url || googleAvatar, googleName };
   _picks = data.picks ?? {};
 }
 
@@ -78,6 +79,34 @@ const Auth = {
     _picks[matchId] = pick;
     await sb.from('profiles').update({ picks: _picks }).eq('id', _user.id);
   },
+
+  async updateName(name) {
+    if (!_user || !name.trim()) return { ok: false, msg: 'Nombre inválido' };
+    const { error } = await sb.from('profiles').update({ name: name.trim() }).eq('id', _user.id);
+    if (error) return { ok: false, msg: error.message };
+    _user.name = name.trim();
+    updateNav();
+    return { ok: true };
+  },
+
+  async uploadAvatar(file) {
+    if (!_user) return { ok: false, msg: 'No has iniciado sesión' };
+    if (!file.type.startsWith('image/')) return { ok: false, msg: 'Selecciona una imagen' };
+    if (file.size > 3 * 1024 * 1024) return { ok: false, msg: 'La imagen debe pesar menos de 3 MB' };
+
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `${_user.id}/avatar.${ext}`;
+    const { error: upErr } = await sb.storage.from('avatars').upload(path, file, { upsert: true, cacheControl: '3600' });
+    if (upErr) return { ok: false, msg: upErr.message };
+
+    const { data: pub } = sb.storage.from('avatars').getPublicUrl(path);
+    const url = pub.publicUrl + '?t=' + Date.now();
+    const { error } = await sb.from('profiles').update({ avatar_url: url }).eq('id', _user.id);
+    if (error) return { ok: false, msg: error.message };
+    _user.avatar = url;
+    updateNav();
+    return { ok: true, url };
+  },
 };
 
 async function signInWithGoogle() {
@@ -104,8 +133,18 @@ function updateNav() {
   if (_user) {
     guestEl.style.display = 'none';
     userEl.classList.add('visible');
-    avatarEl.textContent  = (_user.name || '?').slice(0, 2).toUpperCase();
-    nameEl.textContent    = _user.name;
+    if (_user.avatar) {
+      avatarEl.style.backgroundImage = `url('${_user.avatar}')`;
+      avatarEl.style.backgroundSize = 'cover';
+      avatarEl.style.backgroundPosition = 'center';
+      avatarEl.textContent = '';
+    } else {
+      avatarEl.style.backgroundImage = '';
+      avatarEl.textContent = (_user.name || '?').slice(0, 2).toUpperCase();
+    }
+    avatarEl.style.cursor = 'pointer';
+    avatarEl.onclick = () => { location.href = 'perfil.html'; };
+    nameEl.textContent = _user.name;
   } else {
     guestEl.style.display = 'flex';
     userEl.classList.remove('visible');

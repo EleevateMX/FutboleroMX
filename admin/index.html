@@ -226,6 +226,10 @@
           <div><label>Comisión app</label><input type="text" id="q-fee" placeholder="20"></div>
         </div>
         <div class="form-row">
+          <div><label>Bote base (semilla para incentivar)</label><input type="text" id="q-base" placeholder="1000"></div>
+          <div></div>
+        </div>
+        <div class="form-row">
           <div><label>Estado</label>
             <select id="q-status">
               <option value="open">🟢 Abierta (acepta boletos)</option>
@@ -479,12 +483,14 @@ async function loadQuinielaAdmin() {
   document.getElementById('q-holder').value = _qPool.bank_holder || '';
   document.getElementById('q-clabe').value = _qPool.bank_clabe || '';
   document.getElementById('q-link').value = _qPool.payment_link || '';
+  document.getElementById('q-base').value = _qPool.base_pot ?? 1000;
 
   // Stats
   const verified = _qEntries.filter(e => e.payment_status === 'verified');
   const pending = _qEntries.filter(e => e.payment_status === 'pending');
   const poolPer = (_qPool.entry_amount ?? 100) - (_qPool.service_fee ?? 20);
-  document.getElementById('q-pot').textContent = qMoney(verified.length * poolPer);
+  const base = _qPool.base_pot ?? 1000;
+  document.getElementById('q-pot').textContent = qMoney(base + verified.length * poolPer);
   document.getElementById('q-verified').textContent = verified.length;
   document.getElementById('q-pending').textContent = pending.length;
 
@@ -539,6 +545,7 @@ async function saveQuinielaPool() {
     p_clabe: document.getElementById('q-clabe').value.trim(),
     p_holder: document.getElementById('q-holder').value.trim(),
     p_link: document.getElementById('q-link').value.trim(),
+    p_base: parseFloat(document.getElementById('q-base').value) || 0,
   });
   if (error) { err.textContent = 'Error: ' + error.message; err.style.display = 'block'; return; }
   ok.style.display = 'block'; setTimeout(() => ok.style.display = 'none', 4000);
@@ -561,7 +568,8 @@ function renderWinners(champ) {
   const verified = _qEntries.filter(e => e.payment_status === 'verified');
   const winners = verified.filter(e => e.champion_pick === champ);
   const poolPer = (_qPool.entry_amount ?? 100) - (_qPool.service_fee ?? 20);
-  const total = verified.length * poolPer;
+  const base = _qPool.base_pot ?? 1000;
+  const total = base + verified.length * poolPer;
   const per = winners.length ? total / winners.length : 0;
   const el = document.getElementById('q-winners');
   el.innerHTML = `

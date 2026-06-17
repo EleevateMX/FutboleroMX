@@ -51,8 +51,9 @@ function renderPotHeader() {
   const entry = _pool.entry_amount ?? 100;
   const fee = _pool.service_fee ?? 20;
   const pool = entry - fee;
+  const base = _pool.base_pot ?? 1000;
   const verified = _entries.filter(e => e.payment_status === 'verified');
-  const total = verified.length * pool;
+  const total = base + verified.length * pool;
 
   document.getElementById('q-name').textContent = _pool.name || 'Quiniela Mundialista 2026';
   document.getElementById('q-entry').textContent = money(entry);
@@ -266,7 +267,8 @@ function renderSettled(el) {
   const verified = _entries.filter(e => e.payment_status === 'verified');
   const winners = verified.filter(e => e.champion_pick === champ);
   const pool = (_pool.entry_amount - _pool.service_fee);
-  const total = verified.length * pool;
+  const base = _pool.base_pot ?? 1000;
+  const total = base + verified.length * pool;
   const perWinner = winners.length ? total / winners.length : 0;
   const user = Auth.getUser();
   const iWon = user && winners.some(w => w.user_id === user.id);
