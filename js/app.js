@@ -107,33 +107,44 @@ async function postFanMessage() {
   loadFanWall();
 }
 
+// Resuelve la bandera de un equipo por su nombre (desde MATCHES)
+function flagFor(name) {
+  for (const m of MATCHES) {
+    if (m.home.name === name) return m.home.flag;
+    if (m.away.name === name) return m.away.flag;
+  }
+  return '🏳️';
+}
+
 // ── Carga el partido en vivo desde Supabase (live_config) ─────────────────
 async function loadLiveConfig() {
   try {
     const { data } = await sb.from('live_config').select('*').eq('id', 1).single();
-    if (data && data.slug && Array.isArray(data.channels) && data.channels.length) {
+    if (data && data.status === 'live' && data.slug && Array.isArray(data.channels) && data.channels.length) {
       CHANNELS = buildChannels(data.slug, data.channels);
-      LIVE_MATCH = (data.status === 'live') ? {
+      LIVE_MATCH = {
         id: 'live',
-        home: { name: data.home_name, flag: data.home_flag },
-        away: { name: data.away_name, flag: data.away_flag },
+        home: { name: data.home_name, flag: data.home_flag || flagFor(data.home_name) },
+        away: { name: data.away_name, flag: data.away_flag || flagFor(data.away_name) },
         kickoff: new Date().toISOString(), status: 'live',
         hs: data.hs ?? 0, as: data.as_ ?? 0,
-        venue: data.venue || '', city: data.city || '', comp: data.comp || '',
+        venue: data.venue || '', city: data.city || '', comp: data.comp || 'En vivo',
         defaultChannel: CHANNELS[0]?.id,
-      } : null;
+      };
       return;
     }
-  } catch (e) { /* fallback a data.js */ }
-  // Fallback: usa el partido 'live' definido en data.js
-  LIVE_MATCH = MATCHES.find(m => m.status === 'live') || null;
+  } catch (e) { /* sin partido en vivo */ }
+  // No hay partido en vivo: no mostramos canales viejos
+  LIVE_MATCH = null;
+  CHANNELS = [];
 }
 
 // ── Hero ──────────────────────────────────────────────────────────────────
 function renderHero() {
   const hero = document.getElementById('hero-section');
+  const now = Date.now();
   const live = (LIVE_MATCH && LIVE_MATCH.status === 'live') ? LIVE_MATCH : null;
-  const next = MATCHES.filter(m => m.status === 'scheduled')[0];
+  const next = MATCHES.filter(m => m.status === 'scheduled' && new Date(m.kickoff).getTime() > now)[0];
   const match = live || next;
 
   if (!match) {
@@ -147,8 +158,9 @@ function renderHero() {
   }
 
   const isLive = match.status === 'live';
-  const ch = CHANNELS.find(c => c.id === (match.defaultChannel || CHANNELS[0].id));
-  _activeChannel = ch || CHANNELS[0];
+  if (isLive && CHANNELS.length) {
+    _activeChannel = CHANNELS.find(c => c.id === match.defaultChannel) || CHANNELS[0];
+  }
 
   const ft = fmtMatchTime(match.kickoff);
   const venueLine = match.venue ? `${match.venue} · ${match.city}` : match.comp;
@@ -212,6 +224,8 @@ function renderIframeNotice(isLive) {
 // ── Channel Strip (selector rápido tipo lacancha) ─────────────────────────
 function renderChannelStrip() {
   const strip = document.getElementById('channel-strip');
+  if (!CHANNELS.length) { strip.style.display = 'none'; return; }
+  strip.style.display = 'flex';
   strip.innerHTML = CHANNELS.map((ch, i) => `
     <div class="channel-chip ${i === 0 ? 'active' : ''}" onclick="switchChannel('${ch.id}', this)">
       <span class="chip-name">${ch.name}</span>
@@ -255,8 +269,9 @@ function switchChannel(channelId, el) {
 // ── Matches Row (en vivo + próximos) ──────────────────────────────────────
 function renderMatchesRow() {
   const row = document.getElementById('matches-row');
+  const now = Date.now();
   const live = (LIVE_MATCH && LIVE_MATCH.status === 'live') ? [LIVE_MATCH] : [];
-  const upcoming = MATCHES.filter(m => m.status === 'scheduled').slice(0, 14);
+  const upcoming = MATCHES.filter(m => m.status === 'scheduled' && new Date(m.kickoff).getTime() > now).slice(0, 14);
   const list = [...live, ...upcoming];
 
   row.innerHTML = list.map(m => {
@@ -288,6 +303,11 @@ function renderMatchesRow() {
 // ── Channels Grid ─────────────────────────────────────────────────────────
 function renderChannelsGrid() {
   const grid = document.getElementById('channels-grid');
+  if (!CHANNELS.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:24px 16px;color:var(--text-dim);font-size:13px;">
+      📺 Los canales se activan cuando hay un partido en vivo.<br>Revisa los próximos partidos abajo. ⚽</div>`;
+    return;
+  }
   grid.innerHTML = CHANNELS.map(ch => `
     <div class="ch-card" onclick="switchChannel('${ch.id}')">
       <div class="ch-name">${ch.name}</div>
