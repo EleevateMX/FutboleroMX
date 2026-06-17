@@ -348,10 +348,20 @@ async function loadAdSettings() {
     const { data } = await sb.from('ad_config').select('*').eq('id', 1).single();
     if (!data || !data.enabled) { adBar.classList.add('hidden'); return; }
     const isMobile = window.matchMedia('(max-width: 640px)').matches;
+
+    // Prioridad: imagen propia → código (AdSense/HTML)
+    const img = isMobile ? (data.mobile_img || data.desktop_img) : (data.desktop_img || data.mobile_img);
+    if (img) {
+      const link = data.link_url || '#';
+      adContent.innerHTML = `<a href="${link}" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;height:100%;">
+        <img src="${img}" alt="anuncio" style="max-height:60px;max-width:100%;border-radius:6px;">
+      </a>`;
+      return;
+    }
+
     const code = isMobile ? (data.mobile_code || data.desktop_code) : (data.desktop_code || data.mobile_code);
     if (code && code.trim()) {
       adContent.innerHTML = code;
-      // Re-ejecuta scripts inyectados (AdSense, etc.)
       adContent.querySelectorAll('script').forEach(old => {
         const s = document.createElement('script');
         [...old.attributes].forEach(a => s.setAttribute(a.name, a.value));

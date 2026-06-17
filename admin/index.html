@@ -351,6 +351,35 @@
         <button class="toggle on" id="toggle-ads" onclick="document.getElementById('toggle-ads').classList.toggle('on')"></button>
       </div>
 
+      <!-- Anuncio propio por imagen (lo principal) -->
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:16px;margin:16px 0;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:4px;">🖼️ Tu propio anuncio (imagen)</div>
+        <div style="font-size:11px;color:var(--dim);margin-bottom:14px;">Sube tu imagen para PC y para móvil, y pon a dónde lleva al hacer clic. Se muestra automáticamente según la pantalla.</div>
+
+        <div class="form-row">
+          <div>
+            <label>Imagen PC (recom. 728×90)</label>
+            <input type="file" id="ad-img-desktop-file" accept="image/*">
+            <div id="ad-img-desktop-prev" style="margin-top:8px;"></div>
+          </div>
+          <div>
+            <label>Imagen móvil (recom. 320×50)</label>
+            <input type="file" id="ad-img-mobile-file" accept="image/*">
+            <div id="ad-img-mobile-prev" style="margin-top:8px;"></div>
+          </div>
+        </div>
+        <label>Enlace al hacer clic (a dónde lleva el anuncio)</label>
+        <input type="url" id="ad-link" placeholder="https://tu-promocion.com">
+        <button class="btn-save" onclick="saveAdSettings()">Guardar anuncio</button>
+        <div class="success-msg" id="ad-ok" style="display:none;">✓ Anuncio guardado (visible para todos)</div>
+        <div class="err" id="ad-err" style="display:none;"></div>
+        <div class="err" id="ad-img-err" style="display:none;"></div>
+        <p style="font-size:11px;color:var(--muted);margin-top:8px;">Si subes imagen, esa se muestra. El código de abajo es solo para casos avanzados (AdSense/HTML).</p>
+      </div>
+
+      <details style="margin-bottom:8px;">
+        <summary style="cursor:pointer;font-size:13px;color:var(--dim);">Opciones avanzadas (AdSense / código HTML)</summary>
+
       <!-- Generador rápido de AdSense -->
       <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:16px;margin:16px 0;">
         <div style="font-size:13px;font-weight:700;margin-bottom:4px;">⚡ Generador rápido de AdSense</div>
@@ -371,19 +400,8 @@
 
       <label>Anuncio para móvil (recomendado 320×50 — banner móvil)</label>
       <textarea id="ad-mobile" placeholder="<!-- Código AdSense o HTML del banner para móvil -->" style="min-height:90px;font-family:monospace;font-size:12px;"></textarea>
-
-      <button class="btn-save" onclick="saveAdSettings()">Guardar publicidad</button>
-      <div class="success-msg" id="ad-ok" style="display:none;">✓ Publicidad guardada (visible para todos)</div>
-      <div class="err" id="ad-err" style="display:none;"></div>
-
-      <div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--border);">
-        <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Tip de tamaños AdSense:</div>
-        <div style="font-size:12px;color:var(--dim);line-height:1.8;">
-          • PC: <strong>728×90</strong> (leaderboard) o 970×90<br>
-          • Móvil: <strong>320×50</strong> (banner) o 300×100<br>
-          • Pega el código que te da Google AdSense o cualquier HTML/imagen con enlace.
-        </div>
-      </div>
+      <p style="font-size:11px;color:var(--muted);margin-top:8px;">El código solo se usa si NO subiste imagen. Tras editarlo, dale "Guardar anuncio" arriba.</p>
+      </details>
     </div>
 
     <!-- Moderación del muro de la afición -->
@@ -608,6 +626,11 @@ async function sendPush() {
   }
 }
 
+function _adPrev(id, url) {
+  const el = document.getElementById(id);
+  el.innerHTML = url ? `<img src="${url}" style="max-width:100%;max-height:60px;border-radius:6px;border:1px solid var(--border);">` : '<span style="font-size:11px;color:var(--muted);">Sin imagen</span>';
+}
+
 async function loadAds() {
   try {
     const { data } = await sb.from('ad_config').select('*').eq('id', 1).single();
@@ -615,7 +638,39 @@ async function loadAds() {
     document.getElementById('toggle-ads').classList.toggle('on', data.enabled !== false);
     document.getElementById('ad-desktop').value = data.desktop_code || '';
     document.getElementById('ad-mobile').value = data.mobile_code || '';
+    document.getElementById('ad-link').value = data.link_url || '';
+    _adPrev('ad-img-desktop-prev', data.desktop_img);
+    _adPrev('ad-img-mobile-prev', data.mobile_img);
   } catch (e) { /* ignora */ }
+  // Sube al elegir archivo
+  ['desktop','mobile'].forEach(slot => {
+    const inp = document.getElementById(`ad-img-${slot}-file`);
+    if (inp && !inp._wired) { inp._wired = true; inp.addEventListener('change', () => uploadAdImage(slot)); }
+  });
+}
+
+async function uploadAdImage(slot) {
+  const err = document.getElementById('ad-img-err'); err.style.display = 'none';
+  if (!qKey()) { err.textContent = 'Ingresa la clave de operación primero.'; err.style.display = 'block'; return; }
+  const file = document.getElementById(`ad-img-${slot}-file`).files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { err.textContent = 'La imagen debe pesar menos de 2 MB.'; err.style.display = 'block'; return; }
+  const base64 = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej; r.readAsDataURL(file);
+  });
+  const prev = document.getElementById(`ad-img-${slot}-prev`);
+  prev.innerHTML = '<span style="font-size:11px;color:var(--dim);">Subiendo...</span>';
+  try {
+    const { data, error } = await sb.functions.invoke('upload-ad', { body: { pass: qKey(), slot, base64, contentType: file.type } });
+    if (error) throw error;
+    if (data && data.error) throw new Error(data.error);
+    _adPrev(`ad-img-${slot}-prev`, data.url);
+  } catch (e) {
+    err.textContent = 'Error al subir: ' + (e.message || e); err.style.display = 'block';
+    _adPrev(`ad-img-${slot}-prev`, null);
+  }
 }
 
 function genAdsense() {
@@ -642,6 +697,7 @@ async function saveAdSettings() {
     p_enabled: document.getElementById('toggle-ads').classList.contains('on'),
     p_desktop: document.getElementById('ad-desktop').value,
     p_mobile: document.getElementById('ad-mobile').value,
+    p_link: document.getElementById('ad-link').value.trim(),
   });
   if (error) { err.textContent = 'Error: ' + error.message; err.style.display = 'block'; return; }
   ok.style.display = 'block'; setTimeout(() => ok.style.display = 'none', 4000);
