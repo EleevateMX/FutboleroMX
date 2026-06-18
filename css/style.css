@@ -365,6 +365,70 @@ body {
 .rc-team.right { text-align: right; }
 .rc-score { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px; color: var(--blue); }
 
+/* ── Matches Grid (2 columnas) ────────────────────────────────────────────── */
+.matches-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 0 16px 4px;
+}
+@media (max-width: 520px) {
+  .matches-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Result Cards (Resultados Recientes) ──────────────────────────────────── */
+.ri-card {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--surface-2); border: 1.5px solid var(--border);
+  border-radius: var(--radius); padding: 12px 14px;
+  cursor: pointer; transition: border-color .18s, background .18s;
+  min-width: 0;
+}
+.ri-card:hover { border-color: var(--blue-glow); background: var(--surface-3); }
+.ri-card.ri-live { border-color: rgba(239,68,68,.35); }
+.ri-card.ri-live:hover { border-color: var(--red); }
+.ri-teams { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ri-team  { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ri-flag  { font-size: 17px; flex-shrink: 0; line-height: 1; }
+.ri-name  { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ri-scores { display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; }
+.ri-scores span { font-family: 'Bebas Neue', sans-serif; font-size: 24px; line-height: 1; color: var(--text); }
+.ri-info  { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+.ri-badge {
+  font-size: 9px; font-weight: 800; letter-spacing: 1.5px; white-space: nowrap;
+  background: rgba(255,255,255,.05); border: 1px solid var(--border);
+  border-radius: 4px; padding: 2px 7px; color: var(--text-muted);
+}
+.ri-live-badge { background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.3); color: var(--red); }
+.ri-sub   { font-size: 10px; color: var(--text-dim); line-height: 1.3; max-width: 110px; }
+.ri-arrow { color: var(--text-dim); font-size: 20px; flex-shrink: 0; line-height: 1; padding-left: 2px; }
+
+/* ── Upcoming Cards (Próximos Partidos) ───────────────────────────────────── */
+.up-card {
+  background: var(--surface-2); border: 1.5px solid var(--border);
+  border-radius: var(--radius); padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 10px;
+  transition: border-color .18s, background .18s;
+}
+.up-card:hover { border-color: var(--blue-glow); background: var(--surface-3); }
+.up-main    { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.up-teams   { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
+.up-team    { display: flex; align-items: center; gap: 8px; }
+.up-flag    { font-size: 17px; flex-shrink: 0; line-height: 1; }
+.up-name    { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.up-timeblock { text-align: right; flex-shrink: 0; }
+.up-day   { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); }
+.up-time  { font-family: 'Bebas Neue', sans-serif; font-size: 30px; color: var(--text); line-height: 1; letter-spacing: 1px; }
+.up-venue { font-size: 10px; color: var(--text-dim); margin-top: 3px; line-height: 1.3; max-width: 120px; text-align: right; }
+.up-btn {
+  width: 100%; background: transparent; border: 1.5px solid var(--border);
+  border-radius: 6px; color: var(--text-dim); font-size: 11px; font-weight: 800;
+  letter-spacing: 2px; padding: 7px 0; cursor: pointer; transition: all .18s;
+  font-family: inherit;
+}
+.up-btn:hover { border-color: var(--orange); color: var(--orange); background: rgba(249,115,22,.07); }
+.no-data { color: var(--text-dim); font-size: 13px; padding: 20px; text-align: center; grid-column: 1 / -1; margin: 0; }
+
 /* ── Quiniela Section ─────────────────────────────────────────────────────── */
 #quiniela-section { padding: 16px 20px 24px; }
 .quiniela-login-prompt {

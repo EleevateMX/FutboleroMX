@@ -518,51 +518,67 @@ function switchChannel(channelId, el) {
   trackEvent('live', 'watch');
 }
 
-// ── Matches Row (terminados recientes + en vivo + próximos) ──────────────
+// ── Resultados Recientes + Próximos Partidos ─────────────────────────────
 function renderMatchesRow() {
-  const row = document.getElementById('matches-row');
   const now = Date.now();
-  const live = (LIVE_MATCH && LIVE_MATCH.status === 'live') ? [LIVE_MATCH] : [];
-  const recentDone = MATCHES
-    .filter(m => m.status === 'finished' && m.hs != null
-               && new Date(m.kickoff).getTime() < now
-               && new Date(m.kickoff).getTime() > now - 10 * 3600000)
-    .slice(-4);
-  const upcoming = MATCHES.filter(m => m.status === 'scheduled' && new Date(m.kickoff).getTime() > now).slice(0, 12);
-  const list = [...recentDone, ...live, ...upcoming];
 
-  row.innerHTML = list.map(m => {
-    const isLive     = m.status === 'live';
-    const isFinished = m.status === 'finished';
-    const ft = fmtMatchTime(m.kickoff);
-    const statusLabel = isLive
-      ? '● EN VIVO'
-      : (isFinished ? '✓ FINAL' : '⏰ ' + ft.day + ' ' + ft.time);
-    const scoreLabel  = (isLive || isFinished) ? `${m.hs ?? 0}-${m.as ?? 0}` : 'vs';
-    const click = isLive
-      ? `switchChannel('${m.defaultChannel || (CHANNELS[0] && CHANNELS[0].id) || ''}')`
-      : (isFinished ? `scrollToSection('standings-section')` : `openMatchInfo('${m.id}')`);
-    return `
-    <div class="match-card ${isLive ? 'live' : ''} ${isFinished ? 'finished' : ''}" onclick="${click}">
-      <div class="mc-status ${isLive ? 'live' : isFinished ? '' : 'upcoming'}">
-        ${statusLabel}
-      </div>
-      <div class="mc-teams">
-        <div class="mc-team">
-          <div class="mc-flag">${m.home.flag}</div>
-          <div class="mc-team-name">${m.home.name}</div>
+  // ── Resultados Recientes ──────────────────────────────────────────────
+  const recentEl = document.getElementById('recent-results');
+  if (recentEl) {
+    const liveM = LIVE_MATCH && LIVE_MATCH.status === 'live' ? LIVE_MATCH : null;
+    const done  = MATCHES.filter(m => m.status === 'finished' && m.hs != null).slice(-4).reverse();
+    const list  = liveM ? [liveM, ...done].slice(0, 4) : done;
+
+    recentEl.innerHTML = list.length ? list.map(m => {
+      const isLive = m.status === 'live';
+      const venue  = [m.venue, m.city].filter(Boolean).join(' · ');
+      const click  = isLive
+        ? `openLiveStream()`
+        : `scrollToSection('standings-section')`;
+      return `
+      <div class="ri-card${isLive ? ' ri-live' : ''}" onclick="${click}">
+        <div class="ri-teams">
+          <div class="ri-team"><span class="ri-flag">${m.home.flag}</span><span class="ri-name">${m.home.name}</span></div>
+          <div class="ri-team"><span class="ri-flag">${m.away.flag}</span><span class="ri-name">${m.away.name}</span></div>
         </div>
-        <div class="mc-score-block">
-          <div class="mc-score">${scoreLabel}</div>
+        <div class="ri-scores">
+          <span>${m.hs ?? 0}</span>
+          <span>${m.as ?? 0}</span>
         </div>
-        <div class="mc-team">
-          <div class="mc-flag">${m.away.flag}</div>
-          <div class="mc-team-name">${m.away.name}</div>
+        <div class="ri-info">
+          <div class="ri-badge${isLive ? ' ri-live-badge' : ''}">${isLive ? '● EN VIVO' : 'FINAL'}</div>
+          <div class="ri-sub">${venue || m.comp}</div>
         </div>
-      </div>
-      <div class="mc-competition">${m.comp}</div>
-    </div>`;
-  }).join('');
+        <div class="ri-arrow">›</div>
+      </div>`;
+    }).join('') : '<p class="no-data">Sin resultados aún</p>';
+  }
+
+  // ── Próximos Partidos ─────────────────────────────────────────────────
+  const upcomingEl = document.getElementById('upcoming-matches');
+  if (upcomingEl) {
+    const list = MATCHES.filter(m => m.status === 'scheduled' && new Date(m.kickoff).getTime() > now).slice(0, 6);
+
+    upcomingEl.innerHTML = list.length ? list.map(m => {
+      const ft    = fmtMatchTime(m.kickoff);
+      const venue = [m.venue, m.city].filter(Boolean).join(' · ');
+      return `
+      <div class="up-card">
+        <div class="up-main">
+          <div class="up-teams">
+            <div class="up-team"><span class="up-flag">${m.home.flag}</span><span class="up-name">${m.home.name}</span></div>
+            <div class="up-team"><span class="up-flag">${m.away.flag}</span><span class="up-name">${m.away.name}</span></div>
+          </div>
+          <div class="up-timeblock">
+            <div class="up-day">${ft.day}</div>
+            <div class="up-time">${ft.time}</div>
+            ${venue ? `<div class="up-venue">${venue}</div>` : ''}
+          </div>
+        </div>
+        <button class="up-btn" onclick="openMatchInfo('${m.id}'); event.stopPropagation()">PRONOSTICAR</button>
+      </div>`;
+    }).join('') : '<p class="no-data">No hay partidos próximos</p>';
+  }
 }
 
 // ── Partido próximo: cuenta regresiva + "Avísame" ─────────────────────────
