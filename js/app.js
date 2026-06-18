@@ -199,7 +199,18 @@ async function refreshLiveConfig() {
 function renderHero() {
   const hero = document.getElementById('hero-section');
   const now = Date.now();
-  const live   = (LIVE_MATCH && LIVE_MATCH.status === 'live') ? LIVE_MATCH : null;
+
+  // auto-live detecta el embed antes del kickoff — verificar que ya empezó
+  const rawLive = (LIVE_MATCH && LIVE_MATCH.status === 'live') ? LIVE_MATCH : null;
+  let live = rawLive;
+  if (rawLive) {
+    const entry = MATCHES.find(m =>
+      m.home.name === rawLive.home.name && m.away.name === rawLive.away.name
+    );
+    // 5 min de gracia: si el kickoff aún no llegó, no mostrar como live
+    if (entry && new Date(entry.kickoff).getTime() > now + 5 * 60000) live = null;
+  }
+
   const recent = (!live && RECENT_RESULT) ? RECENT_RESULT : null;
   const next   = MATCHES.filter(m => m.status === 'scheduled' && new Date(m.kickoff).getTime() > now)[0];
   const match  = live || recent || next;
@@ -218,7 +229,8 @@ function renderHero() {
 
   const isLive   = match.status === 'live';
   const isRecent = !isLive && match === recent;
-  if (isLive && CHANNELS.length) {
+  const hasChannels = CHANNELS.length > 0;
+  if (isLive && hasChannels) {
     _activeChannel = CHANNELS.find(c => c.id === match.defaultChannel) || CHANNELS[0];
   }
 
@@ -280,12 +292,32 @@ function renderHero() {
     renderIframeNotice(false);
     showMatchTabs(false);
   } else {
+    // Pre-match (embed listo pero kickoff aún no) o siguiente partido
+    const isPreMatch = hasChannels && rawLive && !live;
     hero.innerHTML = `
-      <div class="hero-no-live">
-        <div style="font-size:13px;color:var(--orange);font-weight:700;letter-spacing:1px;">PRÓXIMO PARTIDO</div>
-        <div style="font-size:34px;font-family:'Bebas Neue',sans-serif;letter-spacing:1px;">${match.home.flag} ${match.home.name} <span style="color:var(--text-muted)">vs</span> ${match.away.name} ${match.away.flag}</div>
-        <p>${ft.day} ${ft.time} · ${match.comp}</p>
-        <p style="font-size:11px;">📍 ${venueLine}</p>
+      <div class="hero-match-preview">
+        <div class="hmp-badge hmp-badge-next">
+          ${isPreMatch ? '📡 TRANSMISIÓN LISTA' : '⏱ PRÓXIMO PARTIDO'} · ${match.comp}
+        </div>
+        <div class="hmp-teams">
+          <div class="hmp-team">
+            <div class="hmp-flag">${match.home.flag}</div>
+            <div class="hmp-name">${match.home.name.toUpperCase()}</div>
+          </div>
+          <div class="hmp-center">
+            <div class="hmp-score hmp-vs">vs</div>
+            <div class="hmp-kickoff">${ft.day} · ${ft.time}</div>
+          </div>
+          <div class="hmp-team">
+            <div class="hmp-flag">${match.away.flag}</div>
+            <div class="hmp-name">${match.away.name.toUpperCase()}</div>
+          </div>
+        </div>
+        <div class="hmp-venue">📍 ${venueLine}</div>
+        <div class="hmp-actions">
+          ${isPreMatch ? `<button class="hmp-btn-watch" onclick="openLiveStream()">▶ Ver en vivo</button>` : ''}
+          <button class="hmp-btn-quiniela" onclick="location.href='quiniela.html'">🏆 La quiniela</button>
+        </div>
       </div>`;
     renderIframeNotice(false);
     showMatchTabs(false);
