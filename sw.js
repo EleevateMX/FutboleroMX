@@ -1,4 +1,4 @@
-const CACHE = 'tvc-v19';
+const CACHE = 'tvc-v20';
 const STATIC = [
   '/', '/index.html', '/quiniela.html', '/perfil.html', '/css/style.css',
   '/js/data.js', '/js/auth.js', '/js/app.js', '/js/quiniela.js', '/js/perfil.js', '/js/push.js',
@@ -31,7 +31,21 @@ self.addEventListener('fetch', e => {
     );
     return;
   }
-  // Assets: cache first
+  // JS y CSS: network first → caché como fallback offline
+  // Así cada deploy se refleja de inmediato en la PWA
+  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
+    e.respondWith(
+      fetch(e.request).then(res => {
+        if (res && res.status === 200) {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
+        return res;
+      }).catch(() => caches.match(e.request))
+    );
+    return;
+  }
+  // Imágenes e íconos: cache first (no cambian entre deploys)
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
       if (res && res.status === 200) {

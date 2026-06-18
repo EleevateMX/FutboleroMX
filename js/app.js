@@ -1,5 +1,14 @@
 // ── TVContigo — App Logic ─────────────────────────────────────────────────
 
+// Recarga la página cuando el SW nuevo toma control (para que siempre
+// cargue la versión más reciente del JS tras un deploy)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    // No recargar si el usuario ya abrió el stream en vivo
+    if (!document.getElementById('live-frame')) window.location.reload();
+  });
+}
+
 let _activeChannel = null;
 let MATCH_LIVE_DATA = null;
 let RECENT_RESULT   = null;
