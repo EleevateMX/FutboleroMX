@@ -69,10 +69,10 @@ const MATCHES = [
   { id:'m18', home:{name:'Argentina',flag:'🇦🇷'}, away:{name:'Argelia',flag:'🇩🇿'}, kickoff:'2026-06-17T01:00:00+00:00', status:'finished', hs:3, as:0, venue:'Arrowhead Stadium', city:'Kansas City', comp:'Jornada 1' },
   { id:'m19', home:{name:'Austria',flag:'🇦🇹'}, away:{name:'Jordania',flag:'🇯🇴'}, kickoff:'2026-06-17T04:00:00+00:00', status:'finished', hs:3, as:1, venue:'', city:'', comp:'Jornada 1' },
   { id:'m20', home:{name:'Portugal',flag:'🇵🇹'}, away:{name:'RD Congo',flag:'🇨🇩'}, kickoff:'2026-06-17T17:00:00+00:00', status:'finished', hs:1, as:1, venue:'', city:'', comp:'Jornada 1' },
-  { id:'m21', home:{name:'Inglaterra',flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'}, away:{name:'Croacia',flag:'🇭🇷'}, kickoff:'2026-06-17T20:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 1' },
-  { id:'m22', home:{name:'Ghana',flag:'🇬🇭'}, away:{name:'Panamá',flag:'🇵🇦'}, kickoff:'2026-06-17T23:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 1' },
-  { id:'m23', home:{name:'Uzbekistán',flag:'🇺🇿'}, away:{name:'Colombia',flag:'🇨🇴'}, kickoff:'2026-06-18T02:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 1' },
-  { id:'m24', home:{name:'Chequia',flag:'🇨🇿'}, away:{name:'Sudáfrica',flag:'🇿🇦'}, kickoff:'2026-06-18T16:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
+  { id:'m21', home:{name:'Inglaterra',flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'}, away:{name:'Croacia',flag:'🇭🇷'}, kickoff:'2026-06-17T20:00:00+00:00', status:'finished', hs:4, as:2, venue:'', city:'', comp:'Jornada 1' },
+  { id:'m22', home:{name:'Ghana',flag:'🇬🇭'}, away:{name:'Panamá',flag:'🇵🇦'}, kickoff:'2026-06-17T23:00:00+00:00', status:'finished', hs:1, as:0, venue:'', city:'', comp:'Jornada 1' },
+  { id:'m23', home:{name:'Uzbekistán',flag:'🇺🇿'}, away:{name:'Colombia',flag:'🇨🇴'}, kickoff:'2026-06-18T02:00:00+00:00', status:'finished', hs:1, as:3, venue:'', city:'', comp:'Jornada 1' },
+  { id:'m24', home:{name:'Chequia',flag:'🇨🇿'}, away:{name:'Sudáfrica',flag:'🇿🇦'}, kickoff:'2026-06-18T16:00:00+00:00', status:'finished', hs:1, as:1, venue:'', city:'', comp:'Jornada 2' },
   { id:'m25', home:{name:'Canadá',flag:'🇨🇦'}, away:{name:'Catar',flag:'🇶🇦'}, kickoff:'2026-06-18T22:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
   { id:'m26', home:{name:'México',flag:'🇲🇽'}, away:{name:'Corea del Sur',flag:'🇰🇷'}, kickoff:'2026-06-19T01:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'Estadio Akron', city:'Guadalajara', comp:'Jornada 2' },
   { id:'m27', home:{name:'EE.UU.',flag:'🇺🇸'}, away:{name:'Australia',flag:'🇦🇺'}, kickoff:'2026-06-19T19:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
@@ -118,6 +118,9 @@ const MATCHES = [
   { id:'m67', home:{name:'RD Congo',flag:'🇨🇩'}, away:{name:'Uzbekistán',flag:'🇺🇿'}, kickoff:'2026-06-27T23:30:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 3' },
   { id:'m68', home:{name:'Argelia',flag:'🇩🇿'}, away:{name:'Austria',flag:'🇦🇹'}, kickoff:'2026-06-28T02:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 3' },
   { id:'m69', home:{name:'Jordania',flag:'🇯🇴'}, away:{name:'Argentina',flag:'🇦🇷'}, kickoff:'2026-06-28T02:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 3' },
+  { id:'m70', home:{name:'Canadá',flag:'🇨🇦'}, away:{name:'Bosnia',flag:'🇧🇦'}, kickoff:'2026-06-12T19:00:00+00:00', status:'finished', hs:1, as:1, venue:'', city:'', comp:'Jornada 1' },
+  { id:'m71', home:{name:'Suiza',flag:'🇨🇭'}, away:{name:'Bosnia',flag:'🇧🇦'}, kickoff:'2026-06-18T19:00:00+00:00', status:'finished', hs:4, as:1, venue:'', city:'', comp:'Jornada 2' },
+  { id:'m72', home:{name:'Catar',flag:'🇶🇦'}, away:{name:'Bosnia',flag:'🇧🇦'}, kickoff:'2026-06-24T19:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 3' },
 ];
 
 const TRIVIA = [
@@ -146,7 +149,7 @@ const RANKING = [
 const MATCH_GROUPS = {
   'México':'A','Corea del Sur':'A','Chequia':'A','Sudáfrica':'A',
   'EE.UU.':'B','Paraguay':'B','Australia':'B','Turquía':'B',
-  'Catar':'C','Suiza':'C','Canadá':'C',
+  'Catar':'C','Suiza':'C','Canadá':'C','Bosnia':'C',
   'Brasil':'D','Marruecos':'D','Haití':'D','Escocia':'D',
   'Alemania':'E','Curazao':'E','Costa de Marfil':'E','Ecuador':'E',
   'Países Bajos':'F','Japón':'F','Suecia':'F','Túnez':'F',
