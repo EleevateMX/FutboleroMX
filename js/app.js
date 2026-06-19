@@ -1,11 +1,16 @@
 // ── TVContigo — App Logic ─────────────────────────────────────────────────
 
-// Recarga la página cuando el SW nuevo toma control (para que siempre
-// cargue la versión más reciente del JS tras un deploy)
+// Recarga automática cuando hay SW nuevo — dos mecanismos complementarios:
+// 1) controllerchange: SW nuevo toma control (todos los browsers)
+// 2) message SW_UPDATED: SW nuevo notifica tras limpiar caché (más agresivo en iOS)
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    // No recargar si el usuario ya abrió el stream en vivo
     if (!document.getElementById('live-frame')) window.location.reload();
+  });
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data?.type === 'SW_UPDATED' && !document.getElementById('live-frame')) {
+      window.location.reload();
+    }
   });
 }
 

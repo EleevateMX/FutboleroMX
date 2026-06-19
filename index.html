@@ -409,9 +409,12 @@
 <script src="js/app.js"></script>
 <script src="js/push.js"></script>
 <script>
-  // Service Worker
+  // Service Worker — updateViaCache:'none' fuerza al browser a buscar sw.js
+  // en la red en cada carga, ignorando el HTTP cache del archivo sw.js.
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+      .then(reg => reg.update())   // comprueba si hay SW nuevo en este mismo instante
+      .catch(() => {});
   }
   // Track page view
   const pv = parseInt(localStorage.getItem('tvc_pv') || '0') + 1;
