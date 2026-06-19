@@ -20,6 +20,42 @@ let RECENT_RESULT   = null;
 let _matchTab = 'crono';
 let _matchDataPoll = null;
 
+// ── Normalización de nombres EN→ES (auto-live a veces guarda en inglés) ───
+const _EN_ES = {
+  'united states':'EE.UU.','usa':'EE.UU.',
+  'south korea':'Corea del Sur','ivory coast':'Costa de Marfil',
+  'new zealand':'Nueva Zelanda','south africa':'Sudáfrica',
+  'cape verde':'Cabo Verde','rd congo':'RD Congo','dr congo':'RD Congo',
+  'saudi arabia':'Arabia Saudita','netherlands':'Países Bajos',
+  'germany':'Alemania','spain':'España','france':'Francia',
+  'brazil':'Brasil','england':'Inglaterra','turkey':'Turquía',
+  'czechia':'Chequia','algeria':'Argelia','morocco':'Marruecos',
+  'croatia':'Croacia','sweden':'Suecia','norway':'Noruega',
+  'tunisia':'Túnez','egypt':'Egipto','scotland':'Escocia',
+  'belgium':'Bélgica','austria':'Austria','jordan':'Jordania',
+  'ghana':'Ghana','panama':'Panamá','uzbekistan':'Uzbekistán',
+  'switzerland':'Suiza','japan':'Japón','mexico':'México',
+  'canada':'Canadá','australia':'Australia','iraq':'Irak',
+  'senegal':'Senegal','uruguay':'Uruguay','iran':'Irán',
+  'ecuador':'Ecuador','colombia':'Colombia','argentina':'Argentina',
+  'portugal':'Portugal','curacao':'Curazao','haiti':'Haití',
+  'paraguay':'Paraguay','qatar':'Catar','bosnia':'Bosnia',
+};
+const _normName = n => _EN_ES[(n || '').toLowerCase()] || n;
+
+// ── ¿El partido en LIVE_MATCH realmente ha comenzado? ────────────────────
+// Devuelve true sólo si kickoff ya llegó (o faltan ≤5 min).
+// Se usa en TODAS las secciones para no mostrar "EN VIVO" antes de tiempo.
+function _isActuallyLive() {
+  if (!LIVE_MATCH || LIVE_MATCH.status !== 'live') return false;
+  const entry = MATCHES.find(m =>
+    m.home.name === _normName(LIVE_MATCH.home.name) &&
+    m.away.name === _normName(LIVE_MATCH.away.name)
+  );
+  if (entry && new Date(entry.kickoff).getTime() > Date.now() + 5 * 60000) return false;
+  return true;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   captureReferral();
   loadSiteSettings();
@@ -214,39 +250,8 @@ function renderHero() {
   const hero = document.getElementById('hero-section');
   const now = Date.now();
 
-  // auto-live detecta el embed antes del kickoff — verificar que ya empezó
-  // Tabla EN→ES para casos donde auto-live guarda nombres en inglés (ej. 'United States' en vez de 'EE.UU.')
-  const _EN_ES = {
-    'united states':'EE.UU.','usa':'EE.UU.',
-    'south korea':'Corea del Sur','ivory coast':'Costa de Marfil',
-    'new zealand':'Nueva Zelanda','south africa':'Sudáfrica',
-    'cape verde':'Cabo Verde','rd congo':'RD Congo','dr congo':'RD Congo',
-    'saudi arabia':'Arabia Saudita','netherlands':'Países Bajos',
-    'germany':'Alemania','spain':'España','france':'Francia',
-    'brazil':'Brasil','england':'Inglaterra','turkey':'Turquía',
-    'czechia':'Chequia','algeria':'Argelia','morocco':'Marruecos',
-    'croatia':'Croacia','sweden':'Suecia','norway':'Noruega',
-    'tunisia':'Túnez','egypt':'Egipto','scotland':'Escocia',
-    'belgium':'Bélgica','austria':'Austria','jordan':'Jordania',
-    'ghana':'Ghana','panama':'Panamá','uzbekistan':'Uzbekistán',
-    'switzerland':'Suiza','japan':'Japón','mexico':'México',
-    'canada':'Canadá','australia':'Australia','iraq':'Irak',
-    'senegal':'Senegal','uruguay':'Uruguay','iran':'Irán',
-    'ecuador':'Ecuador','colombia':'Colombia','argentina':'Argentina',
-    'portugal':'Portugal','curacao':'Curazao','haiti':'Haití',
-    'paraguay':'Paraguay','qatar':'Catar','bosnia':'Bosnia',
-  };
-  const _normName = n => _EN_ES[(n || '').toLowerCase()] || n;
-
   const rawLive = (LIVE_MATCH && LIVE_MATCH.status === 'live') ? LIVE_MATCH : null;
-  let live = rawLive;
-  if (rawLive) {
-    const entry = MATCHES.find(m =>
-      m.home.name === _normName(rawLive.home.name) && m.away.name === _normName(rawLive.away.name)
-    );
-    // 5 min de gracia: si el kickoff aún no llegó, no mostrar como live
-    if (entry && new Date(entry.kickoff).getTime() > now + 5 * 60000) live = null;
-  }
+  const live    = rawLive && _isActuallyLive() ? rawLive : null;
 
   const recent = (!live && RECENT_RESULT) ? RECENT_RESULT : null;
   const next   = MATCHES.filter(m => m.status === 'scheduled' && new Date(m.kickoff).getTime() > now)[0];
@@ -498,7 +503,7 @@ function renderIframeNotice(isLive) {
 // ── Channel Strip (selector rápido tipo lacancha) ─────────────────────────
 function renderChannelStrip() {
   const strip = document.getElementById('channel-strip');
-  if (!CHANNELS.length) { strip.style.display = 'none'; return; }
+  if (!CHANNELS.length || !_isActuallyLive()) { strip.style.display = 'none'; return; }
   strip.style.display = 'flex';
   strip.innerHTML = CHANNELS.map((ch, i) => `
     <div class="channel-chip ${i === 0 ? 'active' : ''}" onclick="switchChannel('${ch.id}', this)">
@@ -551,7 +556,7 @@ function renderMatchesRow() {
   // ── Resultados Recientes ──────────────────────────────────────────────
   const recentEl = document.getElementById('recent-results');
   if (recentEl) {
-    const liveM = LIVE_MATCH && LIVE_MATCH.status === 'live' ? LIVE_MATCH : null;
+    const liveM = _isActuallyLive() ? LIVE_MATCH : null;
     const done  = MATCHES.filter(m => m.status === 'finished' && m.hs != null).slice(-4).reverse();
     const list  = liveM ? [liveM, ...done].slice(0, 4) : done;
 
@@ -686,7 +691,7 @@ function addToCalendar() {
 // ── Channels Grid ─────────────────────────────────────────────────────────
 function renderChannelsGrid() {
   const grid = document.getElementById('channels-grid');
-  if (!CHANNELS.length) {
+  if (!CHANNELS.length || !_isActuallyLive()) {
     grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:24px 16px;color:var(--text-dim);font-size:13px;">
       📺 Los canales se activan cuando hay un partido en vivo.<br>Revisa los próximos partidos abajo. ⚽</div>`;
     return;
