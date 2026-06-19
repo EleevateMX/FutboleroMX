@@ -301,12 +301,11 @@ function renderHero() {
     renderIframeNotice(false);
     showMatchTabs(false);
   } else {
-    // Pre-match (embed listo pero kickoff aún no) o siguiente partido
-    const isPreMatch = hasChannels && rawLive && !live;
+    // Próximo partido — nunca marcar como activo aunque el embed ya esté listo
     hero.innerHTML = `
       <div class="hero-match-preview">
         <div class="hmp-badge hmp-badge-next">
-          ${isPreMatch ? '📡 TRANSMISIÓN LISTA' : '⏱ PRÓXIMO PARTIDO'} · ${match.comp}
+          ⏱ PRÓXIMO PARTIDO · ${match.comp}
         </div>
         <div class="hmp-teams">
           <div class="hmp-team">
@@ -324,7 +323,6 @@ function renderHero() {
         </div>
         <div class="hmp-venue">📍 ${venueLine}</div>
         <div class="hmp-actions">
-          ${isPreMatch ? `<button class="hmp-btn-watch" onclick="openLiveStream()">▶ Ver en vivo</button>` : ''}
           <button class="hmp-btn-quiniela" onclick="location.href='quiniela.html'">🏆 La quiniela</button>
         </div>
       </div>`;
