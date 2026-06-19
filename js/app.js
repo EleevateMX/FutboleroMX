@@ -215,11 +215,34 @@ function renderHero() {
   const now = Date.now();
 
   // auto-live detecta el embed antes del kickoff — verificar que ya empezó
+  // Tabla EN→ES para casos donde auto-live guarda nombres en inglés (ej. 'United States' en vez de 'EE.UU.')
+  const _EN_ES = {
+    'united states':'EE.UU.','usa':'EE.UU.',
+    'south korea':'Corea del Sur','ivory coast':'Costa de Marfil',
+    'new zealand':'Nueva Zelanda','south africa':'Sudáfrica',
+    'cape verde':'Cabo Verde','rd congo':'RD Congo','dr congo':'RD Congo',
+    'saudi arabia':'Arabia Saudita','netherlands':'Países Bajos',
+    'germany':'Alemania','spain':'España','france':'Francia',
+    'brazil':'Brasil','england':'Inglaterra','turkey':'Turquía',
+    'czechia':'Chequia','algeria':'Argelia','morocco':'Marruecos',
+    'croatia':'Croacia','sweden':'Suecia','norway':'Noruega',
+    'tunisia':'Túnez','egypt':'Egipto','scotland':'Escocia',
+    'belgium':'Bélgica','austria':'Austria','jordan':'Jordania',
+    'ghana':'Ghana','panama':'Panamá','uzbekistan':'Uzbekistán',
+    'switzerland':'Suiza','japan':'Japón','mexico':'México',
+    'canada':'Canadá','australia':'Australia','iraq':'Irak',
+    'senegal':'Senegal','uruguay':'Uruguay','iran':'Irán',
+    'ecuador':'Ecuador','colombia':'Colombia','argentina':'Argentina',
+    'portugal':'Portugal','curacao':'Curazao','haiti':'Haití',
+    'paraguay':'Paraguay','qatar':'Catar','bosnia':'Bosnia',
+  };
+  const _normName = n => _EN_ES[(n || '').toLowerCase()] || n;
+
   const rawLive = (LIVE_MATCH && LIVE_MATCH.status === 'live') ? LIVE_MATCH : null;
   let live = rawLive;
   if (rawLive) {
     const entry = MATCHES.find(m =>
-      m.home.name === rawLive.home.name && m.away.name === rawLive.away.name
+      m.home.name === _normName(rawLive.home.name) && m.away.name === _normName(rawLive.away.name)
     );
     // 5 min de gracia: si el kickoff aún no llegó, no mostrar como live
     if (entry && new Date(entry.kickoff).getTime() > now + 5 * 60000) live = null;
