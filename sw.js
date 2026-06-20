@@ -1,4 +1,4 @@
-const CACHE = 'tvc-v24';
+const CACHE = 'tvc-v25';
 const STATIC = [
   '/', '/index.html', '/quiniela.html', '/perfil.html', '/css/style.css',
   '/js/data.js', '/js/auth.js', '/js/app.js', '/js/quiniela.js', '/js/perfil.js', '/js/push.js',
@@ -27,18 +27,19 @@ self.addEventListener('fetch', e => {
     e.respondWith(fetch(e.request));
     return;
   }
-  // HTML: network first
+  // HTML: network first, saltando el HTTP cache del browser (evita stale en iOS PWA)
   if (e.request.mode === 'navigate') {
     e.respondWith(
-      fetch(e.request).catch(() => caches.match('/index.html'))
+      fetch(e.request, { cache: 'no-cache' }).catch(() => caches.match('/index.html'))
     );
     return;
   }
-  // JS y CSS: network first → caché como fallback offline
-  // Así cada deploy se refleja de inmediato en la PWA
+  // JS y CSS: network first saltando HTTP cache → SW cache como fallback offline
+  // { cache: 'no-cache' } envía If-None-Match al servidor → 304 si no cambió (rápido)
+  // y 200 con contenido nuevo si hubo deploy → siempre fresco, sin stale de 10 min
   if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
     e.respondWith(
-      fetch(e.request).then(res => {
+      fetch(e.request, { cache: 'no-cache' }).then(res => {
         if (res && res.status === 200) {
           const clone = res.clone();
           caches.open(CACHE).then(c => c.put(e.request, clone));

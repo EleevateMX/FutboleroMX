@@ -4,6 +4,12 @@
 // 1) controllerchange: SW nuevo toma control (todos los browsers)
 // 2) message SW_UPDATED: SW nuevo notifica tras limpiar caché (más agresivo en iOS)
 if ('serviceWorker' in navigator) {
+  // Cuando el usuario vuelve a la PWA (iOS la cierra en background), forzar check de SW
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      navigator.serviceWorker.getRegistration().then(reg => { if (reg) reg.update(); });
+    }
+  });
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!document.getElementById('live-frame')) window.location.reload();
   });
