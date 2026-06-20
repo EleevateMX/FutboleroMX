@@ -11,12 +11,10 @@ if ('serviceWorker' in navigator) {
     }
   });
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!document.getElementById('live-frame')) window.location.reload();
+    window.location.reload();
   });
   navigator.serviceWorker.addEventListener('message', e => {
-    if (e.data?.type === 'SW_UPDATED' && !document.getElementById('live-frame')) {
-      window.location.reload();
-    }
+    if (e.data?.type === 'SW_UPDATED') window.location.reload();
   });
 }
 
@@ -48,6 +46,63 @@ const _EN_ES = {
   'paraguay':'Paraguay','qatar':'Catar','bosnia':'Bosnia',
 };
 const _normName = n => _EN_ES[(n || '').toLowerCase()] || n;
+
+// Banderas por nombre de equipo (respaldo cuando MATCHES no tiene al equipo)
+const _FLAGS = {
+  'EE.UU.':'🇺🇸','United States':'🇺🇸','USA':'🇺🇸',
+  'México':'🇲🇽','Mexico':'🇲🇽',
+  'Canadá':'🇨🇦','Canada':'🇨🇦',
+  'Brasil':'🇧🇷','Brazil':'🇧🇷',
+  'Argentina':'🇦🇷','Colombia':'🇨🇴','Ecuador':'🇪🇨',
+  'Paraguay':'🇵🇾','Uruguay':'🇺🇾','Chile':'🇨🇱',
+  'Perú':'🇵🇪','Peru':'🇵🇪','Bolivia':'🇧🇴',
+  'Venezuela':'🇻🇪','Panamá':'🇵🇦','Panama':'🇵🇦',
+  'Costa Rica':'🇨🇷','Honduras':'🇭🇳','Jamaica':'🇯🇲',
+  'Haití':'🇭🇹','Haiti':'🇭🇹','Cuba':'🇨🇺',
+  'El Salvador':'🇸🇻','Guatemala':'🇬🇹',
+  'España':'🇪🇸','Spain':'🇪🇸',
+  'Francia':'🇫🇷','France':'🇫🇷',
+  'Alemania':'🇩🇪','Germany':'🇩🇪',
+  'Italia':'🇮🇹','Italy':'🇮🇹',
+  'Portugal':'🇵🇹','Países Bajos':'🇳🇱','Netherlands':'🇳🇱',
+  'Bélgica':'🇧🇪','Belgium':'🇧🇪',
+  'Suiza':'🇨🇭','Switzerland':'🇨🇭',
+  'Austria':'🇦🇹','Croacia':'🇭🇷','Croatia':'🇭🇷',
+  'Suecia':'🇸🇪','Sweden':'🇸🇪',
+  'Noruega':'🇳🇴','Norway':'🇳🇴',
+  'Dinamarca':'🇩🇰','Denmark':'🇩🇰',
+  'Chequia':'🇨🇿','Czechia':'🇨🇿',
+  'Eslovaquia':'🇸🇰','Polonia':'🇵🇱','Poland':'🇵🇱',
+  'Hungría':'🇭🇺','Rumania':'🇷🇴','Romania':'🇷🇴',
+  'Serbia':'🇷🇸','Grecia':'🇬🇷','Greece':'🇬🇷',
+  'Turquía':'🇹🇷','Turkey':'🇹🇷',
+  'Ucrania':'🇺🇦','Ukraine':'🇺🇦',
+  'Escocia':'🏴󠁧󠁢󠁳󠁣󠁴󠁿','Scotland':'🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+  'Inglaterra':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+  'Gales':'🏴󠁧󠁢󠁷󠁬󠁳󠁿','Wales':'🏴󠁧󠁢󠁷󠁬󠁳󠁿',
+  'Irlanda':'🇮🇪','Ireland':'🇮🇪',
+  'Japón':'🇯🇵','Japan':'🇯🇵',
+  'Corea del Sur':'🇰🇷','South Korea':'🇰🇷',
+  'Australia':'🇦🇺','Nueva Zelanda':'🇳🇿','New Zealand':'🇳🇿',
+  'China':'🇨🇳','Irán':'🇮🇷','Iran':'🇮🇷',
+  'Arabia Saudita':'🇸🇦','Saudi Arabia':'🇸🇦',
+  'Jordania':'🇯🇴','Jordan':'🇯🇴',
+  'Irak':'🇮🇶','Iraq':'🇮🇶',
+  'Catar':'🇶🇦','Qatar':'🇶🇦',
+  'Uzbekistán':'🇺🇿','Uzbekistan':'🇺🇿',
+  'Marruecos':'🇲🇦','Morocco':'🇲🇦',
+  'Senegal':'🇸🇳','Argelia':'🇩🇿','Algeria':'🇩🇿',
+  'Ghana':'🇬🇭','Egipto':'🇪🇬','Egypt':'🇪🇬',
+  'Túnez':'🇹🇳','Tunisia':'🇹🇳',
+  'Nigeria':'🇳🇬','Sudáfrica':'🇿🇦','South Africa':'🇿🇦',
+  'Costa de Marfil':'🇨🇮','Ivory Coast':'🇨🇮',
+  'Camerún':'🇨🇲','Cameroon':'🇨🇲',
+  'RD Congo':'🇨🇩','DR Congo':'🇨🇩',
+  'Tanzania':'🇹🇿','Angola':'🇦🇴','Zambia':'🇿🇲','Kenia':'🇰🇪','Kenya':'🇰🇪',
+  'Cabo Verde':'🇨🇻','Cape Verde':'🇨🇻',
+  'Curazao':'🇨🇼','Curacao':'🇨🇼',
+  'Bosnia':'🇧🇦',
+};
 
 // ── ¿El partido en LIVE_MATCH realmente ha comenzado? ────────────────────
 // Devuelve true sólo si kickoff ya llegó (o faltan ≤5 min).
@@ -171,12 +226,14 @@ async function postFanMessage() {
 }
 
 // Resuelve la bandera de un equipo por su nombre (desde MATCHES)
+// Intenta primero con el nombre tal cual, luego con la traducción EN→ES
 function flagFor(name) {
+  const norm = _normName(name);
   for (const m of MATCHES) {
-    if (m.home.name === name) return m.home.flag;
-    if (m.away.name === name) return m.away.flag;
+    if (m.home.name === name || m.home.name === norm) return m.home.flag;
+    if (m.away.name === name || m.away.name === norm) return m.away.flag;
   }
-  return '🏳️';
+  return _FLAGS[name] || _FLAGS[norm] || '🏳️';
 }
 
 // ── Carga el partido en vivo desde Supabase (live_config) ─────────────────
