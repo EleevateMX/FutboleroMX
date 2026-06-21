@@ -461,12 +461,19 @@
   }
 
   // ── Compartir ────────────────────────────────────────────────────────────
-  const shareData = {
-    title: 'TVContigo — Fútbol en vivo gratis',
-    text: '⚽ Mira el Mundial 2026 en vivo GRATIS + quiniela con premios:',
-    url: 'https://tvcontigo.site/',
-  };
   document.getElementById('share-btn').addEventListener('click', async () => {
+    let title = 'TVContigo — Fútbol en vivo gratis';
+    let text  = '⚽ Mira el Mundial 2026 en vivo GRATIS:';
+    if (typeof LIVE_MATCH !== 'undefined' && LIVE_MATCH && typeof _isActuallyLive === 'function' && _isActuallyLive()) {
+      const hs = LIVE_MATCH.hs ?? 0, as_ = LIVE_MATCH.as ?? 0;
+      title = `${LIVE_MATCH.home.flag} ${LIVE_MATCH.home.name} ${hs}-${as_} ${LIVE_MATCH.away.name} ${LIVE_MATCH.away.flag} — EN VIVO`;
+      text  = `⚽ ${title} | Míralo gratis en TVContigo:`;
+    } else if (typeof RECENT_RESULT !== 'undefined' && RECENT_RESULT) {
+      const r = RECENT_RESULT;
+      title = `${r.home.flag} ${r.home.name} ${r.hs}-${r.as} ${r.away.name} ${r.away.flag} — Resultado`;
+      text  = `⚽ Resultado: ${title} | TVContigo, el Mundial 2026 gratis:`;
+    }
+    const shareData = { title, text, url: 'https://tvcontigo.site/' };
     if (navigator.share) {
       try { await navigator.share(shareData); } catch (e) {}
     } else {
@@ -474,7 +481,7 @@
         await navigator.clipboard.writeText(shareData.url);
         _showToast('🔗 Enlace copiado. ¡Compártelo!', 'var(--green)');
       } catch (e) {
-        window.open('https://wa.me/?text=' + encodeURIComponent(shareData.text + ' ' + shareData.url), '_blank');
+        window.open('https://wa.me/?text=' + encodeURIComponent(text + ' ' + shareData.url), '_blank');
       }
     }
   });

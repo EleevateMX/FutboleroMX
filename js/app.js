@@ -308,6 +308,7 @@ async function refreshLiveConfig() {
     // Mismo partido — actualiza el marcador en el hero sin re-renderizar el stream
     const scoreEl = document.getElementById('hero-score');
     if (scoreEl) scoreEl.textContent = `${LIVE_MATCH.hs ?? 0}-${LIVE_MATCH.as ?? 0}`;
+    _updateMediaSession();
     // Si el hero muestra el preview (no el stream), también actualiza los marcadores de las tarjetas
   }
   renderMatchesRow();
@@ -376,6 +377,7 @@ function renderHero() {
     renderIframeNotice(false);
     startLiveScorePolling();
     startMatchDataPolling();
+    _updateMediaSession();
     showMatchTabs(true);
   } else if (isRecent) {
     hero.innerHTML = `
@@ -445,7 +447,7 @@ function openLiveStream() {
   const m  = LIVE_MATCH;
   const hero = document.getElementById('hero-section');
   hero.innerHTML = `
-    <iframe id="live-frame" src="${ch.url}" allowfullscreen allow="autoplay; fullscreen; encrypted-media"
+    <iframe id="live-frame" src="${ch.url}" allowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
       onload="onStreamLoaded()" onerror="onStreamError()"
       style="width:100%;height:100%;border:none;display:block;background:#000;"></iframe>
     <div id="stream-status" class="stream-status">
@@ -484,9 +486,33 @@ function startLiveScorePolling() {
         scoreEl.style.transform = 'scale(1.25)';
         setTimeout(() => { scoreEl.style.transform = 'scale(1)'; }, 250);
         if (LIVE_MATCH) { LIVE_MATCH.hs = data.hs; LIVE_MATCH.as = data.as_; }
+        _updateMediaSession();
       }
     } catch (e) {}
   }, 20000);
+}
+
+// ── Media Session API (pantalla bloqueada / segundo plano) ────────────────
+function _updateMediaSession() {
+  if (!('mediaSession' in navigator)) return;
+  if (LIVE_MATCH && _isActuallyLive()) {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title:  `${LIVE_MATCH.home.name} ${LIVE_MATCH.hs ?? 0}-${LIVE_MATCH.as ?? 0} ${LIVE_MATCH.away.name}`,
+      artist: 'TVContigo · EN VIVO',
+      album:  LIVE_MATCH.comp || 'Mundial 2026',
+      artwork: [
+        { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+        { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      ],
+    });
+    navigator.mediaSession.playbackState = 'playing';
+    navigator.mediaSession.setActionHandler('play',  () => { navigator.mediaSession.playbackState = 'playing'; });
+    navigator.mediaSession.setActionHandler('pause', () => { navigator.mediaSession.playbackState = 'paused'; });
+    navigator.mediaSession.setActionHandler('stop',  () => { navigator.mediaSession.metadata = null; navigator.mediaSession.playbackState = 'none'; });
+  } else {
+    navigator.mediaSession.metadata = null;
+    navigator.mediaSession.playbackState = 'none';
+  }
 }
 
 // ── Estado de la transmisión (carga / no disponible) ──────────────────────
