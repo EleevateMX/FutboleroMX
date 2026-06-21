@@ -47,16 +47,85 @@ function countsOf(pool) {
 function renderApp() {
   const el = document.getElementById('q-app');
   if (!Auth.isLoggedIn()) {
-    el.innerHTML = `
-      <div class="q-card" style="text-align:center;">
-        <h3 style="justify-content:center;">Inicia sesión para participar</h3>
-        <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px;">Necesitas una cuenta gratuita para registrar tu pronóstico.</p>
-        <button class="btn-full btn-blue-full" onclick="location.href='index.html'">Crear cuenta / Entrar</button>
-      </div>${renderPoolList(true)}`;
+    el.innerHTML = renderGameInvite();
     return;
   }
   if (_selectedPool) { renderPoolDetail(el); return; }
   el.innerHTML = renderPoolList(false);
+}
+
+function renderGameInvite() {
+  const total = _pools.reduce((s, p) => s + verifiedOf(p), 0);
+  return `
+    <div class="gi-hero">
+      <span class="gi-trophy">🏆</span>
+      <h2 class="gi-title">PREDICE AL <span>CAMPEÓN</span></h2>
+      <p class="gi-sub">Mundial 2026 · ¿Tú sabes quién levanta el trofeo?</p>
+    </div>
+
+    <div class="gi-stats">
+      <div class="gi-stat">
+        <div class="gi-stat-val" style="color:var(--orange);">+100</div>
+        <div class="gi-stat-lbl">PUNTOS</div>
+      </div>
+      <div class="gi-stat">
+        <div class="gi-stat-val" style="color:var(--blue);">${total || '—'}</div>
+        <div class="gi-stat-lbl">JUGADORES</div>
+      </div>
+      <div class="gi-stat">
+        <div class="gi-stat-val" style="color:var(--green);">FREE</div>
+        <div class="gi-stat-lbl">SIN COSTO</div>
+      </div>
+    </div>
+
+    <div class="q-card">
+      <h3>🏅 Tabla de líderes</h3>
+      <div class="gi-lb-row">
+        <span style="font-size:22px;width:28px;text-align:center;">🥇</span>
+        <div style="flex:1;">
+          <div style="height:8px;width:100px;background:var(--surface-3);border-radius:4px;"></div>
+          <div class="gi-lb-fill" style="width:92%;background:#f59e0b;"></div>
+        </div>
+        <span style="font-family:'Bebas Neue';font-size:14px;color:var(--text-dim);">??? pts</span>
+      </div>
+      <div class="gi-lb-row">
+        <span style="font-size:22px;width:28px;text-align:center;">🥈</span>
+        <div style="flex:1;">
+          <div style="height:8px;width:78px;background:var(--surface-3);border-radius:4px;"></div>
+          <div class="gi-lb-fill" style="width:67%;background:#94a3b8;"></div>
+        </div>
+        <span style="font-family:'Bebas Neue';font-size:14px;color:var(--text-dim);">??? pts</span>
+      </div>
+      <div class="gi-lb-row">
+        <span style="font-size:22px;width:28px;text-align:center;">🥉</span>
+        <div style="flex:1;">
+          <div style="height:8px;width:60px;background:var(--surface-3);border-radius:4px;"></div>
+          <div class="gi-lb-fill" style="width:48%;background:#cd7f32;"></div>
+        </div>
+        <span style="font-family:'Bebas Neue';font-size:14px;color:var(--text-dim);">??? pts</span>
+      </div>
+      <div class="gi-lb-row gi-lb-you" style="margin-top:10px;">
+        <span style="font-size:18px;width:28px;text-align:center;color:var(--orange);">?</span>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:700;color:var(--orange);">TÚ · Tu lugar te espera</div>
+          <div style="font-size:10px;color:var(--text-dim);margin-top:2px;">Regístrate y entra al ranking</div>
+        </div>
+        <span style="font-family:'Bebas Neue';font-size:14px;color:var(--text-dim);">0 pts</span>
+      </div>
+    </div>
+
+    <div style="margin:4px 0 0;">
+      <div style="font-size:10px;color:var(--text-muted);letter-spacing:.5px;margin-bottom:8px;">🔒 LOGROS DESBLOQUEABLES</div>
+      <div class="gi-badges">
+        <div class="gi-badge"><span class="gi-badge-ico">🎯</span><span class="gi-badge-nm">PROFETA</span></div>
+        <div class="gi-badge"><span class="gi-badge-ico">⭐</span><span class="gi-badge-nm">EXPERTO</span></div>
+        <div class="gi-badge"><span class="gi-badge-ico">👑</span><span class="gi-badge-nm">LEYENDA</span></div>
+      </div>
+    </div>
+
+    <button class="gi-cta" onclick="location.href='index.html'">▶ UNIRME AL JUEGO</button>
+    <p class="gi-note">100% gratis · Solo necesitas una cuenta</p>
+  `;
 }
 
 function renderPoolList(readonly) {
