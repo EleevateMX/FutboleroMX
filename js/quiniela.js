@@ -10,8 +10,8 @@ const Q_TEAMS = (() => {
   return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0], 'es')).map(([name, flag]) => ({ name, flag }));
 })();
 
-let _pools = [], _pay = {}, _stats = {}, _myEntries = [];
-let _selectedPool = null, _pickedChampion = null, _payMethod = 'nat';
+let _pools = [], _stats = {}, _myEntries = [];
+let _selectedPool = null, _pickedChampion = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   await authInit();
@@ -24,15 +24,13 @@ async function loadAll() {
   const user = Auth.getUser();
   const reqs = [
     sb.from('quiniela_pool').select('*').order('entry_amount'),
-    sb.from('pay_config').select('*').eq('id', 1).single(),
-    sb.rpc('quiniela_stats'),   // solo conteos agregados (sin exponer filas)
+    sb.rpc('quiniela_stats'),
   ];
   if (user) reqs.push(sb.from('quiniela_entries').select('*').eq('user_id', user.id));
   const res = await Promise.all(reqs);
   _pools = res[0].data || [];
-  _pay = res[1].data || {};
-  _stats = res[2].data || {};
-  _myEntries = user ? (res[3].data || []) : [];
+  _stats = res[1].data || {};
+  _myEntries = user ? (res[2].data || []) : [];
   renderApp();
 }
 
@@ -73,12 +71,12 @@ function renderPoolList(readonly) {
     <div style="font-size:12px;color:var(--text-dim);margin:4px 0 10px;font-weight:600;letter-spacing:.5px;">ELIGE TU QUINIELA</div>
     ${_pools.map(p => {
       const mine = _myEntries.find(e => e.pool_id === p.id);
-      const tag = mine ? `<span class="status-pill status-${mine.payment_status}" style="font-size:10px;padding:3px 8px;">${mine.payment_status==='verified'?'✓ Inscrito':mine.payment_status==='pending'?'⏳ Pendiente':'✕ Rechazado'}</span>` : '';
+      const tag = mine ? `<span class="status-pill status-${mine.payment_status==='verified'?'verified':'pending'}" style="font-size:10px;padding:3px 8px;">${mine.payment_status==='verified'?'✓ Inscrito':'⏳ Pendiente'}</span>` : '';
       return `
       <div class="pool-card" onclick="${readonly ? "location.href='index.html'" : `openPool(${p.id})`}">
         <div>
           <div class="pool-name">${p.name}</div>
-          <div class="pool-sub">Boleto ${money(p.entry_amount, p.currency)} · ${p.status === 'open' ? 'Abierta' : p.status === 'settled' ? 'Finalizada' : 'Cerrada'} ${tag}</div>
+          <div class="pool-sub">🎉 Gratis · ${p.status === 'open' ? 'Abierta' : p.status === 'settled' ? 'Finalizada' : 'Cerrada'} ${tag}</div>
         </div>
         <div class="pool-pot">
           <div class="pool-pot-val">${money(potOf(p), p.currency)}</div>
@@ -90,7 +88,7 @@ function renderPoolList(readonly) {
 
 function openPool(id) {
   _selectedPool = _pools.find(p => p.id === id);
-  _pickedChampion = null; _payMethod = 'nat';
+  _pickedChampion = null;
   renderApp();
 }
 function backToPools() { _selectedPool = null; renderApp(); }
@@ -113,7 +111,7 @@ function renderPoolDetail(el) {
         <div><div style="font-family:'Bebas Neue';font-size:24px;color:var(--orange);line-height:1;">${money(potOf(p), p.currency)}</div><div style="font-size:9px;color:var(--text-muted);">BOTE</div></div>
         <div><div style="font-family:'Bebas Neue';font-size:24px;color:var(--blue);line-height:1;">${verifiedOf(p)}</div><div style="font-size:9px;color:var(--text-muted);">JUGADORES</div></div>
       </div>
-      <div style="font-size:11px;color:var(--text-dim);margin-top:8px;">Boleto ${money(p.entry_amount,p.currency)} · Comisión ${money(p.service_fee,p.currency)} · Al bote ${money(p.entry_amount-p.service_fee,p.currency)}</div>
+      <div style="font-size:11px;color:var(--green);margin-top:8px;font-weight:700;">🎉 Participación gratuita</div>
     </div>
     ${body}
     ${renderBounty(p)}`;
@@ -133,59 +131,16 @@ function renderJoinForm(p) {
     </div>
 
     <div class="q-card">
-      <h3><span class="num">2</span> Paga ${money(p.entry_amount, p.currency)} por Revolut</h3>
-      <div class="pay-method">
-        <div class="pay-opt sel" id="pm-nat" onclick="setPay('nat')">🇲🇽 Transferencia nacional</div>
-        <div class="pay-opt" id="pm-intl" onclick="setPay('intl')">🌎 Internacional (SWIFT)</div>
-      </div>
-
-      <div id="pay-nat">
-        <div class="bank-info">
-          <div><strong>Banco:</strong> ${_pay.nat_bank || '—'}</div>
-          <div><strong>Beneficiario:</strong> ${_pay.nat_holder || '—'}</div>
-          <div><strong>CLABE:</strong> <span class="mono" id="clabe-val">${_pay.nat_clabe || '—'}</span>
-            <button class="copy-btn" onclick="copyTxt('${_pay.nat_clabe}')">Copiar</button></div>
-          <div><strong>Monto exacto:</strong> ${money(p.entry_amount, p.currency)}</div>
-        </div>
-      </div>
-
-      <div id="pay-intl" style="display:none;">
-        <div class="bank-info">
-          <div><strong>Banco:</strong> ${_pay.intl_bank || '—'}</div>
-          <div><strong>Beneficiario:</strong> ${_pay.intl_holder || '—'}</div>
-          <div><strong>N.º de cuenta:</strong> <span class="mono">${_pay.intl_account || '—'}</span>
-            <button class="copy-btn" onclick="copyTxt('${_pay.intl_account}')">Copiar</button></div>
-          <div><strong>BIC/SWIFT:</strong> <span class="mono">${_pay.intl_swift || '—'}</span>
-            <button class="copy-btn" onclick="copyTxt('${_pay.intl_swift}')">Copiar</button></div>
-          <div style="font-size:11px;color:var(--text-muted);">${_pay.intl_address || ''}</div>
-          <div><strong>Monto exacto:</strong> ${money(p.entry_amount, p.currency)}</div>
-        </div>
-      </div>
-
-      ${_pay.revolut_referral ? `
-      <div class="revolut-cta">
-        <div style="font-size:13px;font-weight:700;">💳 ¿Aún no tienes Revolut?</div>
-        <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">Únete a los más de 75 millones de clientes. Ábrela gratis y transfiere en segundos.</div>
-        <a href="${_pay.revolut_referral}" target="_blank" rel="noopener">Crear cuenta Revolut →</a>
-      </div>` : ''}
-
-      <label class="form-label">Folio / referencia de tu transferencia</label>
-      <input class="form-input" type="text" id="pay-ref" placeholder="Ej. Revolut REF 0123456789">
-      <p style="font-size:11px;color:var(--text-muted);margin-top:8px;">📸 Tras transferir, ingresa el folio. Verificamos tu pago en <strong>menos de 5 minutos</strong> y te confirmamos por correo. Guarda tu comprobante / captura.</p>
-    </div>
-
-    <div class="q-card">
-      <h3><span class="num">3</span> Confirmar</h3>
+      <h3><span class="num">2</span> Confirmar</h3>
       <div style="font-size:13px;color:var(--text-dim);line-height:1.9;margin-bottom:14px;">
         <div>Campeón elegido: <strong id="conf-team" style="color:var(--orange);">—</strong></div>
-        <div>Boleto: <strong>${money(p.entry_amount, p.currency)}</strong> (incluye ${money(p.service_fee, p.currency)} de comisión)</div>
-        <div>Tu aporte al bote: <strong>${money(p.entry_amount - p.service_fee, p.currency)}</strong></div>
+        <div>Participación: <strong style="color:var(--green);">🎉 Gratis</strong></div>
       </div>
       <label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--text-dim);margin-bottom:14px;cursor:pointer;">
         <input type="checkbox" id="accept-terms" style="margin-top:3px;">
-        <span>Soy mayor de edad y acepto el <a href="pages/reglamento-quiniela.html" target="_blank" style="color:var(--blue);">Reglamento</a>. La comisión no es reembolsable; el bote se reparte entre quienes acierten al campeón.</span>
+        <span>Acepto el <a href="pages/reglamento-quiniela.html" target="_blank" style="color:var(--blue);">Reglamento</a>, los <a href="pages/terminos.html" target="_blank" style="color:var(--blue);">Términos</a> y el <a href="pages/privacidad.html" target="_blank" style="color:var(--blue);">Aviso de Privacidad</a>.</span>
       </label>
-      <button class="btn-full btn-orange" id="join-btn" style="background:var(--orange);color:#fff;" onclick="submitEntry()">Confirmar mi boleto</button>
+      <button class="btn-full btn-orange" id="join-btn" style="background:var(--orange);color:#fff;" onclick="submitEntry()">¡Quiero participar!</button>
       <div class="form-error" id="join-error"></div>
     </div>`;
 }
@@ -196,22 +151,12 @@ function pickChampion(name, elx) {
   elx.classList.add('sel');
   const c = document.getElementById('conf-team'); if (c) c.textContent = name;
 }
-function setPay(m) {
-  _payMethod = m;
-  document.getElementById('pm-nat').classList.toggle('sel', m === 'nat');
-  document.getElementById('pm-intl').classList.toggle('sel', m === 'intl');
-  document.getElementById('pay-nat').style.display = m === 'nat' ? 'block' : 'none';
-  document.getElementById('pay-intl').style.display = m === 'intl' ? 'block' : 'none';
-}
-function copyTxt(t) { navigator.clipboard?.writeText(t); _showToast('Copiado', 'var(--green)'); }
 
 async function submitEntry() {
   const err = document.getElementById('join-error'); err.textContent = '';
   const p = _selectedPool;
   if (!_pickedChampion) { err.textContent = 'Elige un campeón.'; return; }
   if (!document.getElementById('accept-terms').checked) { err.textContent = 'Debes aceptar el reglamento.'; return; }
-  const ref = document.getElementById('pay-ref').value.trim();
-  if (!ref) { err.textContent = 'Ingresa el folio de tu transferencia.'; return; }
 
   const user = Auth.getUser();
   const btn = document.getElementById('join-btn');
@@ -221,15 +166,16 @@ async function submitEntry() {
     user_id: user.id, pool_id: p.id, user_name: user.name, email: user.email,
     champion_pick: _pickedChampion,
     tiebreak_goals: parseInt(document.getElementById('tiebreak').value) || 0,
-    amount: p.entry_amount, fee: p.service_fee, pool_contribution: p.entry_amount - p.service_fee,
-    payment_method: _payMethod === 'intl' ? 'transfer_intl' : 'transfer_nat',
-    payment_ref: ref, payment_status: 'pending',
+    amount: 0, fee: 0, pool_contribution: 0,
+    payment_method: 'free',
+    payment_ref: 'gratis',
+    payment_status: 'verified',
   });
 
-  btn.textContent = 'Confirmar mi boleto'; btn.disabled = false;
+  btn.textContent = '¡Quiero participar!'; btn.disabled = false;
   if (error) { err.textContent = error.message.includes('duplicate') ? 'Ya tienes un boleto en esta quiniela.' : 'Error: ' + error.message; return; }
 
-  _showToast('¡Boleto registrado!', 'var(--green)');
+  _showToast('¡Inscrito! 🎉', 'var(--green)');
   await loadAll();
   _selectedPool = _pools.find(x => x.id === p.id);
   renderApp();
@@ -243,17 +189,16 @@ function renderMyEntry(p, e) {
     rejected: { c:'status-rejected', t:'✕ Pago rechazado' },
   }[e.payment_status];
   return `
-    ${e.payment_status === 'pending' ? `
+    ${e.payment_status === 'verified' ? `
     <div class="confirm-box" style="margin-bottom:14px;">
-      <div style="font-size:14px;font-weight:700;color:var(--green);">✓ ¡Quedaste registrado!</div>
-      <div style="font-size:12px;color:var(--text-dim);margin-top:4px;">Verificamos tu pago en <strong>menos de 5 minutos</strong>. Te confirmaremos por correo a ${e.email || 'tu correo'}.</div>
+      <div style="font-size:14px;font-weight:700;color:var(--green);">🎉 ¡Estás dentro!</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-top:4px;">Tu pronóstico está registrado. El bote se reparte entre quienes acierten al campeón.</div>
     </div>` : ''}
     <div class="q-card" style="text-align:center;">
       <div style="font-size:46px;">${team ? team.flag : '🏆'}</div>
       <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;">${e.champion_pick}</div>
       <p style="color:var(--text-dim);font-size:12px;margin:4px 0 12px;">Tu pronóstico de campeón</p>
       <div class="status-pill ${sm.c}">${sm.t}</div>
-      ${e.payment_status === 'pending' ? `<p style="font-size:11px;color:var(--text-muted);margin-top:10px;">Folio: ${e.payment_ref || '—'}</p>` : ''}
       ${p.status === 'open' ? `
         <div id="edit-pick-box" style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
           <p style="font-size:12px;color:var(--text-dim);margin-bottom:10px;">🔓 Puedes cambiar tu elección hasta que termine la fase de grupos.</p>
