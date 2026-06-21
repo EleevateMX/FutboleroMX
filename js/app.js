@@ -137,6 +137,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadFanWall();
   loadAdSettings();
   startLiveRefresh();   // la página se mantiene al día sola (cambio de partido/canales)
+  _subscribeRealtimeLive(); // marcador en tiempo real vía WebSocket (< 1s, sin polling)
 });
 
 // ── Referidos ───────────────────────────────────────────────────────────────
@@ -515,6 +516,44 @@ function _updateMediaSession() {
     navigator.mediaSession.playbackState = 'none';
   }
 }
+
+// ── Supabase Realtime: marcador en tiempo real (< 1s, sin polling) ───────────
+let _realtimeChannel = null;
+
+function _subscribeRealtimeLive() {
+  if (_realtimeChannel) return;
+  _realtimeChannel = sb
+    .channel('tvc-live-config')
+    .on('postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'live_config' },
+      payload => {
+        const d = payload.new;
+        if (!d) return;
+        if (d.status === 'live') {
+          // Score push → actualiza en pantalla al instante sin esperar el poll de 20s
+          if (LIVE_MATCH) { LIVE_MATCH.hs = d.hs; LIVE_MATCH.as = d.as_; }
+          const scoreEl = document.getElementById('hero-score');
+          if (scoreEl) {
+            const nv = `${d.hs ?? 0}-${d.as_ ?? 0}`;
+            if (scoreEl.textContent !== nv) {
+              scoreEl.textContent = nv;
+              scoreEl.style.transition = 'transform .25s';
+              scoreEl.style.transform = 'scale(1.25)';
+              setTimeout(() => { scoreEl.style.transform = 'scale(1)'; }, 250);
+            }
+          }
+          _updateMediaSession();
+        } else {
+          // Partido terminó o cambió: recarga completa del hero
+          refreshLiveConfig();
+        }
+      })
+    .subscribe();
+}
+
+window.addEventListener('pagehide', () => {
+  if (_realtimeChannel) { sb.removeChannel(_realtimeChannel); _realtimeChannel = null; }
+});
 
 // ── Background audio keepalive (mantiene sesión activa en iOS segundo plano)
 let _audioCtx = null;
