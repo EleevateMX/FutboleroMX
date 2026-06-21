@@ -11,10 +11,14 @@ if ('serviceWorker' in navigator) {
     }
   });
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    window.location.reload();
+    // Esperar a que la página esté lista antes de recargar (evita reload interrumpido en Android)
+    if (document.readyState === 'complete') window.location.reload();
+    else window.addEventListener('load', () => window.location.reload(), { once: true });
   });
   navigator.serviceWorker.addEventListener('message', e => {
-    if (e.data?.type === 'SW_UPDATED') window.location.reload();
+    if (e.data?.type !== 'SW_UPDATED') return;
+    if (document.readyState === 'complete') window.location.reload();
+    else window.addEventListener('load', () => window.location.reload(), { once: true });
   });
 }
 
@@ -519,6 +523,7 @@ function _updateMediaSession() {
 
 // ── Supabase Realtime: marcador en tiempo real (< 1s, sin polling) ───────────
 let _realtimeChannel = null;
+let _realtimeRetries  = 0;
 
 function _subscribeRealtimeLive() {
   if (_realtimeChannel) return;
@@ -530,7 +535,6 @@ function _subscribeRealtimeLive() {
         const d = payload.new;
         if (!d) return;
         if (d.status === 'live') {
-          // Score push → actualiza en pantalla al instante sin esperar el poll de 20s
           if (LIVE_MATCH) { LIVE_MATCH.hs = d.hs; LIVE_MATCH.as = d.as_; }
           const scoreEl = document.getElementById('hero-score');
           if (scoreEl) {
@@ -544,11 +548,21 @@ function _subscribeRealtimeLive() {
           }
           _updateMediaSession();
         } else {
-          // Partido terminó o cambió: recarga completa del hero
           refreshLiveConfig();
         }
       })
-    .subscribe();
+    .subscribe(status => {
+      if (status === 'SUBSCRIBED') {
+        _realtimeRetries = 0;
+      } else if ((status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') && _realtimeRetries < 6) {
+        // Reconexión exponencial: 3s, 6s, 12s, 24s... máx 6 intentos
+        const delay = 3000 * Math.pow(2, _realtimeRetries);
+        _realtimeRetries++;
+        sb.removeChannel(_realtimeChannel);
+        _realtimeChannel = null;
+        setTimeout(_subscribeRealtimeLive, delay);
+      }
+    });
 }
 
 window.addEventListener('pagehide', () => {
@@ -576,7 +590,14 @@ function _startSilentKeepAlive() {
 
 // Reactiva el AudioContext cuando el usuario vuelve desde segundo plano
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && _audioCtx) _audioCtx.resume().catch(() => {});
+  if (document.hidden) return;
+  // Audio: reactivar contexto suspendido en background
+  if (_audioCtx) _audioCtx.resume().catch(() => {});
+  // Realtime: reconectar si Android/iOS mató el WebSocket en background
+  if (!_realtimeChannel) {
+    _subscribeRealtimeLive();
+    refreshLiveConfig(); // sincronizar score perdido mientras estaba en background
+  }
 });
 
 // ── Estado de la transmisión (carga / no disponible) ──────────────────────

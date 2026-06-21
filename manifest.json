@@ -27,5 +27,6 @@
   ],
   "categories": ["sports", "entertainment"],
   "lang": "es",
-  "dir": "ltr"
+  "dir": "ltr",
+  "prefer_related_applications": false
 }
