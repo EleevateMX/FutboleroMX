@@ -1,4 +1,4 @@
-// ── TVContigo — Quiniela Mundialista (multi-pool) ─────────────────────────
+// ── TVContigo — Quiniela Mundialista (sistema de predicción) ──────────────
 
 // Todos los países del Mundial 2026 — derivados de los partidos reales (data.js)
 const Q_TEAMS = (() => {
@@ -34,14 +34,7 @@ async function loadAll() {
   renderApp();
 }
 
-function money(n, cur) { return '$' + Number(Math.round(n)).toLocaleString('es-MX') + ' ' + (cur || 'MXN'); }
-
 function verifiedOf(pool) { return (_stats[pool.id] && _stats[pool.id].verified) || 0; }
-
-function potOf(pool) {
-  const per = (pool.entry_amount - pool.service_fee);
-  return (pool.base_pot || 0) + verifiedOf(pool) * per;
-}
 
 function countsOf(pool) {
   const counts = { ...(pool.seed_picks || {}) };
@@ -57,7 +50,7 @@ function renderApp() {
     el.innerHTML = `
       <div class="q-card" style="text-align:center;">
         <h3 style="justify-content:center;">Inicia sesión para participar</h3>
-        <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px;">Necesitas una cuenta gratuita para entrar a las quinielas.</p>
+        <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px;">Necesitas una cuenta gratuita para registrar tu pronóstico.</p>
         <button class="btn-full btn-blue-full" onclick="location.href='index.html'">Crear cuenta / Entrar</button>
       </div>${renderPoolList(true)}`;
     return;
@@ -67,23 +60,29 @@ function renderApp() {
 }
 
 function renderPoolList(readonly) {
+  const openPools = _pools.filter(p => p.status === 'open');
+  const otherPools = _pools.filter(p => p.status !== 'open');
+  const renderCard = (p) => {
+    const mine = _myEntries.find(e => e.pool_id === p.id);
+    const isOpen = p.status === 'open';
+    const tag = mine ? `<span class="status-pill status-verified" style="font-size:10px;padding:3px 8px;">✓ Inscrito</span>` : '';
+    const participants = verifiedOf(p);
+    return `
+    <div class="pool-card" onclick="${readonly ? "location.href='index.html'" : `openPool(${p.id})`}" ${!isOpen ? 'style="opacity:.6;"' : ''}>
+      <div>
+        <div class="pool-name">${p.name}</div>
+        <div class="pool-sub">🎉 Gratis · ${isOpen ? 'Abierta' : p.status === 'settled' ? 'Finalizada' : 'Cerrada'} ${tag}</div>
+      </div>
+      <div class="pool-pot">
+        <div class="pool-pot-val">${participants}</div>
+        <div class="pool-pot-lbl">PARTICIPANTES</div>
+      </div>
+    </div>`;
+  };
   return `
-    <div style="font-size:12px;color:var(--text-dim);margin:4px 0 10px;font-weight:600;letter-spacing:.5px;">ELIGE TU QUINIELA</div>
-    ${_pools.map(p => {
-      const mine = _myEntries.find(e => e.pool_id === p.id);
-      const tag = mine ? `<span class="status-pill status-${mine.payment_status==='verified'?'verified':'pending'}" style="font-size:10px;padding:3px 8px;">${mine.payment_status==='verified'?'✓ Inscrito':'⏳ Pendiente'}</span>` : '';
-      return `
-      <div class="pool-card" onclick="${readonly ? "location.href='index.html'" : `openPool(${p.id})`}">
-        <div>
-          <div class="pool-name">${p.name}</div>
-          <div class="pool-sub">🎉 Gratis · ${p.status === 'open' ? 'Abierta' : p.status === 'settled' ? 'Finalizada' : 'Cerrada'} ${tag}</div>
-        </div>
-        <div class="pool-pot">
-          <div class="pool-pot-val">${money(potOf(p), p.currency)}</div>
-          <div class="pool-pot-lbl">BOTE</div>
-        </div>
-      </div>`;
-    }).join('')}`;
+    <div style="font-size:12px;color:var(--text-dim);margin:4px 0 10px;font-weight:600;letter-spacing:.5px;">PREDICCIÓN DEL CAMPEÓN</div>
+    ${openPools.map(renderCard).join('')}
+    ${otherPools.length ? `<div style="font-size:11px;color:var(--text-muted);margin:12px 0 6px;letter-spacing:.5px;">OTRAS QUINIELAS</div>${otherPools.map(renderCard).join('')}` : ''}`;
 }
 
 function openPool(id) {
@@ -96,25 +95,32 @@ function backToPools() { _selectedPool = null; renderApp(); }
 function renderPoolDetail(el) {
   const p = _selectedPool;
   const mine = _myEntries.find(e => e.pool_id === p.id);
+  const participants = verifiedOf(p);
 
   let body;
   if (p.status === 'settled') body = renderSettled(p);
   else if (mine) body = renderMyEntry(p, mine);
-  else if (p.status === 'closed') body = `<div class="q-card" style="text-align:center;"><h3 style="justify-content:center;">Inscripciones cerradas</h3><p style="color:var(--text-dim);font-size:13px;">Esta quiniela ya no acepta boletos.</p></div>`;
+  else if (p.status === 'closed') body = `<div class="q-card" style="text-align:center;"><h3 style="justify-content:center;">Pronósticos cerrados</h3><p style="color:var(--text-dim);font-size:13px;">Esta quiniela ya no acepta nuevos pronósticos.</p></div>`;
   else body = renderJoinForm(p);
 
   el.innerHTML = `
     <a class="back-link" onclick="backToPools()" style="cursor:pointer;">← Otras quinielas</a>
     <div class="q-hero" style="padding:18px;margin-bottom:14px;">
       <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;">${p.name}</div>
-      <div style="display:flex;justify-content:center;gap:18px;margin-top:8px;">
-        <div><div style="font-family:'Bebas Neue';font-size:24px;color:var(--orange);line-height:1;">${money(potOf(p), p.currency)}</div><div style="font-size:9px;color:var(--text-muted);">BOTE</div></div>
-        <div><div style="font-family:'Bebas Neue';font-size:24px;color:var(--blue);line-height:1;">${verifiedOf(p)}</div><div style="font-size:9px;color:var(--text-muted);">JUGADORES</div></div>
+      <div style="display:flex;justify-content:center;gap:24px;margin-top:8px;">
+        <div>
+          <div style="font-family:'Bebas Neue';font-size:32px;color:var(--orange);line-height:1;">${participants}</div>
+          <div style="font-size:9px;color:var(--text-muted);">PARTICIPANTES</div>
+        </div>
+        <div>
+          <div style="font-family:'Bebas Neue';font-size:32px;color:var(--blue);line-height:1;">🏆</div>
+          <div style="font-size:9px;color:var(--text-muted);">CAMPEÓN</div>
+        </div>
       </div>
       <div style="font-size:11px;color:var(--green);margin-top:8px;font-weight:700;">🎉 Participación gratuita</div>
     </div>
     ${body}
-    ${renderBounty(p)}`;
+    ${renderPicks(p)}`;
 }
 
 function renderJoinForm(p) {
@@ -131,7 +137,7 @@ function renderJoinForm(p) {
     </div>
 
     <div class="q-card">
-      <h3><span class="num">2</span> Confirmar</h3>
+      <h3><span class="num">2</span> Confirmar pronóstico</h3>
       <div style="font-size:13px;color:var(--text-dim);line-height:1.9;margin-bottom:14px;">
         <div>Campeón elegido: <strong id="conf-team" style="color:var(--orange);">—</strong></div>
         <div>Participación: <strong style="color:var(--green);">🎉 Gratis</strong></div>
@@ -140,7 +146,7 @@ function renderJoinForm(p) {
         <input type="checkbox" id="accept-terms" style="margin-top:3px;">
         <span>Acepto el <a href="pages/reglamento-quiniela.html" target="_blank" style="color:var(--blue);">Reglamento</a>, los <a href="pages/terminos.html" target="_blank" style="color:var(--blue);">Términos</a> y el <a href="pages/privacidad.html" target="_blank" style="color:var(--blue);">Aviso de Privacidad</a>.</span>
       </label>
-      <button class="btn-full btn-orange" id="join-btn" style="background:var(--orange);color:#fff;" onclick="submitEntry()">¡Quiero participar!</button>
+      <button class="btn-full btn-orange" id="join-btn" style="background:var(--orange);color:#fff;" onclick="submitEntry()">¡Registrar pronóstico!</button>
       <div class="form-error" id="join-error"></div>
     </div>`;
 }
@@ -172,10 +178,10 @@ async function submitEntry() {
     payment_status: 'verified',
   });
 
-  btn.textContent = '¡Quiero participar!'; btn.disabled = false;
-  if (error) { err.textContent = error.message.includes('duplicate') ? 'Ya tienes un boleto en esta quiniela.' : 'Error: ' + error.message; return; }
+  btn.textContent = '¡Registrar pronóstico!'; btn.disabled = false;
+  if (error) { err.textContent = error.message.includes('duplicate') ? 'Ya tienes un pronóstico en esta quiniela.' : 'Error: ' + error.message; return; }
 
-  _showToast('¡Inscrito! 🎉', 'var(--green)');
+  _showToast('¡Pronóstico registrado! 🎉', 'var(--green)');
   await loadAll();
   _selectedPool = _pools.find(x => x.id === p.id);
   renderApp();
@@ -184,15 +190,15 @@ async function submitEntry() {
 function renderMyEntry(p, e) {
   const team = Q_TEAMS.find(t => t.name === e.champion_pick);
   const sm = {
-    pending:  { c:'status-pending',  t:'⏳ Verificando tu pago' },
-    verified: { c:'status-verified', t:'✓ Boleto confirmado' },
-    rejected: { c:'status-rejected', t:'✕ Pago rechazado' },
+    pending:  { c:'status-pending',  t:'⏳ Procesando...' },
+    verified: { c:'status-verified', t:'✓ Pronóstico registrado' },
+    rejected: { c:'status-rejected', t:'✕ No válido' },
   }[e.payment_status];
   return `
     ${e.payment_status === 'verified' ? `
     <div class="confirm-box" style="margin-bottom:14px;">
-      <div style="font-size:14px;font-weight:700;color:var(--green);">🎉 ¡Estás dentro!</div>
-      <div style="font-size:12px;color:var(--text-dim);margin-top:4px;">Tu pronóstico está registrado. El bote se reparte entre quienes acierten al campeón.</div>
+      <div style="font-size:14px;font-weight:700;color:var(--green);">🎉 ¡Pronóstico registrado!</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-top:4px;">Tu elección está confirmada. Al terminar el torneo verás si acertaste al campeón.</div>
     </div>` : ''}
     <div class="q-card" style="text-align:center;">
       <div style="font-size:46px;">${team ? team.flag : '🏆'}</div>
@@ -238,26 +244,38 @@ async function saveNewPick(poolId) {
   renderApp();
 }
 
-function renderBounty(p) {
+// ── Distribución de pronósticos (reemplaza "Reparto del bote") ────────────
+function renderPicks(p) {
   const counts = countsOf(p);
-  const total = potOf(p);
+  const keys = Object.keys(counts);
+  if (!keys.length) return '';
+  const total = keys.reduce((s, t) => s + Number(counts[t]), 0);
   const myTeam = (_myEntries.find(e => e.pool_id === p.id) || {}).champion_pick;
-  const teams = Object.keys(counts).sort((a,b) => {
-    if (a === myTeam) return -1; if (b === myTeam) return 1; return counts[b] - counts[a];
+  const teams = keys.sort((a, b) => {
+    if (a === myTeam) return -1; if (b === myTeam) return 1;
+    return counts[b] - counts[a];
   });
-  if (!teams.length) return '';
   return `
     <div class="q-card">
-      <h3>🏆 Reparto del bote</h3>
-      <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Si tu equipo es campeón, el bote (${money(total,p.currency)}) se divide entre quienes lo eligieron:</div>
+      <h3>📊 Pronósticos</h3>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">${total} pronóstico${total === 1 ? '' : 's'} registrado${total === 1 ? '' : 's'}</div>
       ${teams.map(team => {
         const t = Q_TEAMS.find(x => x.name === team);
-        const n = counts[team];
-        return `<div class="bounty-row ${team===myTeam?'mine':''}">
+        const n = Number(counts[team]);
+        const pct = total ? Math.round(n / total * 100) : 0;
+        const isMe = team === myTeam;
+        return `<div class="bounty-row ${isMe ? 'mine' : ''}">
           <span style="font-size:22px;">${t ? t.flag : '🏳️'}</span>
-          <div style="flex:1;"><div style="font-size:13px;font-weight:700;">${team} ${team===myTeam?'· <span style="color:var(--orange)">tu equipo</span>':''}</div>
-          <div style="font-size:10px;color:var(--text-dim);">${n} ${n===1?'jugador':'jugadores'}</div></div>
-          <div style="text-align:right;"><div class="bounty-amt">${money(total/n,p.currency)}</div><div style="font-size:9px;color:var(--text-muted);">c/u si gana</div></div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:700;">${team}${isMe ? ' · <span style="color:var(--orange)">tu pick</span>' : ''}</div>
+            <div style="margin-top:5px;height:4px;background:var(--surface-3);border-radius:2px;">
+              <div style="height:4px;background:${isMe ? 'var(--orange)' : 'var(--blue)'};border-radius:2px;width:${pct}%;transition:width .4s;"></div>
+            </div>
+          </div>
+          <div style="text-align:right;min-width:52px;">
+            <div class="bounty-amt" style="color:var(--text);">${pct}%</div>
+            <div style="font-size:9px;color:var(--text-muted);">${n} ${n === 1 ? 'pick' : 'picks'}</div>
+          </div>
         </div>`;
       }).join('')}
     </div>`;
@@ -266,9 +284,7 @@ function renderBounty(p) {
 function renderSettled(p) {
   const champ = p.result_champion;
   const counts = countsOf(p);
-  const total = potOf(p);
   const nWin = counts[champ] || 0;
-  const per = nWin ? total / nWin : 0;
   const team = Q_TEAMS.find(t => t.name === champ);
   const mine = _myEntries.find(e => e.pool_id === p.id);
   const iWon = mine && mine.payment_status === 'verified' && mine.champion_pick === champ;
@@ -277,11 +293,12 @@ function renderSettled(p) {
       <div style="font-size:46px;">${team ? team.flag : '🏆'}</div>
       <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--orange);">${champ} CAMPEÓN</div>
       <div style="margin:14px 0;padding:16px;background:var(--surface-2);border-radius:12px;">
-        <div style="font-size:13px;color:var(--text-dim);">Bote: <strong>${money(total,p.currency)}</strong> · Ganadores: <strong>${nWin}</strong></div>
-        <div style="font-family:'Bebas Neue';font-size:32px;color:var(--green);margin-top:6px;">${money(per,p.currency)}</div>
-        <div style="font-size:11px;color:var(--text-muted);">por ganador</div>
+        <div style="font-size:13px;color:var(--text-dim);">Acertaron: <strong>${nWin} pronóstico${nWin === 1 ? '' : 's'} correcto${nWin === 1 ? '' : 's'}</strong></div>
+        ${iWon ? '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:28px;color:var(--green);margin-top:6px;">🏆 ¡ACERTASTE!</div>' : ''}
       </div>
-      ${iWon ? `<div class="status-pill status-verified" style="font-size:14px;">🎉 ¡Ganaste! Te contactaremos para tu pago.</div>` : (mine ? `<p style="color:var(--text-dim);font-size:13px;">No acertaste esta vez. ¡Suerte en la próxima!</p>` : '')}
+      ${iWon
+        ? `<div class="status-pill status-verified" style="font-size:14px;">🎉 ¡Pronóstico correcto! Eres un experto.</div>`
+        : (mine ? `<p style="color:var(--text-dim);font-size:13px;">No acertaste esta vez. ¡Suerte en la próxima!</p>` : '')}
     </div>`;
 }
 

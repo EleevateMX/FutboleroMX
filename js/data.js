@@ -1,8 +1,8 @@
 // ── TVContigo — Data Layer (datos reales lacancha.tv · Mundial 2026) ───────
-// Última sincronización: 2026-06-21
+// Última sincronización: 2026-06-21 · Ecuador 0-0 Curazao FIN
 
 // Slug del partido EN VIVO en embed.st — actualizar cuando cambie el partido
-const LIVE_SLUG = 'ppv-ecuador-vs-cura-ao';
+const LIVE_SLUG = 'ppv-tunisia-vs-japan';
 const ES = (n) => `https://embed.st/embed/admin/${LIVE_SLUG}/${n}`;
 
 // Telemundo SIEMPRE primero (canal en español que ofrecemos de entrada), HD antes que SD
@@ -81,7 +81,7 @@ const MATCHES = [
   { id:'m30', home:{name:'Turquía',flag:'🇹🇷'}, away:{name:'Paraguay',flag:'🇵🇾'}, kickoff:'2026-06-20T03:00:00+00:00', status:'finished', hs:0, as:1, venue:'', city:'', comp:'Jornada 2' },
   { id:'m31', home:{name:'Países Bajos',flag:'🇳🇱'}, away:{name:'Suecia',flag:'🇸🇪'}, kickoff:'2026-06-20T17:00:00+00:00', status:'finished', hs:5, as:1, venue:'', city:'', comp:'Jornada 2' },
   { id:'m32', home:{name:'Alemania',flag:'🇩🇪'}, away:{name:'Costa de Marfil',flag:'🇨🇮'}, kickoff:'2026-06-20T20:00:00+00:00', status:'finished', hs:2, as:1, venue:'', city:'', comp:'Jornada 2' },
-  { id:'m33', home:{name:'Ecuador',flag:'🇪🇨'}, away:{name:'Curazao',flag:'🇨🇼'}, kickoff:'2026-06-21T00:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
+  { id:'m33', home:{name:'Ecuador',flag:'🇪🇨'}, away:{name:'Curazao',flag:'🇨🇼'}, kickoff:'2026-06-21T00:00:00+00:00', status:'finished', hs:0, as:0, venue:'', city:'', comp:'Jornada 2' },
   { id:'m34', home:{name:'Túnez',flag:'🇹🇳'}, away:{name:'Japón',flag:'🇯🇵'}, kickoff:'2026-06-21T04:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
   { id:'m35', home:{name:'España',flag:'🇪🇸'}, away:{name:'Arabia Saudita',flag:'🇸🇦'}, kickoff:'2026-06-21T16:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
   { id:'m36', home:{name:'Bélgica',flag:'🇧🇪'}, away:{name:'Irán',flag:'🇮🇷'}, kickoff:'2026-06-21T19:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
