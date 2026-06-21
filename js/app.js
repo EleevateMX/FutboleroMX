@@ -593,11 +593,11 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) return;
   // Audio: reactivar contexto suspendido en background
   if (_audioCtx) _audioCtx.resume().catch(() => {});
-  // Realtime: reconectar si Android/iOS mató el WebSocket en background
-  if (!_realtimeChannel) {
-    _subscribeRealtimeLive();
-    refreshLiveConfig(); // sincronizar score perdido mientras estaba en background
-  }
+  // Realtime: reconectar si el canal fue matado (Android BFCache / iOS kill)
+  if (!_realtimeChannel) _subscribeRealtimeLive();
+  // Siempre sincronizar score al volver: cubre iOS (pagehide no siempre dispara)
+  // y Android (puede haber llegado un gol mientras estaba en background)
+  refreshLiveConfig();
 });
 
 // ── Estado de la transmisión (carga / no disponible) ──────────────────────
