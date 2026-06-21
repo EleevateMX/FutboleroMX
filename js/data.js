@@ -1,5 +1,5 @@
 // ── TVContigo — Data Layer (datos reales lacancha.tv · Mundial 2026) ───────
-// Última sincronización: 2026-06-16
+// Última sincronización: 2026-06-20
 
 // Slug del partido EN VIVO en embed.st — actualizar cuando cambie el partido
 const LIVE_SLUG = 'ppv-austria-vs-jordan';
@@ -73,14 +73,14 @@ const MATCHES = [
   { id:'m22', home:{name:'Ghana',flag:'🇬🇭'}, away:{name:'Panamá',flag:'🇵🇦'}, kickoff:'2026-06-17T23:00:00+00:00', status:'finished', hs:1, as:0, venue:'', city:'', comp:'Jornada 1' },
   { id:'m23', home:{name:'Uzbekistán',flag:'🇺🇿'}, away:{name:'Colombia',flag:'🇨🇴'}, kickoff:'2026-06-18T02:00:00+00:00', status:'finished', hs:1, as:3, venue:'', city:'', comp:'Jornada 1' },
   { id:'m24', home:{name:'Chequia',flag:'🇨🇿'}, away:{name:'Sudáfrica',flag:'🇿🇦'}, kickoff:'2026-06-18T16:00:00+00:00', status:'finished', hs:1, as:1, venue:'', city:'', comp:'Jornada 2' },
-  { id:'m25', home:{name:'Canadá',flag:'🇨🇦'}, away:{name:'Catar',flag:'🇶🇦'}, kickoff:'2026-06-18T22:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
-  { id:'m26', home:{name:'México',flag:'🇲🇽'}, away:{name:'Corea del Sur',flag:'🇰🇷'}, kickoff:'2026-06-19T01:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'Estadio Akron', city:'Guadalajara', comp:'Jornada 2' },
-  { id:'m27', home:{name:'EE.UU.',flag:'🇺🇸'}, away:{name:'Australia',flag:'🇦🇺'}, kickoff:'2026-06-19T19:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
-  { id:'m28', home:{name:'Escocia',flag:'🏴󠁧󠁢󠁳󠁣󠁴󠁿'}, away:{name:'Marruecos',flag:'🇲🇦'}, kickoff:'2026-06-19T22:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
-  { id:'m29', home:{name:'Brasil',flag:'🇧🇷'}, away:{name:'Haití',flag:'🇭🇹'}, kickoff:'2026-06-20T00:30:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
-  { id:'m30', home:{name:'Turquía',flag:'🇹🇷'}, away:{name:'Paraguay',flag:'🇵🇾'}, kickoff:'2026-06-20T03:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
-  { id:'m31', home:{name:'Países Bajos',flag:'🇳🇱'}, away:{name:'Suecia',flag:'🇸🇪'}, kickoff:'2026-06-20T17:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
-  { id:'m32', home:{name:'Alemania',flag:'🇩🇪'}, away:{name:'Costa de Marfil',flag:'🇨🇮'}, kickoff:'2026-06-20T20:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
+  { id:'m25', home:{name:'Canadá',flag:'🇨🇦'}, away:{name:'Catar',flag:'🇶🇦'}, kickoff:'2026-06-18T22:00:00+00:00', status:'finished', hs:6, as:0, venue:'', city:'', comp:'Jornada 2' },
+  { id:'m26', home:{name:'México',flag:'🇲🇽'}, away:{name:'Corea del Sur',flag:'🇰🇷'}, kickoff:'2026-06-19T01:00:00+00:00', status:'finished', hs:1, as:0, venue:'Estadio Akron', city:'Guadalajara', comp:'Jornada 2' },
+  { id:'m27', home:{name:'EE.UU.',flag:'🇺🇸'}, away:{name:'Australia',flag:'🇦🇺'}, kickoff:'2026-06-19T19:00:00+00:00', status:'finished', hs:2, as:0, venue:'', city:'', comp:'Jornada 2' },
+  { id:'m28', home:{name:'Escocia',flag:'🏴󠁧󠁢󠁳󠁣󠁴󠁿'}, away:{name:'Marruecos',flag:'🇲🇦'}, kickoff:'2026-06-19T22:00:00+00:00', status:'finished', hs:0, as:1, venue:'', city:'', comp:'Jornada 2' },
+  { id:'m29', home:{name:'Brasil',flag:'🇧🇷'}, away:{name:'Haití',flag:'🇭🇹'}, kickoff:'2026-06-20T00:30:00+00:00', status:'finished', hs:3, as:0, venue:'', city:'', comp:'Jornada 2' },
+  { id:'m30', home:{name:'Turquía',flag:'🇹🇷'}, away:{name:'Paraguay',flag:'🇵🇾'}, kickoff:'2026-06-20T03:00:00+00:00', status:'finished', hs:0, as:1, venue:'', city:'', comp:'Jornada 2' },
+  { id:'m31', home:{name:'Países Bajos',flag:'🇳🇱'}, away:{name:'Suecia',flag:'🇸🇪'}, kickoff:'2026-06-20T17:00:00+00:00', status:'finished', hs:5, as:1, venue:'', city:'', comp:'Jornada 2' },
+  { id:'m32', home:{name:'Alemania',flag:'🇩🇪'}, away:{name:'Costa de Marfil',flag:'🇨🇮'}, kickoff:'2026-06-20T20:00:00+00:00', status:'finished', hs:2, as:1, venue:'', city:'', comp:'Jornada 2' },
   { id:'m33', home:{name:'Ecuador',flag:'🇪🇨'}, away:{name:'Curazao',flag:'🇨🇼'}, kickoff:'2026-06-21T00:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
   { id:'m34', home:{name:'Túnez',flag:'🇹🇳'}, away:{name:'Japón',flag:'🇯🇵'}, kickoff:'2026-06-21T04:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
   { id:'m35', home:{name:'España',flag:'🇪🇸'}, away:{name:'Arabia Saudita',flag:'🇸🇦'}, kickoff:'2026-06-21T16:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },

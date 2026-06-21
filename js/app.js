@@ -289,7 +289,7 @@ async function loadMatchResults() {
 let _liveRefresh = null;
 function startLiveRefresh() {
   if (_liveRefresh) return;
-  _liveRefresh = setInterval(refreshLiveConfig, 60000);  // cada 60s
+  _liveRefresh = setInterval(refreshLiveConfig, 20000);  // cada 20s
 }
 async function refreshLiveConfig() {
   const before = _curSlug;
@@ -460,7 +460,7 @@ function openLiveStream() {
   trackEvent('live', 'watch');
 }
 
-// Actualiza el marcador en vivo cada 25s sin recargar la transmisión
+// Actualiza el marcador en vivo cada 20s sin recargar la transmisión
 let _scorePoll = null;
 function startLiveScorePolling() {
   if (_scorePoll) return;
@@ -479,7 +479,7 @@ function startLiveScorePolling() {
         if (LIVE_MATCH) { LIVE_MATCH.hs = data.hs; LIVE_MATCH.as = data.as_; }
       }
     } catch (e) {}
-  }, 25000);
+  }, 20000);
 }
 
 // ── Estado de la transmisión (carga / no disponible) ──────────────────────
@@ -1173,5 +1173,5 @@ async function loadMatchLiveData() {
 function startMatchDataPolling() {
   if (_matchDataPoll) return;
   loadMatchLiveData();
-  _matchDataPoll = setInterval(loadMatchLiveData, 30000);
+  _matchDataPoll = setInterval(loadMatchLiveData, 20000);
 }
