@@ -1,8 +1,8 @@
 // ── TVContigo — Data Layer (datos reales lacancha.tv · Mundial 2026) ───────
-// Última sincronización: 2026-06-20
+// Última sincronización: 2026-06-21
 
 // Slug del partido EN VIVO en embed.st — actualizar cuando cambie el partido
-const LIVE_SLUG = 'ppv-austria-vs-jordan';
+const LIVE_SLUG = 'ppv-ecuador-vs-cura-ao';
 const ES = (n) => `https://embed.st/embed/admin/${LIVE_SLUG}/${n}`;
 
 // Telemundo SIEMPRE primero (canal en español que ofrecemos de entrada), HD antes que SD

@@ -42,7 +42,7 @@ const _EN_ES = {
   'canada':'Canadá','australia':'Australia','iraq':'Irak',
   'senegal':'Senegal','uruguay':'Uruguay','iran':'Irán',
   'ecuador':'Ecuador','colombia':'Colombia','argentina':'Argentina',
-  'portugal':'Portugal','curacao':'Curazao','haiti':'Haití',
+  'portugal':'Portugal','curacao':'Curazao','cura ao':'Curazao','haiti':'Haití',
   'paraguay':'Paraguay','qatar':'Catar','bosnia':'Bosnia',
 };
 const _normName = n => _EN_ES[(n || '').toLowerCase()] || n;
@@ -100,7 +100,7 @@ const _FLAGS = {
   'RD Congo':'🇨🇩','DR Congo':'🇨🇩',
   'Tanzania':'🇹🇿','Angola':'🇦🇴','Zambia':'🇿🇲','Kenia':'🇰🇪','Kenya':'🇰🇪',
   'Cabo Verde':'🇨🇻','Cape Verde':'🇨🇻',
-  'Curazao':'🇨🇼','Curacao':'🇨🇼',
+  'Curazao':'🇨🇼','Curacao':'🇨🇼','Cura Ao':'🇨🇼',
   'Bosnia':'🇧🇦',
 };
 
