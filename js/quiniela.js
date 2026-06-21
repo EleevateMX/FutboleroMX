@@ -416,3 +416,12 @@ async function doRegister(e) {
   closeModal('register-modal');
   _showToast('¡Cuenta creada! Revisa tu correo para confirmar. 📧', 'var(--green)');
 }
+
+// Auto-reload cuando el SW instala nueva versión
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data?.type !== 'SW_UPDATED') return;
+    _showToast('Nueva versión lista. Actualizando…', 'var(--blue)');
+    setTimeout(() => window.location.reload(), 3000);
+  });
+}

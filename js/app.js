@@ -464,6 +464,7 @@ function openLiveStream() {
     </div>`;
   armStreamWatchdog();
   armHeroAutoHide();
+  _startSilentKeepAlive();
   renderIframeNotice(true);
   window.scrollTo({ top: 0, behavior: 'smooth' });
   trackEvent('live', 'watch');
@@ -514,6 +515,30 @@ function _updateMediaSession() {
     navigator.mediaSession.playbackState = 'none';
   }
 }
+
+// ── Background audio keepalive (mantiene sesión activa en iOS segundo plano)
+let _audioCtx = null;
+let _silenceNode = null;
+
+function _startSilentKeepAlive() {
+  try {
+    if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (_audioCtx.state === 'suspended') _audioCtx.resume();
+    if (_silenceNode) { try { _silenceNode.stop(); } catch(_e){} _silenceNode.disconnect(); }
+    // Buffer de 1 segundo de silencio (amplitud 0) → mantiene la sesión de audio viva
+    const buf = _audioCtx.createBuffer(1, _audioCtx.sampleRate, _audioCtx.sampleRate);
+    _silenceNode = _audioCtx.createBufferSource();
+    _silenceNode.buffer = buf;
+    _silenceNode.loop = true;
+    _silenceNode.connect(_audioCtx.destination);
+    _silenceNode.start();
+  } catch (e) {}
+}
+
+// Reactiva el AudioContext cuando el usuario vuelve desde segundo plano
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && _audioCtx) _audioCtx.resume().catch(() => {});
+});
 
 // ── Estado de la transmisión (carga / no disponible) ──────────────────────
 let _streamWatchdog = null;

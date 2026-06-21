@@ -485,6 +485,20 @@
       }
     }
   });
+
+  // Auto-reload cuando el SW instala nueva versión
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', e => {
+      if (e.data?.type !== 'SW_UPDATED') return;
+      if (document.getElementById('live-frame')) {
+        // No interrumpir al usuario si está viendo el stream
+        _showToast('Nueva versión disponible. Recarga para actualizar.', 'var(--blue)');
+      } else {
+        _showToast('Nueva versión lista. Actualizando…', 'var(--blue)');
+        setTimeout(() => window.location.reload(), 2000);
+      }
+    });
+  }
 </script>
 </body>
 </html>
