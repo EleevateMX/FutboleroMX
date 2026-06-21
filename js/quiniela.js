@@ -123,8 +123,8 @@ function renderGameInvite() {
       </div>
     </div>
 
-    <button class="gi-cta" onclick="location.href='index.html'">▶ UNIRME AL JUEGO</button>
-    <p class="gi-note">100% gratis · Solo necesitas una cuenta</p>
+    <button class="gi-cta" onclick="openModal('register-modal')">▶ UNIRME AL JUEGO</button>
+    <p class="gi-note">100% gratis · <span onclick="openModal('login-modal')" style="color:var(--blue);cursor:pointer;text-decoration:underline;">¿Ya tienes cuenta? Entra aquí</span></p>
   `;
 }
 
@@ -375,4 +375,44 @@ function _showToast(msg, color = 'var(--surface-3)') {
   const t = document.getElementById('toast'); if (!t) return;
   t.textContent = msg; t.style.borderColor = color;
   t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Modales de auth (quiniela.html no carga app.js) ──────────────────────
+function openModal(id) { document.getElementById(id)?.classList.add('open'); }
+function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
+function closeAll() { document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('open')); }
+function switchModal(from, to) { closeModal(from); openModal(to); }
+
+// Hook para que authInit() re-renderice al cambiar sesión (login con email o Google redirect)
+function renderQuinielaSection() { loadAll(); }
+
+async function doLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-error');
+  err.textContent = ''; btn.textContent = 'Entrando...'; btn.disabled = true;
+  const res = await Auth.login(
+    document.getElementById('login-email').value,
+    document.getElementById('login-pass').value
+  );
+  btn.textContent = 'Entrar'; btn.disabled = false;
+  if (!res.ok) { err.textContent = res.msg; return; }
+  closeModal('login-modal');
+  // onAuthStateChange dispara renderQuinielaSection → loadAll automáticamente
+}
+
+async function doRegister(e) {
+  e.preventDefault();
+  const btn = document.getElementById('reg-btn');
+  const err = document.getElementById('reg-error');
+  err.textContent = ''; btn.textContent = 'Creando cuenta...'; btn.disabled = true;
+  const res = await Auth.register(
+    document.getElementById('reg-name').value,
+    document.getElementById('reg-email').value,
+    document.getElementById('reg-pass').value
+  );
+  btn.textContent = 'Crear cuenta gratis'; btn.disabled = false;
+  if (!res.ok) { err.textContent = res.msg; return; }
+  closeModal('register-modal');
+  _showToast('¡Cuenta creada! Revisa tu correo para confirmar. 📧', 'var(--green)');
 }
