@@ -241,8 +241,10 @@ let _curSlug = null;   // slug del partido actualmente cargado (para detectar ca
 async function loadLiveConfig() {
   try {
     const { data } = await sb.from('live_config').select('*').eq('id', 1).single();
-    if (data && data.status === 'live' && data.slug && Array.isArray(data.channels) && data.channels.length) {
-      CHANNELS = buildChannels(data.slug, data.channels);  // ya viene Telemundo primero
+    if (data && data.status === 'live' && data.slug) {
+      if (Array.isArray(data.channels) && data.channels.length) {
+        CHANNELS = buildChannels(data.slug, data.channels);
+      }
       LIVE_MATCH = {
         id: 'live', slug: data.slug,
         home: { name: data.home_name, flag: data.home_flag || flagFor(data.home_name) },
@@ -250,16 +252,16 @@ async function loadLiveConfig() {
         kickoff: new Date().toISOString(), status: 'live',
         hs: data.hs ?? 0, as: data.as_ ?? 0,
         venue: data.venue || '', city: data.city || '', comp: data.comp || 'En vivo',
-        defaultChannel: CHANNELS[0]?.id,   // Telemundo
+        defaultChannel: CHANNELS[0]?.id,
       };
       _curSlug = data.slug;
       return;
     }
-  } catch (e) { /* sin partido en vivo */ }
-  // No hay partido en vivo: no mostramos canales viejos
-  LIVE_MATCH = null;
-  CHANNELS = [];
-  _curSlug = null;
+    // Status 'off' o sin datos → limpiar
+    LIVE_MATCH = null; CHANNELS = []; _curSlug = null;
+  } catch (e) {
+    // Error de red: conservar estado anterior (no borrar LIVE_MATCH)
+  }
 }
 
 // ── Resultados finales desde Supabase (overlay sobre MATCHES estático) ───
@@ -302,6 +304,11 @@ async function refreshLiveConfig() {
     renderHero();
     renderChannelStrip();
     renderChannelsGrid();
+  } else if (LIVE_MATCH && _isActuallyLive()) {
+    // Mismo partido — actualiza el marcador en el hero sin re-renderizar el stream
+    const scoreEl = document.getElementById('hero-score');
+    if (scoreEl) scoreEl.textContent = `${LIVE_MATCH.hs ?? 0}-${LIVE_MATCH.as ?? 0}`;
+    // Si el hero muestra el preview (no el stream), también actualiza los marcadores de las tarjetas
   }
   renderMatchesRow();
   renderResultsRow();
@@ -352,7 +359,7 @@ function renderHero() {
             <div class="hmp-name">${match.home.name.toUpperCase()}</div>
           </div>
           <div class="hmp-center">
-            <div class="hmp-score" id="hero-score">${match.hs ?? 0} - ${match.as ?? 0}</div>
+            <div class="hmp-score" id="hero-score">${match.hs ?? 0}-${match.as ?? 0}</div>
             <div class="hmp-live-label">● EN VIVO</div>
           </div>
           <div class="hmp-team">
