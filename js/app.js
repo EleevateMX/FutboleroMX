@@ -10,6 +10,10 @@ if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistration().then(reg => { if (reg) reg.update(); });
     }
   });
+  // Check periódico cada 5 min: cubre tabs abiertas mucho tiempo sin ir al background
+  setInterval(() => {
+    navigator.serviceWorker.getRegistration().then(reg => { if (reg) reg.update(); });
+  }, 5 * 60 * 1000);
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     // Esperar a que la página esté lista antes de recargar (evita reload interrumpido en Android)
     if (document.readyState === 'complete') window.location.reload();
@@ -142,6 +146,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadAdSettings();
   startLiveRefresh();   // la página se mantiene al día sola (cambio de partido/canales)
   _subscribeRealtimeLive(); // marcador en tiempo real vía WebSocket (< 1s, sin polling)
+
+  // Health-check del canal Realtime cada 30s
+  // cubre canales que mueren silenciosamente sin disparar CHANNEL_ERROR
+  setInterval(() => {
+    if (!_realtimeChannel) _subscribeRealtimeLive();
+  }, 30000);
 });
 
 // ── Referidos ───────────────────────────────────────────────────────────────

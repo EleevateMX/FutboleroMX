@@ -1,4 +1,4 @@
-const CACHE = 'tvc-v37';
+const CACHE = 'tvc-v38';
 const STATIC = [
   '/', '/index.html', '/quiniela.html', '/perfil.html', '/css/style.css',
   '/js/data.js', '/js/auth.js', '/js/app.js', '/js/quiniela.js', '/js/perfil.js', '/js/push.js',
@@ -15,7 +15,11 @@ self.addEventListener('activate', e => {
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
       .then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
-      .then(clients => clients.forEach(c => c.postMessage({ type: 'SW_UPDATED', cache: CACHE })))
+      .then(clients => clients.forEach(c => {
+        // navigate() recarga incluso tabs congeladas en background (iOS/Android)
+        // más fiable que postMessage que requiere que el JS del cliente esté activo
+        c.navigate(c.url).catch(() => c.postMessage({ type: 'SW_UPDATED', cache: CACHE }));
+      }))
   );
 });
 
@@ -37,7 +41,7 @@ self.addEventListener('fetch', e => {
   // JS y CSS: network first saltando HTTP cache → SW cache como fallback offline
   // { cache: 'no-cache' } envía If-None-Match al servidor → 304 si no cambió (rápido)
   // y 200 con contenido nuevo si hubo deploy → siempre fresco, sin stale de 10 min
-  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
+  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css') || url.pathname.endsWith('manifest.json')) {
     e.respondWith(
       fetch(e.request, { cache: 'no-cache' }).then(res => {
         if (res && res.status === 200) {
