@@ -696,8 +696,13 @@ function renderChannelStrip() {
   const strip = document.getElementById('channel-strip');
   if (!CHANNELS.length || !_isActuallyLive()) { strip.style.display = 'none'; return; }
   strip.style.display = 'flex';
-  strip.innerHTML = CHANNELS.map((ch, i) => `
-    <div class="channel-chip ${i === 0 ? 'active' : ''}" onclick="switchChannel('${ch.id}', this)">
+  const canchaChip = `
+    <div class="cancha-tv-chip${_canchaActive ? ' active' : ''}" onclick="openCanchaTV()">
+      <span class="chip-name">📺 CANCHA</span>
+      <span class="chip-label">Multi-vista</span>
+    </div>`;
+  strip.innerHTML = canchaChip + CHANNELS.map((ch, i) => `
+    <div class="channel-chip ${i === 0 && !_canchaActive ? 'active' : ''}" onclick="switchChannel('${ch.id}', this)">
       <span class="chip-name">${ch.name}</span>
       <span class="chip-label">${ch.option}</span>
       ${ch.tag ? `<span class="chip-tag">${ch.tag}</span>` : (ch.live ? '<span class="chip-live">● EN VIVO</span>' : '')}
@@ -1177,6 +1182,101 @@ async function doRegister(e) {
 async function logout() {
   await Auth.logout();
   _showToast('Sesión cerrada', 'var(--text-dim)');
+}
+
+// ── Cancha TV — Multi-vista ────────────────────────────────────────────────
+let _canchaActive = false;
+let _canchaLayout = 2;
+const _canchaSel  = [0, 1, 2, 3]; // índice de canal por panel
+
+function openCanchaTV() {
+  _canchaActive = true;
+  document.getElementById('cancha-tv').style.display = 'block';
+  document.getElementById('hero-section').style.display = 'none';
+  const ph = document.getElementById('play-hint');
+  if (ph) ph.style.display = 'none';
+  document.getElementById('channel-strip').style.display = 'none';
+  // Actualizar chip activo
+  document.querySelectorAll('.cancha-tv-chip').forEach(c => c.classList.add('active'));
+  _renderCanchaGrid();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  trackEvent('cancha_tv', 'open');
+}
+
+function closeCanchaTV() {
+  _canchaActive = false;
+  document.getElementById('cancha-tv').style.display = 'none';
+  document.getElementById('hero-section').style.display = '';
+  const ph = document.getElementById('play-hint');
+  if (ph) ph.style.display = '';
+  renderChannelStrip(); // re-renders strip (restores visibility)
+  document.querySelectorAll('.cancha-tv-chip').forEach(c => c.classList.remove('active'));
+  // Destruir iframes para liberar memoria
+  document.getElementById('cancha-grid').innerHTML = '';
+}
+
+function setCanchaLayout(n) {
+  _canchaLayout = n;
+  document.querySelectorAll('.cv-btn').forEach(b => {
+    b.classList.toggle('active', b.id === `cv-${n}`);
+  });
+  const grid = document.getElementById('cancha-grid');
+  grid.className = `cancha-grid layout-${n}`;
+  _renderCanchaGrid();
+}
+
+function _renderCanchaGrid() {
+  if (!_canchaActive) return;
+  const grid = document.getElementById('cancha-grid');
+  grid.className = `cancha-grid layout-${_canchaLayout}`;
+  const count = _canchaLayout;
+
+  let html = '';
+  for (let i = 0; i < count; i++) {
+    const idx = Math.min(_canchaSel[i], CHANNELS.length - 1);
+    const ch  = CHANNELS[idx];
+    const options = CHANNELS.map((c, ci) =>
+      `<option value="${ci}"${ci === idx ? ' selected' : ''}>${c.name} · ${c.option}</option>`
+    ).join('');
+
+    if (!ch) {
+      html += `<div class="cancha-panel">
+        <div class="cp-no-signal">
+          <div class="cp-icon">📡</div>
+          <div class="cp-msg">No hay transmisión activa en este momento</div>
+        </div>
+        <div class="cp-num">P${i+1}</div>
+      </div>`;
+      continue;
+    }
+
+    html += `<div class="cancha-panel" id="cp-${i}">
+      <div class="cp-top">
+        <select class="cp-select" onchange="changeCanchaChannel(${i},+this.value)">${options}</select>
+        <div class="cp-badge"><div class="cp-badge-dot"></div>EN VIVO</div>
+      </div>
+      <div class="cp-iframe-wrap">
+        <iframe class="cp-iframe"
+          src="${ch.url}"
+          allowfullscreen
+          allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+          sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-pointer-lock allow-top-navigation"
+          loading="lazy"></iframe>
+      </div>
+      <div class="cp-num">P${i+1}</div>
+    </div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function changeCanchaChannel(panelIdx, channelIdx) {
+  _canchaSel[panelIdx] = channelIdx;
+  const ch = CHANNELS[channelIdx];
+  if (!ch) return;
+  const panel = document.getElementById(`cp-${panelIdx}`);
+  if (!panel) return;
+  const iframe = panel.querySelector('.cp-iframe');
+  if (iframe) iframe.src = ch.url;
 }
 
 // ── Navigation Helpers ────────────────────────────────────────────────────

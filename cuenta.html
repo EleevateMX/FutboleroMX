@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Únete gratis — TVContigo</title>
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#07070f">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Bebas+Neue&display=swap');
+
+:root {
+  --bg:   #07070f;
+  --s1:   #0f0f1a;
+  --s2:   #161625;
+  --s3:   #1d1d30;
+  --blue: #0ea5e9;
+  --orange: #f97316;
+  --green:  #22c55e;
+  --red:    #ef4444;
+  --text:   #f0f0ff;
+  --dim:    #94a3b8;
+  --muted:  #4b5563;
+  --border: rgba(255,255,255,.07);
+  --border-hi: rgba(255,255,255,.14);
+}
+
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html,body { height:100%; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  min-height: 100dvh;
+  display: flex;
+  overflow-x: hidden;
+}
+
+/* ── Layout: brand left / form right ──────────────────────── */
+.auth-wrap {
+  display: flex;
+  width: 100%;
+  min-height: 100dvh;
+}
+
+/* ─── BRAND PANEL ─────────────────────────────────────────── */
+.brand-panel {
+  flex: 1;
+  position: relative;
+  background: linear-gradient(160deg, #060613 0%, #090920 55%, #0c1428 100%);
+  padding: 40px 52px 40px 48px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* Pitch lines overlay */
+.brand-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 68%, transparent 12.5%, rgba(255,255,255,.018) 13%, rgba(255,255,255,.018) 13.5%, transparent 14%),
+    radial-gradient(circle at 50% 68%, rgba(255,255,255,.04) 1%, transparent 2%),
+    linear-gradient(90deg, transparent 49.9%, rgba(255,255,255,.018) 50%, transparent 50.1%),
+    linear-gradient(transparent 67%, rgba(255,255,255,.018) 67.1%, transparent 67.2%);
+  pointer-events: none;
+}
+/* Glow blobs */
+.brand-panel::after {
+  content: '';
+  position: absolute;
+  width: 700px;
+  height: 700px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(14,165,233,.07) 0%, transparent 65%);
+  right: -180px;
+  bottom: -160px;
+  pointer-events: none;
+}
+.brand-glow-orange {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(249,115,22,.05) 0%, transparent 65%);
+  left: -120px;
+  top: -100px;
+  pointer-events: none;
+}
+
+.brand-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 1.5px;
+  color: var(--text);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+.brand-logo span { color: var(--orange); }
+.brand-live-dot {
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 8px var(--red);
+  margin-left: 6px;
+  animation: blink 1.4s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+
+.brand-main {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 48px 0 32px;
+}
+
+.brand-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2.5px;
+  color: var(--orange);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+.brand-eyebrow::before {
+  content: '';
+  width: 24px; height: 2px;
+  background: var(--orange);
+  border-radius: 1px;
+}
+
+.brand-headline {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(44px, 4.2vw, 68px);
+  line-height: 1.0;
+  letter-spacing: .5px;
+  margin-bottom: 18px;
+}
+.brand-headline em { color: var(--orange); font-style: normal; }
+
+.brand-sub {
+  font-size: 15px;
+  color: var(--dim);
+  line-height: 1.7;
+  margin-bottom: 48px;
+  max-width: 400px;
+}
+
+/* Benefits */
+.benefits { display: flex; flex-direction: column; gap: 18px; }
+
+.benefit {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.b-icon-wrap {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+  transition: background .2s, border-color .2s;
+}
+.benefit:hover .b-icon-wrap {
+  background: rgba(255,255,255,.07);
+  border-color: var(--border-hi);
+}
+.b-text strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+  margin-bottom: 2px;
+}
+.b-text span { font-size: 12px; color: var(--dim); }
+
+/* Trust bar */
+.trust-bar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.trust-stat { text-align: center; }
+.trust-stat .val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  color: var(--blue);
+  line-height: 1;
+  letter-spacing: .5px;
+}
+.trust-stat .lbl { font-size: 11px; color: var(--muted); margin-top: 2px; letter-spacing: .5px; }
+.trust-div { width: 1px; height: 28px; background: var(--border); }
+
+/* ─── AUTH PANEL ──────────────────────────────────────────── */
+.auth-panel {
+  width: 100%;
+  max-width: 480px;
+  background: var(--s1);
+  border-left: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 32px;
+  flex-shrink: 0;
+}
+
+.auth-card { width: 100%; max-width: 390px; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+.auth-card { animation: fadeUp .35s ease; }
+
+/* Tabs */
+.auth-tabs {
+  display: flex;
+  background: var(--s2);
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 32px;
+  gap: 4px;
+}
+.auth-tab {
+  flex: 1;
+  padding: 11px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all .2s;
+  color: var(--dim);
+  border: none;
+  background: transparent;
+  font-family: inherit;
+}
+.auth-tab.active {
+  background: var(--s3);
+  color: var(--text);
+  box-shadow: 0 2px 12px rgba(0,0,0,.5);
+}
+
+.auth-form { display: none; }
+.auth-form.active { display: block; animation: fadeUp .25s ease; }
+
+.auth-heading {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 30px;
+  letter-spacing: .5px;
+  margin-bottom: 6px;
+  line-height: 1.15;
+}
+.auth-heading span { color: var(--orange); }
+.auth-sub {
+  font-size: 13px;
+  color: var(--dim);
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+/* Google */
+.btn-google {
+  width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 13px 20px;
+  background: #fff;
+  color: #1f2937;
+  border: none; border-radius: 11px;
+  font-size: 15px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+  transition: all .18s;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.btn-google::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0);
+  transition: background .18s;
+}
+.btn-google:hover::before { background: rgba(0,0,0,.04); }
+.btn-google:hover { box-shadow: 0 6px 20px rgba(0,0,0,.35); }
+
+/* Divider */
+.divider {
+  position: relative;
+  text-align: center;
+  margin: 20px 0;
+}
+.divider::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 0; right: 0;
+  height: 1px;
+  background: var(--border);
+}
+.divider span {
+  position: relative;
+  background: var(--s1);
+  padding: 0 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Form fields */
+.field { margin-bottom: 16px; }
+.field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dim);
+  margin-bottom: 6px;
+  letter-spacing: .3px;
+}
+.field-input {
+  width: 100%;
+  background: var(--s2);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .18s, background .18s;
+}
+.field-input::placeholder { color: var(--muted); }
+.field-input:focus { border-color: var(--blue); background: var(--s3); }
+
+.pass-wrap { position: relative; }
+.pass-wrap .field-input { padding-right: 44px; }
+.pass-eye {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; color: var(--dim);
+  cursor: pointer; padding: 4px; display: flex; align-items: center;
+  line-height: 0;
+}
+.pass-eye:hover { color: var(--text); }
+.pass-eye svg { width: 18px; height: 18px; }
+
+.form-err {
+  font-size: 12px; color: var(--red);
+  min-height: 18px; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.form-err:empty { display: none; }
+
+/* Submit buttons */
+.btn-submit {
+  width: 100%;
+  padding: 14px;
+  background: var(--orange);
+  color: #fff;
+  border: none; border-radius: 11px;
+  font-size: 15px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  transition: all .2s;
+  position: relative; overflow: hidden;
+}
+.btn-submit::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(255,255,255,.1) 0%, transparent 100%);
+}
+.btn-submit:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(249,115,22,.45); }
+.btn-submit:active { transform: none; }
+.btn-submit:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-submit.blue { background: var(--blue); }
+.btn-submit.blue:hover { box-shadow: 0 8px 24px rgba(14,165,233,.45); }
+
+.auth-switch {
+  text-align: center; font-size: 13px;
+  color: var(--dim); margin-top: 22px;
+}
+.auth-switch a { color: var(--blue); font-weight: 600; cursor: pointer; text-decoration: none; }
+.auth-switch a:hover { text-decoration: underline; }
+
+/* ── Mobile: stack (hide brand panel) ───────────────────── */
+@media (max-width: 860px) {
+  .brand-panel { display: none; }
+  .auth-panel {
+    max-width: 100%; border-left: none;
+    background: var(--bg);
+    min-height: 100dvh;
+    align-items: flex-start;
+    padding-top: 52px;
+  }
+}
+
+/* Mobile top logo */
+.mobile-logo {
+  display: none;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  color: var(--text);
+  text-decoration: none;
+  margin-bottom: 36px;
+  align-items: center;
+  gap: 2px;
+}
+.mobile-logo span { color: var(--orange); }
+@media (max-width: 860px) { .mobile-logo { display: flex; } }
+
+/* ── Success screen ─────────────────────────────────────── */
+.auth-success { display: none; text-align: center; padding: 16px 0; }
+.success-check {
+  width: 76px; height: 76px;
+  border-radius: 50%;
+  background: rgba(34,197,94,.1);
+  border: 2px solid rgba(34,197,94,.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 34px;
+  margin: 0 auto 22px;
+  animation: fadeUp .4s ease;
+}
+.auth-success h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 30px; margin-bottom: 10px;
+}
+.auth-success p { font-size: 14px; color: var(--dim); line-height: 1.7; }
+.btn-back {
+  display: inline-block;
+  margin-top: 24px; padding: 13px 32px;
+  background: var(--orange); color: #fff;
+  border-radius: 11px; font-weight: 700;
+  font-size: 15px; text-decoration: none;
+  transition: all .2s;
+}
+.btn-back:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(249,115,22,.4); }
+
+/* ── Toast ──────────────────────────────────────────────── */
+#toast {
+  position: fixed; bottom: 28px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--s3); color: var(--text);
+  padding: 12px 22px; border-radius: 10px;
+  font-size: 14px; font-weight: 600;
+  z-index: 1000;
+  border: 1px solid var(--border-hi);
+  box-shadow: 0 8px 32px rgba(0,0,0,.6);
+  transition: transform .28s ease;
+  white-space: nowrap;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<div class="auth-wrap">
+  <!-- ────── BRAND PANEL ──────────────────────────────────── -->
+  <div class="brand-panel">
+    <div class="brand-glow-orange"></div>
+
+    <a class="brand-logo" href="index.html">
+      TV<span>Contigo</span><span class="brand-live-dot"></span>
+    </a>
+
+    <div class="brand-main">
+      <div class="brand-eyebrow">Plataforma de Streaming</div>
+
+      <div class="brand-headline">
+        El fútbol donde<br>
+        quieras. <em>Gratis.</em>
+      </div>
+
+      <div class="brand-sub">
+        Mundial 2026 · Liga MX · Liguilla · Copa MX<br>
+        Sin suscripción. Sin tarjeta. Para siempre.
+      </div>
+
+      <div class="benefits">
+        <div class="benefit">
+          <div class="b-icon-wrap">🔴</div>
+          <div class="b-text">
+            <strong>EN VIVO · Mundial 2026</strong>
+            <span>48 selecciones · 104 partidos · todos los grupos</span>
+          </div>
+        </div>
+        <div class="benefit">
+          <div class="b-icon-wrap">⚽</div>
+          <div class="b-text">
+            <strong>Liga MX · Liguilla · Copa · Champions</strong>
+            <span>Próximamente — streams del fútbol mexicano</span>
+          </div>
+        </div>
+        <div class="benefit">
+          <div class="b-icon-wrap">📺</div>
+          <div class="b-text">
+            <strong>Cancha TV — Vista simultánea</strong>
+            <span>Ve hasta 4 partidos al mismo tiempo en pantalla dividida</span>
+          </div>
+        </div>
+        <div class="benefit">
+          <div class="b-icon-wrap">🏆</div>
+          <div class="b-text">
+            <strong>Quiniela con pozo en dinero</strong>
+            <span>Predice al campeón del Mundial y llévate el bote</span>
+          </div>
+        </div>
+        <div class="benefit">
+          <div class="b-icon-wrap">🔔</div>
+          <div class="b-text">
+            <strong>Avisos antes del partido</strong>
+            <span>Notificación cuando empieza tu partido</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="trust-bar">
+        <div class="trust-stat">
+          <div class="val">104</div>
+          <div class="lbl">Partidos</div>
+        </div>
+        <div class="trust-div"></div>
+        <div class="trust-stat">
+          <div class="val">48</div>
+          <div class="lbl">Selecciones</div>
+        </div>
+        <div class="trust-div"></div>
+        <div class="trust-stat">
+          <div class="val">GRATIS</div>
+          <div class="lbl">Para siempre</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────── AUTH PANEL ───────────────────────────────────── -->
+  <div class="auth-panel">
+    <div class="auth-card">
+
+      <a class="mobile-logo" href="index.html">TV<span>Contigo</span></a>
+
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="showTab('register')">Crear cuenta</button>
+        <button class="auth-tab" onclick="showTab('login')">Entrar</button>
+      </div>
+
+      <!-- ── Register ─────────────────────────────────────── -->
+      <div class="auth-form active" id="form-register">
+        <h1 class="auth-heading">Únete a <span>TVContigo</span></h1>
+        <p class="auth-sub">Gratis. Siempre. Sin tarjeta de crédito.</p>
+
+        <button class="btn-google" type="button" onclick="signInWithGoogle()">
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"/><path fill="#34A853" d="M6.3 14.7l7 5.1C15.1 16.1 19.2 13 24 13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 16.3 2 9.7 7.4 6.3 14.7z"/><path fill="#FBBC05" d="M24 46c5.5 0 10.5-1.9 14.3-5l-6.6-5.4C29.8 37 27 38 24 38c-6 0-10.7-3-11.8-7.3l-7 5.4C8.7 42.2 15.7 46 24 46z"/><path fill="#EA4335" d="M44.5 20H24v8.5h11.8c-.6 2.3-2 4.3-3.8 5.8l6.6 5.4C42.1 36.2 45 30.5 45 24c0-1.3-.2-2.7-.5-4z"/></svg>
+          Continuar con Google
+        </button>
+
+        <div class="divider"><span>o con correo electrónico</span></div>
+
+        <form onsubmit="doRegister(event)" novalidate>
+          <div class="field">
+            <label for="reg-name">Nombre</label>
+            <input class="field-input" type="text" id="reg-name" placeholder="Tu nombre" required autocomplete="name">
+          </div>
+          <div class="field">
+            <label for="reg-email">Correo electrónico</label>
+            <input class="field-input" type="email" id="reg-email" placeholder="tu@correo.com" required autocomplete="email">
+          </div>
+          <div class="field">
+            <label for="reg-pass">Contraseña</label>
+            <div class="pass-wrap">
+              <input class="field-input" type="password" id="reg-pass" placeholder="Mínimo 6 caracteres" required autocomplete="new-password">
+              <button type="button" class="pass-eye" onclick="togglePass('reg-pass',this)" aria-label="Ver contraseña">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="form-err" id="reg-error"></div>
+          <button type="submit" class="btn-submit" id="reg-btn">Crear cuenta gratis →</button>
+        </form>
+
+        <div class="auth-switch">
+          ¿Ya tienes cuenta? <a onclick="showTab('login')">Entrar aquí</a>
+        </div>
+      </div>
+
+      <!-- ── Login ─────────────────────────────────────────── -->
+      <div class="auth-form" id="form-login">
+        <h1 class="auth-heading">Bienvenido <span>de vuelta</span></h1>
+        <p class="auth-sub">Entra con tu cuenta de TVContigo.</p>
+
+        <button class="btn-google" type="button" onclick="signInWithGoogle()">
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"/><path fill="#34A853" d="M6.3 14.7l7 5.1C15.1 16.1 19.2 13 24 13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 16.3 2 9.7 7.4 6.3 14.7z"/><path fill="#FBBC05" d="M24 46c5.5 0 10.5-1.9 14.3-5l-6.6-5.4C29.8 37 27 38 24 38c-6 0-10.7-3-11.8-7.3l-7 5.4C8.7 42.2 15.7 46 24 46z"/><path fill="#EA4335" d="M44.5 20H24v8.5h11.8c-.6 2.3-2 4.3-3.8 5.8l6.6 5.4C42.1 36.2 45 30.5 45 24c0-1.3-.2-2.7-.5-4z"/></svg>
+          Continuar con Google
+        </button>
+
+        <div class="divider"><span>o con correo electrónico</span></div>
+
+        <form onsubmit="doLogin(event)" novalidate>
+          <div class="field">
+            <label for="login-email">Correo electrónico</label>
+            <input class="field-input" type="email" id="login-email" placeholder="tu@correo.com" required autocomplete="email">
+          </div>
+          <div class="field">
+            <label for="login-pass">Contraseña</label>
+            <div class="pass-wrap">
+              <input class="field-input" type="password" id="login-pass" placeholder="••••••••" required autocomplete="current-password">
+              <button type="button" class="pass-eye" onclick="togglePass('login-pass',this)" aria-label="Ver contraseña">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="form-err" id="login-error"></div>
+          <button type="submit" class="btn-submit blue" id="login-btn">Entrar →</button>
+        </form>
+
+        <div class="auth-switch">
+          ¿No tienes cuenta? <a onclick="showTab('register')">Regístrate gratis</a>
+        </div>
+      </div>
+
+      <!-- ── Éxito ──────────────────────────────────────────── -->
+      <div class="auth-success" id="auth-success">
+        <div class="success-check">✓</div>
+        <h2>¡Cuenta creada!</h2>
+        <p>Revisa tu correo y confirma tu cuenta.<br>Después entra y disfruta el fútbol gratis.</p>
+        <a class="btn-back" href="index.html">← Ver partido en vivo</a>
+      </div>
+
+    </div><!-- /auth-card -->
+  </div><!-- /auth-panel -->
+</div><!-- /auth-wrap -->
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  // closeAll stub (requerido por signInWithGoogle en auth.js)
+  function closeAll() {}
+
+  // Tabs
+  function showTab(tab) {
+    const isReg = tab === 'register';
+    document.querySelectorAll('.auth-tab').forEach((t, i) => {
+      t.classList.toggle('active', isReg ? i === 0 : i === 1);
+    });
+    document.getElementById('form-register').classList.toggle('active', isReg);
+    document.getElementById('form-login').classList.toggle('active', !isReg);
+    document.getElementById('auth-success').style.display = 'none';
+  }
+
+  // Password visibility toggle
+  const _eyeOn  = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>`;
+  const _eyeOff = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>`;
+  function togglePass(id, btn) {
+    const el = document.getElementById(id);
+    el.type = el.type === 'password' ? 'text' : 'password';
+    btn.innerHTML = el.type === 'text' ? _eyeOff : _eyeOn;
+  }
+
+  // Register
+  async function doRegister(e) {
+    e.preventDefault();
+    const errEl = document.getElementById('reg-error');
+    const btn   = document.getElementById('reg-btn');
+    errEl.textContent = '';
+    btn.disabled = true; btn.textContent = 'Creando...';
+
+    const name  = document.getElementById('reg-name').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const pass  = document.getElementById('reg-pass').value;
+    if (!name) { errEl.textContent = 'Escribe tu nombre.'; btn.disabled=false; btn.textContent='Crear cuenta gratis →'; return; }
+
+    const { ok, msg } = await Auth.register(name, email, pass);
+    btn.disabled = false; btn.textContent = 'Crear cuenta gratis →';
+    if (!ok) { errEl.textContent = msg; return; }
+
+    document.getElementById('form-register').style.display = 'none';
+    const s = document.getElementById('auth-success');
+    s.style.display = 'block';
+    s.style.animation = 'fadeUp .35s ease';
+  }
+
+  // Login
+  async function doLogin(e) {
+    e.preventDefault();
+    const errEl = document.getElementById('login-error');
+    const btn   = document.getElementById('login-btn');
+    errEl.textContent = '';
+    btn.disabled = true; btn.textContent = 'Entrando...';
+
+    const email = document.getElementById('login-email').value.trim();
+    const pass  = document.getElementById('login-pass').value;
+
+    const { ok, msg } = await Auth.login(email, pass);
+    btn.disabled = false; btn.textContent = 'Entrar →';
+    if (!ok) { errEl.textContent = msg; return; }
+    window.location.href = 'index.html';
+  }
+
+  // Si ya está logueado, ir al inicio
+  authInit().then(() => {
+    if (Auth.isLoggedIn()) window.location.href = 'index.html';
+  });
+
+  // Parámetro ?tab=login
+  const urlTab = new URLSearchParams(location.search).get('tab');
+  if (urlTab === 'login') showTab('login');
+</script>
+</body>
+</html>

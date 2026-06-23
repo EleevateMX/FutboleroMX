@@ -843,3 +843,273 @@ body {
 @media (max-width: 400px) {
   .nav-center { display: none; }
 }
+
+/* ── Cancha TV — Multi-vista ──────────────────────────────────────────────── */
+#cancha-tv {
+  display: none;
+  background: #000;
+  position: relative;
+}
+
+.cancha-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: rgba(7,7,15,.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: calc(60px + env(safe-area-inset-top, 0px));
+  z-index: 50;
+  gap: 12px;
+}
+@media (min-width: 1024px) { .cancha-header { top: 64px; } }
+
+.cancha-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 17px;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.cancha-title .ct-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 7px var(--red);
+  animation: pulse 1.4s infinite;
+}
+
+.cancha-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.cv-layout {
+  display: flex;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.cv-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .18s;
+  color: var(--text-dim);
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  border-right: 1px solid var(--border);
+  white-space: nowrap;
+}
+.cv-btn:last-child { border-right: none; }
+.cv-btn.active {
+  background: rgba(14,165,233,.18);
+  color: var(--blue);
+}
+.cv-btn:hover:not(.active) { background: var(--surface-3); color: var(--text); }
+
+.cv-close {
+  display: flex; align-items: center; gap: 5px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(239,68,68,.25);
+  background: rgba(239,68,68,.07);
+  color: var(--red);
+  font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: all .18s;
+  font-family: inherit;
+}
+.cv-close:hover { background: rgba(239,68,68,.15); border-color: rgba(239,68,68,.4); }
+
+/* Grid */
+.cancha-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  background: #000;
+}
+.cancha-grid.layout-1 { grid-template-columns: 1fr; }
+.cancha-grid.layout-2 { grid-template-columns: 1fr 1fr; }
+.cancha-grid.layout-4 { grid-template-columns: 1fr 1fr; }
+
+/* Panels */
+.cancha-panel {
+  position: relative;
+  background: #0a0a12;
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  transition: outline .18s;
+}
+.cancha-panel:hover { outline: 2px solid rgba(14,165,233,.4); outline-offset: -2px; }
+
+.cp-top {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 3;
+  background: linear-gradient(to bottom, rgba(0,0,0,.75) 0%, transparent 100%);
+  padding: 8px 10px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity .2s;
+}
+.cancha-panel:hover .cp-top { opacity: 1; }
+
+.cp-select {
+  background: rgba(0,0,0,.7);
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 9px;
+  cursor: pointer;
+  font-family: inherit;
+  flex: 1;
+  min-width: 0;
+  max-width: 180px;
+  outline: none;
+}
+.cp-select:focus { border-color: var(--blue); }
+.cp-select option { background: #0f0f1a; }
+
+.cp-badge {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 9px; font-weight: 800; letter-spacing: 1px;
+  background: rgba(239,68,68,.85);
+  color: #fff; padding: 3px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.cp-badge-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: #fff;
+  animation: blink 1s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+
+.cp-no-signal {
+  position: absolute;
+  inset: 0; z-index: 2;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 8px; padding: 16px;
+  text-align: center;
+  color: var(--text-dim);
+}
+.cp-no-signal .cp-icon { font-size: 32px; opacity: .4; }
+.cp-no-signal .cp-msg { font-size: 11px; color: var(--muted); }
+
+.cp-iframe-wrap { position: absolute; inset: 0; }
+.cp-iframe { width: 100%; height: 100%; border: none; display: block; }
+
+/* Panel number badge */
+.cp-num {
+  position: absolute;
+  top: 8px; right: 10px;
+  z-index: 4;
+  font-size: 9px; font-weight: 800; letter-spacing: .5px;
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.4);
+  padding: 2px 6px; border-radius: 4px;
+  pointer-events: none;
+}
+
+/* Cancha TV chip en channel-strip */
+.cancha-tv-chip {
+  flex-shrink: 0;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 4px; cursor: pointer;
+  padding: 8px 14px; border-radius: 10px;
+  border: 1.5px solid rgba(249,115,22,.4);
+  background: rgba(249,115,22,.08);
+  transition: all .18s; min-width: 88px; text-align: center;
+}
+.cancha-tv-chip:hover, .cancha-tv-chip.active {
+  border-color: var(--orange);
+  background: rgba(249,115,22,.18);
+  box-shadow: 0 0 14px rgba(249,115,22,.25);
+}
+.cancha-tv-chip .chip-name { color: var(--orange); }
+.cancha-tv-chip .chip-label { color: rgba(249,115,22,.7); }
+
+/* Responsive */
+@media (max-width: 640px) {
+  .cancha-grid.layout-2 { grid-template-columns: 1fr; }
+  .cancha-grid.layout-4 { grid-template-columns: 1fr; }
+  .cancha-title { font-size: 14px; }
+  .cv-btn { padding: 5px 9px; font-size: 11px; }
+}
+
+/* ── Liga MX Teaser section ───────────────────────────────────────────────── */
+.liga-teaser {
+  margin: 0 20px;
+  background: linear-gradient(135deg, #0d1422 0%, #111827 100%);
+  border: 1.5px solid rgba(34,197,94,.2);
+  border-radius: 16px;
+  padding: 22px 22px 20px;
+  position: relative;
+  overflow: hidden;
+}
+.liga-teaser::after {
+  content: '⚽';
+  position: absolute;
+  right: -10px; bottom: -16px;
+  font-size: 88px; opacity: .06;
+  pointer-events: none;
+}
+.liga-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 10px; font-weight: 800; letter-spacing: 1.5px;
+  color: var(--green); margin-bottom: 8px;
+  background: rgba(34,197,94,.1);
+  padding: 3px 10px; border-radius: 20px;
+  border: 1px solid rgba(34,197,94,.2);
+}
+.liga-teaser h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 24px; letter-spacing: 1px;
+  margin-bottom: 6px; line-height: 1.1;
+}
+.liga-teaser p {
+  font-size: 13px; color: var(--text-dim);
+  margin-bottom: 16px; line-height: 1.6;
+}
+.liga-competitions {
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.liga-comp-pill {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 12px; font-weight: 600; color: var(--text-dim);
+  white-space: nowrap;
+}
+.liga-notify-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 16px; padding: 10px 20px;
+  background: rgba(34,197,94,.12);
+  border: 1.5px solid rgba(34,197,94,.3);
+  border-radius: 10px;
+  color: var(--green); font-size: 13px;
+  font-weight: 700; cursor: pointer;
+  font-family: inherit; transition: all .18s;
+}
+.liga-notify-btn:hover {
+  background: rgba(34,197,94,.2);
+  border-color: rgba(34,197,94,.5);
+}

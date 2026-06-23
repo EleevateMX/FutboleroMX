@@ -78,7 +78,7 @@
   <div class="nav-actions">
     <div id="nav-guest">
       <button class="btn btn-sm btn-ghost" onclick="openModal('login-modal')">Entrar</button>
-      <button class="btn btn-sm btn-orange" onclick="openModal('register-modal')">Registrarse</button>
+      <a class="btn btn-sm btn-orange" href="cuenta.html">Registrarse</a>
     </div>
     <div id="nav-user">
       <span id="nav-username" style="font-size:13px;color:var(--text-dim)"></span>
@@ -103,8 +103,29 @@
   </div>
 </section>
 
+<!-- ── Cancha TV — Vista Simultánea ──────────────────────────────────────── -->
+<div id="cancha-tv">
+  <div class="cancha-header">
+    <div class="cancha-title">
+      <span class="ct-dot"></span>CANCHA TV · VISTA SIMULTÁNEA
+    </div>
+    <div class="cancha-controls">
+      <div class="cv-layout">
+        <button class="cv-btn active" id="cv-1" onclick="setCanchaLayout(1)">1 pantalla</button>
+        <button class="cv-btn" id="cv-2" onclick="setCanchaLayout(2)">2 pantallas</button>
+        <button class="cv-btn" id="cv-4" onclick="setCanchaLayout(4)">4 pantallas</button>
+      </div>
+      <button class="cv-close" onclick="closeCanchaTV()">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="13" height="13"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+        Salir
+      </button>
+    </div>
+  </div>
+  <div class="cancha-grid layout-2" id="cancha-grid"><!-- rendered by JS --></div>
+</div>
+
 <!-- Aviso para evitar confusión con el anuncio del reproductor -->
-<div class="play-hint">▶ Solo salta el anuncio del reproductor y disfruta la transmisión 😊</div>
+<div class="play-hint" id="play-hint">▶ Solo salta el anuncio del reproductor y disfruta la transmisión 😊</div>
 
 <!-- Channel Selector Strip -->
 <div class="channel-strip" id="channel-strip">
@@ -179,6 +200,34 @@
   </div>
   <div id="standings-groups">
     <!-- rendered by app.js -->
+  </div>
+</section>
+
+<!-- ── Liga MX Teaser ─────────────────────────────────────────────────────── -->
+<section class="content-section" id="liga-mx-section">
+  <div class="section-header">
+    <div class="section-title"><span class="dot" style="background:var(--green)"></span> PRÓXIMAMENTE</div>
+  </div>
+  <div class="liga-teaser">
+    <div class="liga-badge">
+      <span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;"></span>
+      COMING SOON
+    </div>
+    <h3>Liga MX · Liguilla · Copa · Champions</h3>
+    <p>
+      Pronto podrás ver el fútbol mexicano completo aquí: partidos de Liga regular, Liguilla,
+      Copa MX y Concachampions — en vivo y gratis, con Cancha TV vista simultánea.
+    </p>
+    <div class="liga-competitions">
+      <span class="liga-comp-pill">⚽ Liga MX Apertura</span>
+      <span class="liga-comp-pill">⚽ Liga MX Clausura</span>
+      <span class="liga-comp-pill">🏆 Liguilla</span>
+      <span class="liga-comp-pill">🥇 Copa MX</span>
+      <span class="liga-comp-pill">🌎 Champions Concacaf</span>
+    </div>
+    <button class="liga-notify-btn" onclick="Auth.isLoggedIn() ? _showToast('✓ Te avisaremos cuando Liga MX esté disponible','var(--green)') : (location.href='cuenta.html')">
+      🔔 Avísame cuando esté disponible
+    </button>
   </div>
 </section>
 
