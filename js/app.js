@@ -1050,39 +1050,82 @@ async function renderRanking() {
   }).join('');
 }
 
-// ── Ad Settings (global, desde Supabase, adaptado PC/móvil) ───────────────
+// ── Ad Carousel (multi-anuncio con rotación automática) ───────────────────
+let _adCarouselTimer = null;
+let _adsActive       = [];
+let _adCarouselIdx   = 0;
+
 async function loadAdSettings() {
   const adBar = document.getElementById('ad-bar');
-  const adContent = document.getElementById('ad-content');
   try {
-    const { data } = await sb.from('ad_config').select('*').eq('id', 1).single();
-    if (!data || !data.enabled) { adBar.classList.add('hidden'); return; }
-    const isMobile = window.matchMedia('(max-width: 640px)').matches;
+    const { data: cfg } = await sb.from('ad_config').select('enabled').eq('id', 1).single();
+    if (!cfg || !cfg.enabled) { adBar.classList.add('hidden'); return; }
 
-    // Prioridad: imagen propia → código (AdSense/HTML)
-    const img = isMobile ? (data.mobile_img || data.desktop_img) : (data.desktop_img || data.mobile_img);
-    if (img) {
-      const link = data.link_url || '#';
-      adContent.innerHTML = `<a href="${link}" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;height:100%;">
-        <img src="${img}" alt="anuncio" style="max-height:60px;max-width:100%;border-radius:6px;">
-      </a>`;
-      return;
-    }
+    const { data: ads } = await sb.from('ads').select('*').eq('active', true)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true });
 
-    const code = isMobile ? (data.mobile_code || data.desktop_code) : (data.desktop_code || data.mobile_code);
-    if (code && code.trim()) {
-      adContent.innerHTML = code;
-      adContent.querySelectorAll('script').forEach(old => {
-        const s = document.createElement('script');
-        [...old.attributes].forEach(a => s.setAttribute(a.name, a.value));
-        s.textContent = old.textContent;
-        old.replaceWith(s);
-      });
+    if (!ads || !ads.length) { adBar.classList.add('hidden'); return; }
+
+    _adsActive     = ads;
+    _adCarouselIdx = 0;
+    if (_adCarouselTimer) { clearInterval(_adCarouselTimer); _adCarouselTimer = null; }
+
+    _renderAdSlide(0);
+
+    if (ads.length > 1) {
+      _renderAdDots(ads.length);
+      _adCarouselTimer = setInterval(() => {
+        _adCarouselIdx = (_adCarouselIdx + 1) % _adsActive.length;
+        _renderAdSlide(_adCarouselIdx);
+        _updateAdDots(_adCarouselIdx);
+      }, 6000);
     }
-  } catch (e) { /* deja el placeholder por defecto */ }
+  } catch (e) { /* mantiene el placeholder */ }
+}
+
+function _renderAdSlide(idx) {
+  const adContent = document.getElementById('ad-content');
+  const ad = _adsActive[idx];
+  if (!ad) return;
+  const isMobile = window.matchMedia('(max-width:640px)').matches;
+  const img = isMobile ? (ad.mobile_img || ad.desktop_img) : (ad.desktop_img || ad.mobile_img);
+  if (!img) return;
+  adContent.style.opacity    = '0';
+  adContent.style.transition = 'opacity .25s';
+  setTimeout(() => {
+    adContent.innerHTML = `<a href="${ad.link_url || '#'}" target="_blank" rel="noopener"
+      style="display:flex;align-items:center;justify-content:center;height:100%;">
+      <img src="${img}" alt="${ad.title || 'anuncio'}"
+        style="max-height:58px;max-width:100%;border-radius:6px;">
+    </a>`;
+    adContent.style.opacity = '1';
+  }, 150);
+}
+
+function _renderAdDots(count) {
+  let dots = document.getElementById('ad-dots');
+  if (!dots) {
+    dots = document.createElement('div');
+    dots.id = 'ad-dots';
+    dots.style.cssText =
+      'position:absolute;bottom:3px;left:50%;transform:translateX(-50%);display:flex;gap:4px;pointer-events:none;';
+    document.getElementById('ad-bar').appendChild(dots);
+  }
+  dots.innerHTML = Array.from({ length: count }, (_, i) =>
+    `<span data-dot="${i}" style="display:inline-block;width:5px;height:5px;border-radius:50%;` +
+    `background:${i === 0 ? 'var(--blue)' : 'rgba(255,255,255,.3)'};transition:background .3s;"></span>`
+  ).join('');
+}
+
+function _updateAdDots(idx) {
+  document.querySelectorAll('#ad-dots span').forEach((s, i) => {
+    s.style.background = i === idx ? 'var(--blue)' : 'rgba(255,255,255,.3)';
+  });
 }
 
 function closeAd() {
+  if (_adCarouselTimer) { clearInterval(_adCarouselTimer); _adCarouselTimer = null; }
   document.getElementById('ad-bar').classList.add('hidden');
 }
 

@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin — TVContigo</title>
+  <!-- Nunca cachear el admin: siempre traer del servidor -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <link rel="icon" type="image/svg+xml" href="../icons/icon.svg">
   <link rel="icon" type="image/png" sizes="192x192" href="../icons/icon-192.png">
   <style>
@@ -346,72 +350,71 @@
       </div>
     </div>
 
-    <!-- Ad Settings (global, PC + móvil) -->
+    <!-- Ad Settings (multi-ad con toggle individual) -->
     <div class="section-card">
-      <h3><span class="dot"></span> 📢 Publicidad (PC y móvil)</h3>
+      <h3><span class="dot"></span> 📢 Publicidad
+        <button class="btn-out" onclick="loadAds()" style="font-size:11px;padding:3px 10px;margin-left:auto;">↻ Recargar</button>
+      </h3>
       <div style="background:rgba(14,165,233,.08);border:1px solid rgba(14,165,233,.2);border-radius:10px;padding:12px;font-size:12px;color:var(--dim);margin-bottom:16px;">
-        Estos anuncios se muestran a <strong>todos los visitantes</strong> en el banner inferior. El sitio elige automáticamente la versión PC o móvil según la pantalla. Requiere la clave de operación.
+        Añade varios anuncios (imagen + enlace). Cada uno se puede activar o desactivar individualmente. Los anuncios activos rotan automáticamente en el banner inferior del sitio.
       </div>
 
-      <div class="toggle-row">
+      <!-- Toggle global -->
+      <div class="toggle-row" style="margin-bottom:12px;">
         <div>
           <div class="toggle-label">Banner de anuncios activo</div>
           <div class="toggle-desc">Muestra/oculta el banner inferior en todo el sitio</div>
         </div>
-        <button class="toggle on" id="toggle-ads" onclick="document.getElementById('toggle-ads').classList.toggle('on')"></button>
+        <button class="toggle on" id="toggle-ads" onclick="this.classList.toggle('on')"></button>
       </div>
+      <button class="btn-save" style="margin-bottom:14px;" onclick="saveGlobalAdToggle()">Guardar estado del banner</button>
+      <div class="success-msg" id="ad-toggle-ok" style="display:none;">✓ Guardado</div>
+      <div class="err" id="ad-toggle-err" style="display:none;"></div>
 
-      <!-- Anuncio propio por imagen (lo principal) -->
-      <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:16px;margin:16px 0;">
-        <div style="font-size:13px;font-weight:700;margin-bottom:4px;">🖼️ Tu propio anuncio (imagen)</div>
-        <div style="font-size:11px;color:var(--dim);margin-bottom:14px;">Sube tu imagen para PC y para móvil, y pon a dónde lleva al hacer clic. Se muestra automáticamente según la pantalla.</div>
+      <!-- Lista de anuncios -->
+      <div id="ads-list" style="margin:16px 0;"></div>
+
+      <!-- Botón nuevo anuncio -->
+      <button class="btn-out" id="btn-new-ad" onclick="openAdForm(null)"
+        style="width:100%;text-align:center;padding:10px;">+ Nuevo anuncio</button>
+
+      <!-- Formulario agregar/editar (oculto por defecto) -->
+      <div id="ad-form-wrap" style="display:none;margin-top:16px;background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:16px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;" id="ad-form-title-lbl">Nuevo anuncio</div>
+        <input type="hidden" id="ad-form-id">
+
+        <label>Título del anuncio</label>
+        <input type="text" id="ad-form-title" placeholder="Ej. Promo especial">
 
         <div class="form-row">
           <div>
             <label>Imagen PC (recom. 728×90)</label>
-            <input type="file" id="ad-img-desktop-file" accept="image/*">
-            <div id="ad-img-desktop-prev" style="margin-top:8px;"></div>
+            <input type="file" id="ad-form-desktop-file" accept="image/*">
+            <div id="ad-form-desktop-prev" style="margin-top:6px;"></div>
           </div>
           <div>
             <label>Imagen móvil (recom. 320×50)</label>
-            <input type="file" id="ad-img-mobile-file" accept="image/*">
-            <div id="ad-img-mobile-prev" style="margin-top:8px;"></div>
+            <input type="file" id="ad-form-mobile-file" accept="image/*">
+            <div id="ad-form-mobile-prev" style="margin-top:6px;"></div>
           </div>
         </div>
-        <label>Enlace al hacer clic (a dónde lleva el anuncio)</label>
-        <input type="url" id="ad-link" placeholder="https://tu-promocion.com">
-        <button class="btn-save" onclick="saveAdSettings()">Guardar anuncio</button>
-        <div class="success-msg" id="ad-ok" style="display:none;">✓ Anuncio guardado (visible para todos)</div>
-        <div class="err" id="ad-err" style="display:none;"></div>
-        <div class="err" id="ad-img-err" style="display:none;"></div>
-        <p style="font-size:11px;color:var(--muted);margin-top:8px;">Si subes imagen, esa se muestra. El código de abajo es solo para casos avanzados (AdSense/HTML).</p>
-      </div>
 
-      <details style="margin-bottom:8px;">
-        <summary style="cursor:pointer;font-size:13px;color:var(--dim);">Opciones avanzadas (AdSense / código HTML)</summary>
+        <label>Enlace al hacer clic</label>
+        <input type="url" id="ad-form-link" placeholder="https://tu-promocion.com">
 
-      <!-- Generador rápido de AdSense -->
-      <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:16px;margin:16px 0;">
-        <div style="font-size:13px;font-weight:700;margin-bottom:4px;">⚡ Generador rápido de AdSense</div>
-        <div style="font-size:11px;color:var(--dim);margin-bottom:12px;">Pega tu ID de Google AdSense y los IDs de bloque, y te genero el código para PC y móvil automáticamente.</div>
-        <label>ID de cliente AdSense (ca-pub-…)</label>
-        <input type="text" id="ads-pub" placeholder="ca-pub-1234567890123456">
-        <div class="form-row">
-          <div><label>ID de bloque PC (728×90)</label><input type="text" id="ads-slot-pc" placeholder="1234567890"></div>
-          <div><label>ID de bloque móvil (320×50)</label><input type="text" id="ads-slot-mb" placeholder="0987654321"></div>
+        <div class="toggle-row" style="margin:12px 0;">
+          <div><div class="toggle-label">Anuncio activo</div></div>
+          <button class="toggle on" id="ad-form-active" onclick="this.classList.toggle('on')"></button>
         </div>
-        <button class="btn-out" onclick="genAdsense()">Generar código automáticamente</button>
-        <div class="success-msg" id="ads-gen-ok" style="display:none;">✓ Código generado abajo. Revisa y dale "Guardar publicidad".</div>
-        <div class="err" id="ads-gen-err" style="display:none;"></div>
+
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="btn-save" onclick="saveAd()">Guardar anuncio</button>
+          <button class="btn-out" onclick="closeAdForm()">Cancelar</button>
+        </div>
+        <div class="success-msg" id="ad-form-ok" style="display:none;">✓ Anuncio guardado</div>
+        <div class="err" id="ad-form-err" style="display:none;"></div>
+        <div class="err" id="ad-form-img-err" style="display:none;"></div>
       </div>
-
-      <label style="margin-top:14px;">Anuncio para PC / escritorio (recomendado 728×90 — leaderboard)</label>
-      <textarea id="ad-desktop" placeholder="<!-- Código AdSense o HTML del banner para PC -->" style="min-height:90px;font-family:monospace;font-size:12px;"></textarea>
-
-      <label>Anuncio para móvil (recomendado 320×50 — banner móvil)</label>
-      <textarea id="ad-mobile" placeholder="<!-- Código AdSense o HTML del banner para móvil -->" style="min-height:90px;font-family:monospace;font-size:12px;"></textarea>
-      <p style="font-size:11px;color:var(--muted);margin-top:8px;">El código solo se usa si NO subiste imagen. Tras editarlo, dale "Guardar anuncio" arriba.</p>
-      </details>
     </div>
 
     <!-- Moderación del muro de la afición -->
@@ -478,6 +481,24 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
+// ── Forzar siempre la versión más reciente del admin ─────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js', { scope: '/' })
+    .then(reg => {
+      reg.update(); // Verificar si hay SW nuevo al cargar
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) reg.update();
+      });
+    })
+    .catch(() => {});
+  // Cuando un nuevo SW toma el control → recarga dura para traer archivos frescos
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload(true);
+  });
+}
+// Si el navegador restaura la página desde bfcache → recarga dura
+window.addEventListener('pageshow', e => { if (e.persisted) window.location.reload(true); });
+
 const ADMIN_PASS = 'tvcontigo2026';
 
 // Supabase client (mismo proyecto FutboleroMX)
@@ -518,7 +539,12 @@ function adminLogout() {
 if (sessionStorage.getItem('tvc_admin') === '1') {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('dashboard').style.display = 'block';
-  window.addEventListener('DOMContentLoaded', initDashboard);
+  // DOMContentLoaded ya pudo haber disparado cuando el script está al fondo del body
+  if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', initDashboard);
+  } else {
+    initDashboard();
+  }
 }
 
 const TAB_RULES = [
@@ -713,76 +739,240 @@ function _adPrev(id, url) {
   el.innerHTML = url ? `<img src="${url}" style="max-width:100%;max-height:60px;border-radius:6px;border:1px solid var(--border);">` : '<span style="font-size:11px;color:var(--muted);">Sin imagen</span>';
 }
 
-async function loadAds() {
-  try {
-    const { data } = await sb.from('ad_config').select('*').eq('id', 1).single();
-    if (!data) return;
-    document.getElementById('toggle-ads').classList.toggle('on', data.enabled !== false);
-    document.getElementById('ad-desktop').value = data.desktop_code || '';
-    document.getElementById('ad-mobile').value = data.mobile_code || '';
-    document.getElementById('ad-link').value = data.link_url || '';
-    _adPrev('ad-img-desktop-prev', data.desktop_img);
-    _adPrev('ad-img-mobile-prev', data.mobile_img);
-  } catch (e) { /* ignora */ }
-  // Sube al elegir archivo
-  ['desktop','mobile'].forEach(slot => {
-    const inp = document.getElementById(`ad-img-${slot}-file`);
-    if (inp && !inp._wired) { inp._wired = true; inp.addEventListener('change', () => uploadAdImage(slot)); }
-  });
-}
+// ── Multi-ad state ─────────────────────────────────────────────────────────
+let _adsList          = [];
+let _adFormDesktopUrl = null;
+let _adFormMobileUrl  = null;
 
-async function uploadAdImage(slot) {
-  const err = document.getElementById('ad-img-err'); err.style.display = 'none';
-  if (!qKey()) { err.textContent = 'Ingresa la clave de operación primero.'; err.style.display = 'block'; return; }
-  const file = document.getElementById(`ad-img-${slot}-file`).files[0];
-  if (!file) return;
-  if (file.size > 2 * 1024 * 1024) { err.textContent = 'La imagen debe pesar menos de 2 MB.'; err.style.display = 'block'; return; }
-  const base64 = await new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result.split(',')[1]);
-    r.onerror = rej; r.readAsDataURL(file);
-  });
-  const prev = document.getElementById(`ad-img-${slot}-prev`);
-  prev.innerHTML = '<span style="font-size:11px;color:var(--dim);">Subiendo...</span>';
+async function loadAds() {
+  const listEl = document.getElementById('ads-list');
+  listEl.innerHTML = '<p style="font-size:12px;color:var(--dim);padding:8px 0;">Cargando...</p>';
+
   try {
-    const { data, error } = await sb.functions.invoke('upload-ad', { body: { pass: qKey(), slot, base64, contentType: file.type } });
+    const { data: cfg } = await sb.from('ad_config').select('enabled').eq('id', 1).single();
+    if (cfg) document.getElementById('toggle-ads').classList.toggle('on', cfg.enabled !== false);
+  } catch (_) {}
+
+  try {
+    const { data: ads, error } = await sb.from('ads').select('*')
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true });
     if (error) throw error;
-    if (data && data.error) throw new Error(data.error);
-    _adPrev(`ad-img-${slot}-prev`, data.url);
+    renderAdsList(ads || []);
   } catch (e) {
-    err.textContent = 'Error al subir: ' + (e.message || e); err.style.display = 'block';
-    _adPrev(`ad-img-${slot}-prev`, null);
+    listEl.innerHTML = `
+      <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);
+        border-radius:10px;padding:14px;margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:4px;">
+          Error al cargar anuncios
+        </div>
+        <div style="font-size:11px;color:var(--dim);margin-bottom:10px;">${e.message || 'Error de conexión'}</div>
+        <button class="btn-out" onclick="loadAds()" style="font-size:12px;">↻ Volver a intentar</button>
+      </div>`;
+    // Auto-reintento una vez después de 5 s
+    setTimeout(() => {
+      if (document.getElementById('ads-list').querySelector('button[onclick="loadAds()"]')) loadAds();
+    }, 5000);
   }
 }
 
-function genAdsense() {
-  const ok = document.getElementById('ads-gen-ok'); const err = document.getElementById('ads-gen-err');
-  ok.style.display = 'none'; err.style.display = 'none';
-  const pub = document.getElementById('ads-pub').value.trim();
-  const pc = document.getElementById('ads-slot-pc').value.trim();
-  const mb = document.getElementById('ads-slot-mb').value.trim();
-  if (!/^ca-pub-\d{10,}$/.test(pub)) { err.textContent = 'El ID de cliente debe verse como ca-pub-1234567890.'; err.style.display = 'block'; return; }
-  if (!pc && !mb) { err.textContent = 'Pon al menos un ID de bloque (PC o móvil).'; err.style.display = 'block'; return; }
-  const lib = `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${pub}" crossorigin="anonymous"></scr` + `ipt>`;
-  const ins = (slot, w, h) => `${lib}\n<ins class="adsbygoogle" style="display:inline-block;width:${w}px;height:${h}px" data-ad-client="${pub}" data-ad-slot="${slot}"></ins>\n<scr`+`ipt>(adsbygoogle = window.adsbygoogle || []).push({});</scr`+`ipt>`;
-  if (pc) document.getElementById('ad-desktop').value = ins(pc, 728, 90);
-  if (mb) document.getElementById('ad-mobile').value = ins(mb, 320, 50);
-  ok.style.display = 'block';
+function _adStatusBadge(active) {
+  return active
+    ? 'background:rgba(34,197,94,.15);color:var(--green);border-color:rgba(34,197,94,.3);'
+    : 'background:rgba(148,163,184,.08);color:var(--dim);border-color:var(--border);';
 }
 
-async function saveAdSettings() {
-  const ok = document.getElementById('ad-ok'); const err = document.getElementById('ad-err');
+function renderAdsList(ads) {
+  _adsList = ads;
+  const el = document.getElementById('ads-list');
+  if (!ads.length) {
+    el.innerHTML = '<p style="font-size:12px;color:var(--muted);padding:8px 0;">Aún no hay anuncios. Crea uno abajo.</p>';
+    return;
+  }
+  try {
+  el.innerHTML = ads.map(ad => `
+    <div id="ad-card-${ad.id}" style="background:var(--s3);border:1px solid var(--border);border-radius:10px;
+      padding:10px 14px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:56px;height:34px;border-radius:6px;overflow:hidden;background:var(--surface);
+          display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          ${ad.desktop_img
+            ? `<img src="${ad.desktop_img}" alt="" style="max-width:100%;max-height:100%;object-fit:cover;">`
+            : '<span style="font-size:18px;line-height:1;">📢</span>'}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            ${ad.title || 'Sin título'}
+          </div>
+          <div style="font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            ${ad.link_url || '—'}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+          <span id="ad-status-${ad.id}" style="font-size:10px;font-weight:700;padding:3px 8px;
+            border-radius:20px;letter-spacing:.5px;border:1px solid;${_adStatusBadge(ad.active)}">
+            ${ad.active ? 'ACTIVO' : 'INACTIVO'}
+          </span>
+          <button class="toggle ${ad.active ? 'on' : ''}" id="toggle-ad-${ad.id}"
+            onclick="toggleAd(${ad.id}, !this.classList.contains('on'), this)"></button>
+          <button class="btn-out" style="font-size:11px;padding:4px 10px;"
+            onclick="openAdForm(_adsList.find(a=>a.id===${ad.id}))">✎</button>
+          <button class="btn-out" style="font-size:11px;padding:4px 10px;color:var(--red);border-color:rgba(239,68,68,.3);"
+            onclick="deleteAd(${ad.id})">🗑</button>
+        </div>
+      </div>
+      <div id="ad-confirm-${ad.id}" style="display:none;font-size:11px;color:var(--green);
+        font-weight:600;margin-top:6px;padding-left:66px;">✓ Cambio guardado</div>
+    </div>
+  `).join('');
+  } catch (e) {
+    el.innerHTML = `<div style="font-size:12px;color:var(--red);padding:8px 0;">
+      Error al mostrar anuncios: ${e.message || e}
+      <button class="btn-out" onclick="loadAds()" style="font-size:12px;margin-left:8px;">↻ Reintentar</button>
+    </div>`;
+  }
+}
+
+function openAdForm(ad) {
+  _adFormDesktopUrl = ad ? (ad.desktop_img || null) : null;
+  _adFormMobileUrl  = ad ? (ad.mobile_img  || null) : null;
+
+  document.getElementById('ad-form-id').value             = ad ? ad.id : '';
+  document.getElementById('ad-form-title').value           = ad ? (ad.title    || '') : '';
+  document.getElementById('ad-form-link').value            = ad ? (ad.link_url || '') : '';
+  document.getElementById('ad-form-title-lbl').textContent = ad ? 'Editar anuncio' : 'Nuevo anuncio';
+  document.getElementById('ad-form-active').classList.toggle('on', !ad || ad.active !== false);
+  document.getElementById('ad-form-desktop-file').value = '';
+  document.getElementById('ad-form-mobile-file').value  = '';
+  _adPrev('ad-form-desktop-prev', _adFormDesktopUrl);
+  _adPrev('ad-form-mobile-prev',  _adFormMobileUrl);
+
+  document.getElementById('ad-form-desktop-file').onchange = () => uploadAdFormSlot('desktop');
+  document.getElementById('ad-form-mobile-file').onchange  = () => uploadAdFormSlot('mobile');
+
+  ['ad-form-ok','ad-form-err','ad-form-img-err'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+  document.getElementById('ad-form-wrap').style.display = 'block';
+  document.getElementById('btn-new-ad').style.display   = 'none';
+  document.getElementById('ad-form-wrap').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function closeAdForm() {
+  document.getElementById('ad-form-wrap').style.display = 'none';
+  document.getElementById('btn-new-ad').style.display   = '';
+}
+
+async function uploadAdFormSlot(slot) {
+  const errEl = document.getElementById('ad-form-img-err'); errEl.style.display = 'none';
+  if (!qKey()) { errEl.textContent = 'Ingresa la clave de operación primero.'; errEl.style.display = 'block'; return; }
+  const inp  = document.getElementById(`ad-form-${slot}-file`);
+  const file = inp.files[0]; if (!file) return;
+  if (file.size > 2 * 1024 * 1024) {
+    errEl.textContent = 'La imagen debe pesar menos de 2 MB.'; errEl.style.display = 'block'; return;
+  }
+  const prevEl = document.getElementById(`ad-form-${slot}-prev`);
+  prevEl.innerHTML = '<span style="font-size:11px;color:var(--dim);">Subiendo...</span>';
+  const base64 = await new Promise((res, rej) => {
+    const r = new FileReader(); r.onload = () => res(r.result.split(',')[1]); r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+  const adId   = document.getElementById('ad-form-id').value || `new${Date.now()}`;
+  const slotId = `ads-${adId}-${slot}`;
+  try {
+    const { data, error } = await sb.functions.invoke('upload-ad', {
+      body: { pass: qKey(), slot: slotId, base64, contentType: file.type }
+    });
+    if (error) throw error;
+    if (data && data.error) throw new Error(data.error);
+    if (slot === 'desktop') _adFormDesktopUrl = data.url;
+    else                    _adFormMobileUrl  = data.url;
+    _adPrev(`ad-form-${slot}-prev`, data.url);
+  } catch (e) {
+    errEl.textContent = 'Error al subir: ' + (e.message || e); errEl.style.display = 'block';
+    _adPrev(`ad-form-${slot}-prev`, null);
+  }
+}
+
+async function saveAd() {
+  const ok  = document.getElementById('ad-form-ok');
+  const err = document.getElementById('ad-form-err');
   ok.style.display = 'none'; err.style.display = 'none';
-  if (!qKey()) { err.textContent = 'Ingresa la clave de operación (arriba, en la sección de pago).'; err.style.display = 'block'; return; }
-  const { error } = await sb.rpc('qadmin_update_ads', {
-    p_pass: qKey(),
-    p_enabled: document.getElementById('toggle-ads').classList.contains('on'),
-    p_desktop: document.getElementById('ad-desktop').value,
-    p_mobile: document.getElementById('ad-mobile').value,
-    p_link: document.getElementById('ad-link').value.trim(),
+  if (!qKey()) { err.textContent = 'Ingresa la clave de operación primero.'; err.style.display = 'block'; return; }
+  const idVal = document.getElementById('ad-form-id').value;
+  const p_id  = idVal ? parseInt(idVal) : null;
+  const { error } = await sb.rpc('qadmin_upsert_ad', {
+    p_pass:        qKey(),
+    p_id,
+    p_title:       document.getElementById('ad-form-title').value.trim() || 'Anuncio',
+    p_desktop_img: _adFormDesktopUrl || '',
+    p_mobile_img:  _adFormMobileUrl  || '',
+    p_link_url:    document.getElementById('ad-form-link').value.trim() || '#',
+    p_active:      document.getElementById('ad-form-active').classList.contains('on'),
+    p_sort_order:  0,
   });
   if (error) { err.textContent = 'Error: ' + error.message; err.style.display = 'block'; return; }
-  ok.style.display = 'block'; setTimeout(() => ok.style.display = 'none', 4000);
+  ok.style.display = 'block';
+  setTimeout(() => { ok.style.display = 'none'; closeAdForm(); loadAds(); }, 1500);
+}
+
+async function toggleAd(id, active, btn) {
+  if (!qKey()) { alert('Ingresa la clave de operación primero.'); return; }
+
+  // Actualización optimista: toggle + badge inmediatos
+  btn.classList.toggle('on', active);
+  const statusEl  = document.getElementById(`ad-status-${id}`);
+  const confirmEl = document.getElementById(`ad-confirm-${id}`);
+  if (statusEl) {
+    statusEl.textContent = active ? 'ACTIVO' : 'INACTIVO';
+    statusEl.style.cssText = `font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;
+      letter-spacing:.5px;border:1px solid;${_adStatusBadge(active)}`;
+  }
+
+  const { error } = await sb.rpc('qadmin_toggle_ad', { p_pass: qKey(), p_ad_id: id, p_active: active });
+
+  if (error) {
+    // Revertir todo si falla
+    btn.classList.toggle('on', !active);
+    if (statusEl) {
+      statusEl.textContent = !active ? 'ACTIVO' : 'INACTIVO';
+      statusEl.style.cssText = `font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;
+        letter-spacing:.5px;border:1px solid;${_adStatusBadge(!active)}`;
+    }
+    alert('Error: ' + error.message);
+  } else {
+    const entry = _adsList.find(a => a.id === id);
+    if (entry) entry.active = active;
+    if (confirmEl) {
+      confirmEl.style.display = 'block';
+      setTimeout(() => { confirmEl.style.display = 'none'; }, 2500);
+    }
+  }
+}
+
+async function deleteAd(id) {
+  if (!confirm('¿Eliminar este anuncio? Esta acción no se puede deshacer.')) return;
+  if (!qKey()) { alert('Ingresa la clave de operación primero.'); return; }
+  const { error } = await sb.rpc('qadmin_delete_ad', { p_pass: qKey(), p_ad_id: id });
+  if (error) { alert('Error: ' + error.message); return; }
+  document.getElementById(`ad-card-${id}`)?.remove();
+  _adsList = _adsList.filter(a => a.id !== id);
+}
+
+async function saveGlobalAdToggle() {
+  const ok  = document.getElementById('ad-toggle-ok');
+  const err = document.getElementById('ad-toggle-err');
+  ok.style.display = 'none'; err.style.display = 'none';
+  if (!qKey()) { err.textContent = 'Ingresa la clave de operación primero.'; err.style.display = 'block'; return; }
+  const { error } = await sb.rpc('qadmin_update_ads', {
+    p_pass:    qKey(),
+    p_enabled: document.getElementById('toggle-ads').classList.contains('on'),
+    p_desktop: '',
+    p_mobile:  '',
+    p_link:    '',
+  });
+  if (error) { err.textContent = 'Error: ' + error.message; err.style.display = 'block'; return; }
+  ok.style.display = 'block'; setTimeout(() => { ok.style.display = 'none'; }, 3000);
 }
 
 async function loadLiveConfigAdmin() {
