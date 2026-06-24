@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "tvcontigo",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", "-p", "5599", "."],
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", ".claude/serve.ps1", "-Port", "5599", "-Root", "."],
       "port": 5599
     }
   ]

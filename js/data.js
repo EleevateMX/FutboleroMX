@@ -1,16 +1,27 @@
 // ── TVContigo — Data Layer (datos reales lacancha.tv · Mundial 2026) ───────
-// Última sincronización: 2026-06-23 · Colombia 3-1 RD Congo FIN
+// El partido EN VIVO y su marcador se auto-sincronizan desde lacancha.tv vía
+// los cron/edge-functions (auto-live, sync-score). NO marcar a mano como
+// 'finished' el partido que sigue en vivo: crea duplicados. Editar aquí solo
+// el calendario estático (próximos) y resultados ya caídos de la señal en vivo.
 
 // Slug del partido EN VIVO en embed.st — actualizar cuando cambie el partido
 const LIVE_SLUG = 'ppv-tunisia-vs-japan';
 const ES = (n) => `https://embed.st/embed/admin/${LIVE_SLUG}/${n}`;
 
-// Telemundo SIEMPRE primero (canal en español que ofrecemos de entrada), HD antes que SD
+// Canal priority: Telemundo/DSports (español) → FS1/TSN/Peacock (inglés) → europeos
 function chRank(c) {
-  const nm = String(c.name || '').toUpperCase();
+  const nm  = String(c.name || '').toUpperCase();
   const opt = String(c.option || '').toUpperCase();
-  const sd = opt.includes('SD') || opt.includes('2');
-  return (nm.includes('TELEMUNDO') ? 0 : 100) + (sd ? 1 : 0);
+  const opN = parseInt((opt.match(/\d+/) || ['1'])[0], 10);
+  const PRIO = [
+    'TELEMUNDO', 'DSPORTS',
+    'FS1', 'TSN', 'PEACOCK',
+    'ITV1', 'BEIN', 'DAZN',
+    'FUSSBALL', 'DAS ERSTE', 'SERVUS',
+    'ZDF', 'ORF', 'BBC',
+  ];
+  const base = PRIO.findIndex(k => nm.includes(k));
+  return (base === -1 ? 90 : base) * 10 + (opN - 1);
 }
 function sortChannels(list) {
   return list.map((c, i) => ({ c, i }))
@@ -28,19 +39,43 @@ function buildChannels(slug, list) {
 }
 
 // Canales reales actuales (default — se sobrescribe con Supabase live_config)
+// Números de stream (n) corresponden al slug activo en embed.st — el admin los ajusta por partido
 let CHANNELS = [
-  { id: 'telemundo-1', name: 'TELEMUNDO', option: 'OPCIÓN 1', tag: 'PARTIDO', url: ES(7),  live: true },
-  { id: 'telemundo-2', name: 'TELEMUNDO', option: 'OPCIÓN 2', tag: 'PARTIDO', url: ES(8),  live: true },
-  { id: 'tsn-1',       name: 'TSN',       option: 'OPCIÓN 1', tag: '',        url: ES(1),  live: true },
-  { id: 'tsn-2',       name: 'TSN',       option: 'OPCIÓN 2', tag: '',        url: ES(2),  live: true },
-  { id: 'fs1-1',       name: 'FS1',       option: 'OPCIÓN 1', tag: '',        url: ES(3),  live: true },
-  { id: 'fs1-2',       name: 'FS1',       option: 'OPCIÓN 2', tag: '',        url: ES(4),  live: true },
-  { id: 'bbc-1',       name: 'BBC ONE',   option: 'OPCIÓN 1', tag: '',        url: ES(5),  live: true },
-  { id: 'bbc-2',       name: 'BBC ONE',   option: 'OPCIÓN 2', tag: '',        url: ES(6),  live: true },
-  { id: 'zdf-1',       name: 'ZDF',       option: 'OPCIÓN 1', tag: '',        url: ES(9),  live: true },
-  { id: 'zdf-2',       name: 'ZDF',       option: 'OPCIÓN 2', tag: '',        url: ES(10), live: true },
-  { id: 'orf-1',       name: 'ORF 1',     option: 'OPCIÓN 1', tag: '',        url: ES(11), live: true },
-  { id: 'orf-2',       name: 'ORF 1',     option: 'OPCIÓN 2', tag: '',        url: ES(12), live: true },
+  // ── Español ───────────────────────────────────────────────────────────────
+  { id: 'telemundo-1',  name: 'TELEMUNDO',              option: 'OPCIÓN 1', tag: 'PARTIDO', url: ES(7),  live: true },
+  { id: 'telemundo-2',  name: 'TELEMUNDO',              option: 'OPCIÓN 2', tag: 'PARTIDO', url: ES(8),  live: true },
+  { id: 'telemundo-3',  name: 'TELEMUNDO',              option: 'OPCIÓN 3', tag: 'PARTIDO', url: ES(13), live: true },
+  { id: 'dsports-1',    name: 'DSPORTS',                option: 'OPCIÓN 1', tag: 'PARTIDO', url: ES(14), live: true },
+  { id: 'dsports-2',    name: 'DSPORTS',                option: 'OPCIÓN 2', tag: 'NO ADS',  url: ES(15), live: true },
+  // ── Inglés (EE.UU. / Canadá) ─────────────────────────────────────────────
+  { id: 'fs1-1',        name: 'FS1',                    option: 'OPCIÓN 1', tag: 'PARTIDO', url: ES(3),  live: true },
+  { id: 'fs1-2',        name: 'FS1',                    option: 'OPCIÓN 2', tag: 'PARTIDO', url: ES(4),  live: true },
+  { id: 'fs1-4k',       name: 'FS1 4K (HEVC)',          option: 'OPCIÓN 1', tag: 'PARTIDO', url: ES(16), live: true },
+  { id: 'tsn-1',        name: 'TSN',                    option: 'OPCIÓN 1', tag: 'PARTIDO', url: ES(1),  live: true },
+  { id: 'tsn-2',        name: 'TSN',                    option: 'OPCIÓN 2', tag: 'PARTIDO', url: ES(2),  live: true },
+  { id: 'peacock-1',    name: 'PEACOCK 4K (HEVC)',       option: 'OPCIÓN 1', tag: 'PARTIDO', url: ES(17), live: true },
+  // ── Europa ────────────────────────────────────────────────────────────────
+  { id: 'itv1-1',       name: 'ITV1',                   option: 'OPCIÓN 1', tag: 'PARTIDO', url: ES(18), live: true },
+  { id: 'itv1-2',       name: 'ITV1',                   option: 'OPCIÓN 2', tag: 'PARTIDO', url: ES(19), live: true },
+  { id: 'itv1-3',       name: 'ITV1',                   option: 'OPCIÓN 3', tag: 'PARTIDO', url: ES(20), live: true },
+  { id: 'bein-1',       name: 'BEIN SPORTS',            option: 'OPCIÓN 1', tag: 'PARTIDO', url: ES(21), live: true },
+  { id: 'bein-2',       name: 'BEIN SPORTS',            option: 'OPCIÓN 2', tag: 'PARTIDO', url: ES(22), live: true },
+  { id: 'bein-3',       name: 'BEIN SPORTS',            option: 'OPCIÓN 3', tag: 'PARTIDO', url: ES(23), live: true },
+  { id: 'dazn-1',       name: 'DAZN SPAIN',             option: 'OPCIÓN 1', tag: 'PARTIDO', url: ES(24), live: true },
+  { id: 'dazn-2',       name: 'DAZN SPAIN',             option: 'OPCIÓN 2', tag: 'PARTIDO', url: ES(25), live: true },
+  { id: 'dazn-3',       name: 'DAZN SPAIN',             option: 'OPCIÓN 3', tag: 'PARTIDO', url: ES(26), live: true },
+  { id: 'fussball-1',   name: 'FUSSBALL.TV 1 UHD',      option: 'OPCIÓN 1', tag: 'PARTIDO', url: ES(27), live: true },
+  { id: 'fussball-nc',  name: 'FUSSBALL.TV 1 UHD (NC)', option: 'OPCIÓN 1', tag: 'PARTIDO', url: ES(28), live: true },
+  { id: 'dasErste-1',   name: 'DAS ERSTE',              option: 'OPCIÓN 1', tag: 'PARTIDO', url: ES(29), live: true },
+  { id: 'dasErste-2',   name: 'DAS ERSTE',              option: 'OPCIÓN 2', tag: 'PARTIDO', url: ES(30), live: true },
+  { id: 'servus-1',     name: 'SERVUS TV',              option: 'OPCIÓN 1', tag: 'PARTIDO', url: ES(31), live: true },
+  { id: 'servus-2',     name: 'SERVUS TV',              option: 'OPCIÓN 2', tag: 'PARTIDO', url: ES(32), live: true },
+  { id: 'zdf-1',        name: 'ZDF',                    option: 'OPCIÓN 1', tag: '',        url: ES(9),  live: true },
+  { id: 'zdf-2',        name: 'ZDF',                    option: 'OPCIÓN 2', tag: '',        url: ES(10), live: true },
+  { id: 'orf-1',        name: 'ORF 1',                  option: 'OPCIÓN 1', tag: '',        url: ES(11), live: true },
+  { id: 'orf-2',        name: 'ORF 1',                  option: 'OPCIÓN 2', tag: '',        url: ES(12), live: true },
+  { id: 'bbc-1',        name: 'BBC ONE',                option: 'OPCIÓN 1', tag: '',        url: ES(5),  live: true },
+  { id: 'bbc-2',        name: 'BBC ONE',                option: 'OPCIÓN 2', tag: '',        url: ES(6),  live: true },
 ];
 
 // Partido EN VIVO actual (se sobrescribe con Supabase live_config en runtime)
@@ -94,7 +129,7 @@ const MATCHES = [
   { id:'m43', home:{name:'Portugal',flag:'🇵🇹'}, away:{name:'Uzbekistán',flag:'🇺🇿'}, kickoff:'2026-06-23T17:00:00+00:00', status:'finished', hs:5, as:0, venue:'', city:'', comp:'Jornada 2' },
   { id:'m44', home:{name:'Inglaterra',flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'}, away:{name:'Ghana',flag:'🇬🇭'}, kickoff:'2026-06-23T20:00:00+00:00', status:'finished', hs:0, as:0, venue:'', city:'', comp:'Jornada 2' },
   { id:'m45', home:{name:'Panamá',flag:'🇵🇦'}, away:{name:'Croacia',flag:'🇭🇷'}, kickoff:'2026-06-23T23:00:00+00:00', status:'finished', hs:0, as:1, venue:'', city:'', comp:'Jornada 2' },
-  { id:'m46', home:{name:'Colombia',flag:'🇨🇴'}, away:{name:'RD Congo',flag:'🇨🇩'}, kickoff:'2026-06-24T02:00:00+00:00', status:'finished', hs:3, as:1, venue:'Estadio Akron', city:'Guadalajara', comp:'Jornada 2' },
+  { id:'m46', home:{name:'Colombia',flag:'🇨🇴'}, away:{name:'RD Congo',flag:'🇨🇩'}, kickoff:'2026-06-24T02:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'Estadio Akron', city:'Guadalajara', comp:'Jornada 2' },
   { id:'m47', home:{name:'Suiza',flag:'🇨🇭'}, away:{name:'Canadá',flag:'🇨🇦'}, kickoff:'2026-06-24T19:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 3' },
   { id:'m48', home:{name:'Marruecos',flag:'🇲🇦'}, away:{name:'Haití',flag:'🇭🇹'}, kickoff:'2026-06-24T22:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 3' },
   { id:'m49', home:{name:'Escocia',flag:'🏴󠁧󠁢󠁳󠁣󠁴󠁿'}, away:{name:'Brasil',flag:'🇧🇷'}, kickoff:'2026-06-24T22:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 3' },

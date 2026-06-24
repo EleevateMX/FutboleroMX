@@ -187,7 +187,14 @@ async function loadSiteSettings() {
     renderCommunity(data.whatsapp_url, data.telegram_url);
   } catch (e) {}
 }
+let _waLink = '';
 function renderCommunity(wa, tg) {
+  // Botón "WhatsApp · picks de hoy" bajo el reproductor: se muestra solo si hay URL
+  const waBtn = document.getElementById('pa-wa-link');
+  if (waBtn) {
+    if (wa) { _waLink = wa; waBtn.href = wa; waBtn.style.display = ''; }
+    else { waBtn.style.display = 'none'; }
+  }
   const el = document.getElementById('community-box');
   if (!el || (!wa && !tg)) return;
   el.innerHTML = `
@@ -330,6 +337,97 @@ async function refreshLiveConfig() {
   renderResultsRow();
   renderStandings();
 }
+
+// ── Actualización de datos al abrir / volver a la app (con cooldown) ────────
+// Trae partido en vivo, marcadores y resultados frescos cada vez que el usuario
+// abre la web/PWA, vuelve a ella, o recupera conexión — sin recargar la página.
+let _lastRefresh   = 0;
+let _lastRefreshOk = 0;
+let _refreshing    = false;
+const REFRESH_COOLDOWN = 30000;   // máx. 1 actualización cada 30s (evita exceso)
+
+function setRefreshStatus(state, msg) {
+  const dot   = document.getElementById('rs-dot');
+  const label = document.getElementById('refresh-label');
+  const btn   = document.getElementById('refresh-btn');
+  if (label && msg) label.textContent = msg;
+  if (dot) dot.className = 'rs-dot' + (state ? ' ' + state : '');
+  if (btn) {
+    if (state === 'busy') { btn.classList.add('spinning'); btn.disabled = true; }
+    else { btn.classList.remove('spinning'); btn.disabled = false; }
+  }
+}
+
+function updateLastRefreshLabel() {
+  const label = document.getElementById('refresh-label');
+  if (!label || !_lastRefreshOk || _refreshing) return;
+  const secs = Math.round((Date.now() - _lastRefreshOk) / 1000);
+  let rel;
+  if (secs < 10) rel = 'hace un momento';
+  else if (secs < 60) rel = `hace ${secs} s`;
+  else if (secs < 3600) rel = `hace ${Math.floor(secs / 60)} min`;
+  else rel = new Date(_lastRefreshOk).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+  label.textContent = `Actualizado ${rel}`;
+}
+
+async function refreshAppData(force = false) {
+  const now = Date.now();
+  if (_refreshing) return;
+  if (!force && now - _lastRefresh < REFRESH_COOLDOWN) { updateLastRefreshLabel(); return; }
+  _lastRefresh = now;
+  _refreshing  = true;
+  setRefreshStatus('busy', 'Actualizando partidos…');
+  try {
+    await refreshLiveConfig();   // recarga live_config + match_results y re-renderiza
+    _lastRefreshOk = Date.now();
+    _refreshing = false;
+    setRefreshStatus(_isActuallyLive() ? 'live' : '', null);
+    updateLastRefreshLabel();
+  } catch (e) {
+    _refreshing = false;
+    setRefreshStatus('error', 'No se pudo actualizar · reintenta');
+  }
+}
+
+// Refresca el texto relativo ("hace 2 min") cada 15s
+setInterval(updateLastRefreshLabel, 15000);
+
+// Disparadores: al cargar, al volver a la pestaña/PWA, y al recuperar conexión
+window.addEventListener('load',   () => refreshAppData(true));
+window.addEventListener('online', () => { setRefreshStatus(null, 'Conexión recuperada…'); refreshAppData(true); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshAppData(); });
+
+// ── Ver en tu TV · Apóyanos · copiar enlace ────────────────────────────────
+function copyTvLink() {
+  const btn = document.getElementById('vt-copy-btn');
+  const url = 'https://tvcontigo.site';
+  const done = () => {
+    if (!btn) return;
+    btn.textContent = '¡Copiado! ✓'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copiar enlace'; btn.classList.remove('copied'); }, 2000);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(done).catch(() => _fallbackCopy(url, done));
+  } else { _fallbackCopy(url, done); }
+}
+function _fallbackCopy(text, cb) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand('copy'); cb && cb(); } catch (e) {}
+  document.body.removeChild(ta);
+}
+function openSupport() {
+  // El apoyo real al proyecto es la quiniela y la comunidad
+  _showToast('❤️ ¡Gracias por apoyar TVContigo! Juega la quiniela 🏆', 'var(--orange)');
+  scrollToSection('quiniela-section');
+  trackEvent('support', 'click');
+}
+
+// Cerrar cualquier modal con la tecla Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop.open').forEach(m => m.classList.remove('open'));
+});
 
 // ── Hero ──────────────────────────────────────────────────────────────────
 function renderHero() {
@@ -705,9 +803,18 @@ function renderChannelStrip() {
     <div class="channel-chip ${i === 0 && !_canchaActive ? 'active' : ''}" onclick="switchChannel('${ch.id}', this)">
       <span class="chip-name">${ch.name}</span>
       <span class="chip-label">${ch.option}</span>
-      ${ch.tag ? `<span class="chip-tag">${ch.tag}</span>` : (ch.live ? '<span class="chip-live">● EN VIVO</span>' : '')}
+      ${ch.tag ? _chipTag(ch.tag) : (ch.live ? '<span class="chip-live">● EN VIVO</span>' : '')}
     </div>
   `).join('');
+}
+
+// Devuelve el badge del canal con color según tipo (NO ADS verde, HD/4K azul)
+function _chipTag(tag) {
+  if (!tag) return '';
+  const t = String(tag).toUpperCase();
+  const cls = t.includes('NO ADS') ? ' tag-noads'
+            : (t.includes('HD') || t.includes('4K') || t.includes('UHD')) ? ' tag-hd' : '';
+  return `<span class="chip-tag${cls}">${tag}</span>`;
 }
 
 function switchChannel(channelId, el) {
