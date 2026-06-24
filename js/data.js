@@ -1,5 +1,5 @@
 // ── TVContigo — Data Layer (datos reales lacancha.tv · Mundial 2026) ───────
-// Última sincronización: 2026-06-21 · Ecuador 0-0 Curazao FIN
+// Última sincronización: 2026-06-23 · Panamá 0-1 Croacia FIN
 
 // Slug del partido EN VIVO en embed.st — actualizar cuando cambie el partido
 const LIVE_SLUG = 'ppv-tunisia-vs-japan';
@@ -82,18 +82,18 @@ const MATCHES = [
   { id:'m31', home:{name:'Países Bajos',flag:'🇳🇱'}, away:{name:'Suecia',flag:'🇸🇪'}, kickoff:'2026-06-20T17:00:00+00:00', status:'finished', hs:5, as:1, venue:'', city:'', comp:'Jornada 2' },
   { id:'m32', home:{name:'Alemania',flag:'🇩🇪'}, away:{name:'Costa de Marfil',flag:'🇨🇮'}, kickoff:'2026-06-20T20:00:00+00:00', status:'finished', hs:2, as:1, venue:'', city:'', comp:'Jornada 2' },
   { id:'m33', home:{name:'Ecuador',flag:'🇪🇨'}, away:{name:'Curazao',flag:'🇨🇼'}, kickoff:'2026-06-21T00:00:00+00:00', status:'finished', hs:0, as:0, venue:'', city:'', comp:'Jornada 2' },
-  { id:'m34', home:{name:'Túnez',flag:'🇹🇳'}, away:{name:'Japón',flag:'🇯🇵'}, kickoff:'2026-06-21T04:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
-  { id:'m35', home:{name:'España',flag:'🇪🇸'}, away:{name:'Arabia Saudita',flag:'🇸🇦'}, kickoff:'2026-06-21T16:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
-  { id:'m36', home:{name:'Bélgica',flag:'🇧🇪'}, away:{name:'Irán',flag:'🇮🇷'}, kickoff:'2026-06-21T19:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
-  { id:'m37', home:{name:'Uruguay',flag:'🇺🇾'}, away:{name:'Cabo Verde',flag:'🇨🇻'}, kickoff:'2026-06-21T22:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
-  { id:'m38', home:{name:'Nueva Zelanda',flag:'🇳🇿'}, away:{name:'Egipto',flag:'🇪🇬'}, kickoff:'2026-06-22T01:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
-  { id:'m39', home:{name:'Argentina',flag:'🇦🇷'}, away:{name:'Austria',flag:'🇦🇹'}, kickoff:'2026-06-22T17:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
-  { id:'m40', home:{name:'Francia',flag:'🇫🇷'}, away:{name:'Irak',flag:'🇮🇶'}, kickoff:'2026-06-22T21:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
-  { id:'m41', home:{name:'Noruega',flag:'🇳🇴'}, away:{name:'Senegal',flag:'🇸🇳'}, kickoff:'2026-06-23T00:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
-  { id:'m42', home:{name:'Jordania',flag:'🇯🇴'}, away:{name:'Argelia',flag:'🇩🇿'}, kickoff:'2026-06-23T03:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
-  { id:'m43', home:{name:'Portugal',flag:'🇵🇹'}, away:{name:'Uzbekistán',flag:'🇺🇿'}, kickoff:'2026-06-23T17:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
-  { id:'m44', home:{name:'Inglaterra',flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'}, away:{name:'Ghana',flag:'🇬🇭'}, kickoff:'2026-06-23T20:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
-  { id:'m45', home:{name:'Panamá',flag:'🇵🇦'}, away:{name:'Croacia',flag:'🇭🇷'}, kickoff:'2026-06-23T23:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
+  { id:'m34', home:{name:'Túnez',flag:'🇹🇳'}, away:{name:'Japón',flag:'🇯🇵'}, kickoff:'2026-06-21T04:00:00+00:00', status:'finished', hs:0, as:4, venue:'', city:'', comp:'Jornada 2' },
+  { id:'m35', home:{name:'España',flag:'🇪🇸'}, away:{name:'Arabia Saudita',flag:'🇸🇦'}, kickoff:'2026-06-21T16:00:00+00:00', status:'finished', hs:4, as:0, venue:'', city:'', comp:'Jornada 2' },
+  { id:'m36', home:{name:'Bélgica',flag:'🇧🇪'}, away:{name:'Irán',flag:'🇮🇷'}, kickoff:'2026-06-21T19:00:00+00:00', status:'finished', hs:0, as:0, venue:'', city:'', comp:'Jornada 2' },
+  { id:'m37', home:{name:'Uruguay',flag:'🇺🇾'}, away:{name:'Cabo Verde',flag:'🇨🇻'}, kickoff:'2026-06-21T22:00:00+00:00', status:'finished', hs:2, as:2, venue:'', city:'', comp:'Jornada 2' },
+  { id:'m38', home:{name:'Nueva Zelanda',flag:'🇳🇿'}, away:{name:'Egipto',flag:'🇪🇬'}, kickoff:'2026-06-22T01:00:00+00:00', status:'finished', hs:1, as:3, venue:'', city:'', comp:'Jornada 2' },
+  { id:'m39', home:{name:'Argentina',flag:'🇦🇷'}, away:{name:'Austria',flag:'🇦🇹'}, kickoff:'2026-06-22T17:00:00+00:00', status:'finished', hs:2, as:0, venue:'', city:'', comp:'Jornada 2' },
+  { id:'m40', home:{name:'Francia',flag:'🇫🇷'}, away:{name:'Irak',flag:'🇮🇶'}, kickoff:'2026-06-22T21:00:00+00:00', status:'finished', hs:3, as:0, venue:'', city:'', comp:'Jornada 2' },
+  { id:'m41', home:{name:'Noruega',flag:'🇳🇴'}, away:{name:'Senegal',flag:'🇸🇳'}, kickoff:'2026-06-23T00:00:00+00:00', status:'finished', hs:3, as:2, venue:'', city:'', comp:'Jornada 2' },
+  { id:'m42', home:{name:'Jordania',flag:'🇯🇴'}, away:{name:'Argelia',flag:'🇩🇿'}, kickoff:'2026-06-23T03:00:00+00:00', status:'finished', hs:1, as:2, venue:'Estadio Bahía de SF', city:'San Francisco', comp:'Jornada 2' },
+  { id:'m43', home:{name:'Portugal',flag:'🇵🇹'}, away:{name:'Uzbekistán',flag:'🇺🇿'}, kickoff:'2026-06-23T17:00:00+00:00', status:'finished', hs:5, as:0, venue:'', city:'', comp:'Jornada 2' },
+  { id:'m44', home:{name:'Inglaterra',flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'}, away:{name:'Ghana',flag:'🇬🇭'}, kickoff:'2026-06-23T20:00:00+00:00', status:'finished', hs:0, as:0, venue:'', city:'', comp:'Jornada 2' },
+  { id:'m45', home:{name:'Panamá',flag:'🇵🇦'}, away:{name:'Croacia',flag:'🇭🇷'}, kickoff:'2026-06-23T23:00:00+00:00', status:'finished', hs:0, as:1, venue:'', city:'', comp:'Jornada 2' },
   { id:'m46', home:{name:'Colombia',flag:'🇨🇴'}, away:{name:'RD Congo',flag:'🇨🇩'}, kickoff:'2026-06-24T02:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 2' },
   { id:'m47', home:{name:'Suiza',flag:'🇨🇭'}, away:{name:'Canadá',flag:'🇨🇦'}, kickoff:'2026-06-24T19:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 3' },
   { id:'m48', home:{name:'Marruecos',flag:'🇲🇦'}, away:{name:'Haití',flag:'🇭🇹'}, kickoff:'2026-06-24T22:00:00+00:00', status:'scheduled', hs:null, as:null, venue:'', city:'', comp:'Jornada 3' },
