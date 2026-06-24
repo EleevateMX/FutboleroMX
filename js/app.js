@@ -142,6 +142,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderTriviaRow();
   renderQuinielaSection();
   renderRanking();
+  awardDailyLogin();          // suma login diario si hay sesión (recreativo)
+  renderChannelFilters();     // filtros del catálogo "Todos los canales"
+  renderChallenges();         // retos del día
+  renderPointsToday();        // módulo de puntos
+  renderRewards();            // niveles + recompensas
   loadFanWall();
   loadAdSettings();
   startLiveRefresh();   // la página se mantiene al día sola (cambio de partido/canales)
@@ -379,6 +384,13 @@ async function refreshAppData(force = false) {
   setRefreshStatus('busy', 'Actualizando partidos…');
   try {
     await refreshLiveConfig();   // recarga live_config + match_results y re-renderiza
+    // Refresca también gamificación, canales y ranking al abrir/volver a la PWA
+    renderChannelsGrid();
+    renderRanking();
+    awardDailyLogin();
+    renderChallenges();
+    renderPointsToday();
+    renderRewards();
     _lastRefreshOk = Date.now();
     _refreshing = false;
     setRefreshStatus(_isActuallyLive() ? 'live' : '', null);
@@ -898,6 +910,7 @@ function renderMatchesRow() {
       const venue = [m.venue, m.city].filter(Boolean).join(' · ');
       return `
       <div class="up-card">
+        <div class="up-status-badge">PRÓXIMO</div>
         <div class="up-main">
           <div class="up-teams">
             <div class="up-team"><span class="up-flag">${m.home.flag}</span><span class="up-name">${m.home.name}</span></div>
@@ -991,24 +1004,44 @@ function addToCalendar() {
   trackEvent('add_calendar', _miMatch.id);
 }
 
-// ── Channels Grid ─────────────────────────────────────────────────────────
+// ── Channels Grid — catálogo filtrable (referencia) + señal en vivo real ──
 function renderChannelsGrid() {
   const grid = document.getElementById('channels-grid');
-  if (!CHANNELS.length || !_isActuallyLive()) {
-    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:24px 16px;color:var(--text-dim);font-size:13px;">
-      📺 Los canales se activan cuando hay un partido en vivo.<br>Revisa los próximos partidos abajo. ⚽</div>`;
+  if (!grid || typeof CHANNEL_CATALOG === 'undefined') return;
+
+  // Canales realmente transmitiendo ahora (del partido en vivo) para marcarlos
+  const liveList = _isActuallyLive() ? CHANNELS : [];
+  const q = _chSearch.trim().toLowerCase();
+
+  const list = CHANNEL_CATALOG.filter(c => {
+    if (_chFilter !== 'all' && !c.groups.includes(_chFilter)) return false;
+    if (q && !`${c.name} ${c.country} ${c.lang}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  if (!list.length) {
+    grid.innerHTML = `<div class="ch-empty">Sin canales para este filtro o búsqueda.</div>`;
     return;
   }
-  grid.innerHTML = CHANNELS.map(ch => `
-    <div class="ch-card" onclick="switchChannel('${ch.id}')">
-      <div class="ch-name">${ch.name}</div>
-      <div class="ch-option">${ch.option}</div>
-      ${ch.live ? `<div class="ch-live-tag">
-        <span style="width:6px;height:6px;background:var(--red);border-radius:50%;display:inline-block;"></span>
-        EN VIVO
-      </div>` : ''}
-    </div>
-  `).join('');
+
+  grid.innerHTML = list.map(c => {
+    const liveCh = liveList.find(x => _chMatch(x.name, c.name));
+    const avail  = !!liveCh;
+    const onclick = avail ? `switchChannel('${liveCh.id}')` : `channelUnavailable()`;
+    return `
+    <div class="ch-card${avail ? ' ch-avail' : ' ch-ref'}" onclick="${onclick}">
+      <div class="ch-card-top">
+        <div class="ch-name">${c.name}</div>
+        ${c.badge ? `<span class="ch-badge ${_badgeClass(c.badge)}">${c.badge}</span>` : ''}
+      </div>
+      <div class="ch-meta">${c.country} · ${c.lang}</div>
+      <div class="ch-status">
+        ${avail
+          ? `<span class="ch-live-tag"><span class="ch-dot"></span>EN VIVO</span>`
+          : `<span class="ch-ref-tag">Catálogo</span>`}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ── Results Row (partidos finalizados) ────────────────────────────────────
@@ -1153,13 +1186,182 @@ async function renderRanking() {
     const av = u.avatar
       ? `<div style="width:30px;height:30px;border-radius:50%;background-image:url('${u.avatar}');background-size:cover;background-position:center;flex-shrink:0;"></div>`
       : `<div style="width:30px;height:30px;border-radius:50%;background:var(--surface-3);color:var(--text-dim);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${ini}</div>`;
+    const lvl = (typeof levelFor === 'function') ? levelFor(u.pts || 0) : { name: '' };
+    // Insignias pequeñas (decorativas): líder, racha y tino exacto
+    const badges = [];
+    if (i === 0) badges.push({ ic: 'trophy', cls: 'rb-top',  t: 'Líder' });
+    if (i % 2 === 0) badges.push({ ic: 'fire', cls: 'rb-fire', t: 'Racha' });
+    if (i === 1 || i === 4) badges.push({ ic: 'target', cls: 'rb-exact', t: 'Exacto' });
+    const badgeHtml = badges.map(b => `<span class="rank-badge ${b.cls}" title="${b.t}">${svgIcon(b.ic, 12)}</span>`).join('');
     return `<div class="ranking-row">
       <div class="ranking-pos ${posClass[i] || ''}">${i + 1}</div>
       ${av}
-      <div class="ranking-name">${esc(u.name)}</div>
+      <div class="ranking-name">${esc(u.name)}<span class="ranking-level">${lvl.name}</span></div>
+      <div class="rank-badges">${badgeHtml}</div>
       <div class="ranking-pts">${u.pts} <span style="font-size:11px;color:var(--text-dim)">pts</span></div>
     </div>`;
   }).join('');
+}
+
+// ── Iconos SVG inline (sin emojis para la UI nueva) ───────────────────────
+const _ICONS = {
+  login:  '<path d="M11 16l-4-4 4-4m-4 4h12M13 4h4a2 2 0 012 2v12a2 2 0 01-2 2h-4"/>',
+  check:  '<path d="M5 13l4 4L19 7"/>',
+  target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>',
+  trophy: '<path d="M8 21h8m-4-4v4m-5-15h10v3a5 5 0 01-10 0V6zM7 6H4v1a3 3 0 003 3m10-4h3v1a3 3 0 01-3 3"/>',
+  fire:   '<path d="M12 3s4.5 3.5 4.5 8a4.5 4.5 0 01-9 0c0-1 .4-2 .4-2S7 9.5 7 12.5a5 5 0 0010 0C17 7 12 3 12 3z"/>',
+  star:   '<path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 17l-5.3 2.6 1-5.8L3.5 9.7l5.9-.9z"/>',
+  chart:  '<path d="M4 19V5m0 14h16M8 16v-4m4 4V8m4 8v-6"/>',
+  ball:   '<circle cx="12" cy="12" r="9"/><path d="M12 7.5l3.8 2.8-1.5 4.5h-4.6L8.2 10.3z"/>',
+  medal:  '<circle cx="12" cy="14.5" r="5.5"/><path d="M9 9.5L7 2m10 7.5L19 2M12 12l.9 1.8 2 .3-1.5 1.4.4 2-1.8-1-1.8 1 .4-2L9 14.1l2-.3z"/>',
+  crown:  '<path d="M3 18h18M4.5 18l-1.5-9 5 3.5 4-6.5 4 6.5 5-3.5-1.5 9z"/>',
+  badge:  '<circle cx="12" cy="9" r="5"/><path d="M9 13.5L8 21l4-2 4 2-1-7.5"/>',
+  frame:  '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="2"/><path d="M21 16l-5-5L5 21"/>',
+  list:   '<path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>',
+  unlock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0"/>',
+  ticket: '<path d="M3 8a2 2 0 012-2h14a2 2 0 012 2 2 2 0 000 4 2 2 0 000 4 2 2 0 01-2 2H5a2 2 0 01-2-2 2 2 0 000-4 2 2 0 000-4z"/>',
+  share:  '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>',
+  tv:     '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>',
+  bolt:   '<path d="M13 2L4.5 13.5H11l-1 8.5L18.5 10H12z"/>',
+};
+function svgIcon(name, size = 16) {
+  return `<svg class="ic" xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${_ICONS[name] || _ICONS.star}</svg>`;
+}
+
+// ── Puntos del usuario (RECREATIVO · mock local en localStorage) ───────────
+// Estructura lista para conectar a backend luego (RPC tipo award_points).
+function getUserPoints() {
+  let p;
+  try { p = JSON.parse(localStorage.getItem('tvc_points') || '{}'); } catch (e) { p = {}; }
+  if (typeof p.total !== 'number') p = { total: 0, today: 0, streak: 0, lastDay: '', rewards: [] };
+  return p;
+}
+function _saveUserPoints(p) { try { localStorage.setItem('tvc_points', JSON.stringify(p)); } catch (e) {} }
+function _dayKey(d = new Date()) { return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; }
+
+// Suma el login diario (1 vez/día) y mantiene la racha. Solo si hay sesión.
+function awardDailyLogin() {
+  if (!Auth.isLoggedIn()) return;
+  const p = getUserPoints();
+  const today = _dayKey();
+  if (p.lastDay === today) return;
+  const yest = new Date(); yest.setDate(yest.getDate() - 1);
+  p.streak = (p.lastDay === _dayKey(yest)) ? (p.streak || 0) + 1 : 1;
+  p.lastDay = today;
+  p.today = 5 + (p.streak > 1 ? 5 : 0);       // login +5, racha +5
+  p.total = (p.total || 0) + p.today;
+  _saveUserPoints(p);
+}
+
+// ── Render: Puntos de hoy ──────────────────────────────────────────────────
+function renderPointsToday() {
+  const el = document.getElementById('points-today');
+  if (!el) return;
+  const rules = POINTS_RULES.map(r => `
+    <li class="pt-rule">
+      <span class="pt-ic">${svgIcon(r.icon, 14)}</span>
+      <span class="pt-label">${r.label}</span>
+      <span class="pt-pts">+${r.points}</span>
+    </li>`).join('');
+  if (!Auth.isLoggedIn()) {
+    el.innerHTML = `
+      <ul class="pt-rules">${rules}</ul>
+      <div class="pt-locked">
+        <p>Inicia sesión para guardar tus puntos y entrar al ranking.</p>
+        <button class="btn btn-orange btn-sm" onclick="openModal('login-modal')">Entrar / Registrarme</button>
+      </div>`;
+    return;
+  }
+  const p = getUserPoints();
+  const today = p.today || 0;
+  const pct = Math.min(100, Math.round(today / DAILY_MAX * 100));
+  el.innerHTML = `
+    <ul class="pt-rules">${rules}</ul>
+    <div class="pt-progress-wrap">
+      <div class="pt-progress-top"><span>Tu progreso de hoy</span><strong>${today} / ${DAILY_MAX} pts</strong></div>
+      <div class="pt-bar"><div class="pt-bar-fill" style="width:${pct}%"></div></div>
+      ${p.streak > 1 ? `<div class="pt-streak">${svgIcon('fire', 13)} Racha de ${p.streak} días activa · +5 pts extra</div>` : ''}
+    </div>`;
+}
+
+// ── Render: Recompensas (niveles + simbólicas) ─────────────────────────────
+function renderRewards() {
+  const el = document.getElementById('rewards-module');
+  if (!el) return;
+  const total = Auth.isLoggedIn() ? (getUserPoints().total || 0) : 0;
+  const cur = levelFor(total);
+  const levels = REWARD_LEVELS.map(l => {
+    const active = l.name === cur.name;
+    const reached = total >= l.min;
+    const range = l.max === Infinity ? `${l.min}+ pts` : `${l.min}–${l.max} pts`;
+    return `<div class="rw-level${active ? ' active' : ''}${reached ? ' reached' : ''}">
+      <span class="rw-ic">${svgIcon(l.icon, 16)}</span>
+      <div class="rw-meta"><div class="rw-name">${l.name}</div><div class="rw-range">${range}</div></div>
+      ${active ? '<span class="rw-tag">TÚ</span>' : (reached ? `<span class="rw-chk">${svgIcon('check', 13)}</span>` : '')}
+    </div>`;
+  }).join('');
+  const items = REWARD_ITEMS.map(r => `<li>${svgIcon(r.icon, 13)} ${r.label}</li>`).join('');
+  el.innerHTML = `
+    <div class="rw-levels">${levels}</div>
+    <div class="rw-items-title">Recompensas simbólicas</div>
+    <ul class="rw-items">${items}</ul>
+    <div class="rw-disclaimer">${svgIcon('star', 12)} Los puntos y recompensas son de entretenimiento. No tienen valor monetario.</div>`;
+}
+
+// ── Render: Retos del día ──────────────────────────────────────────────────
+function renderChallenges() {
+  const el = document.getElementById('challenges-list');
+  if (!el) return;
+  const rows = DAILY_CHALLENGES.map(c => `
+    <div class="cc-row">
+      <span class="cc-ic">${svgIcon(c.icon, 15)}</span>
+      <span class="cc-label">${c.label}</span>
+      <span class="cc-pts">+${c.points} pts</span>
+    </div>`).join('');
+  el.innerHTML = rows + (Auth.isLoggedIn() ? '' : `
+    <div class="cc-locked">
+      <span>Inicia sesión para completar retos.</span>
+      <button class="btn btn-orange btn-sm" onclick="openModal('login-modal')">Entrar</button>
+    </div>`);
+}
+
+// ── Catálogo "Todos los canales": filtros + búsqueda (referencia legal) ────
+let _chFilter = 'all';
+let _chSearch = '';
+function _norm(n) { return String(n || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+function _chMatch(a, b) { const x = _norm(a), y = _norm(b); return !!x && !!y && (x === y || x.startsWith(y) || y.startsWith(x)); }
+function _badgeClass(b) {
+  const t = String(b).toUpperCase();
+  if (t.includes('NO ADS')) return 'b-noads';
+  if (t.includes('4K') || t.includes('HD')) return 'b-hd';
+  if (t.includes('GRATIS')) return 'b-free';
+  return 'b-partido';
+}
+function renderChannelFilters() {
+  const bar = document.getElementById('channel-filters');
+  if (!bar || typeof CHANNEL_FILTERS === 'undefined') return;
+  bar.innerHTML = CHANNEL_FILTERS.map(f =>
+    `<button class="ch-filter${f.id === _chFilter ? ' active' : ''}" onclick="setChannelFilter('${f.id}', this)">${f.label}</button>`
+  ).join('');
+}
+function setChannelFilter(id, el) {
+  _chFilter = id;
+  document.querySelectorAll('.ch-filter').forEach(b => b.classList.toggle('active', b === el));
+  renderChannelsGrid();
+}
+function searchChannelCatalog(q) { _chSearch = q || ''; renderChannelsGrid(); }
+function channelUnavailable() {
+  _showToast('Transmisión no disponible por el momento. Consulta canales oficiales o vuelve más tarde.', 'var(--surface-3)');
+}
+
+// ── Predicción (sustituye "Apóyanos") ──────────────────────────────────────
+function openPrediction() {
+  openModal('prediction-modal');
+  trackEvent('prediction', 'open');
+}
+function predictionHowto() {
+  closeModal('prediction-modal');
+  scrollToSection('gamify-section');
 }
 
 // ── Ad Carousel (multi-anuncio con rotación automática) ───────────────────

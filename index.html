@@ -130,9 +130,9 @@
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="2" y="3" width="20" height="14" rx="2"/><path stroke-linecap="round" d="M8 21h8M12 17v4"/></svg>
     Ver en tu TV
   </button>
-  <button class="pa-btn pa-support" onclick="openSupport()">
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
-    Apóyanos
+  <button class="pa-btn pa-support" onclick="openPrediction()">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M8 21h8m-4-4v4m-5-15h10v3a5 5 0 01-10 0V6zM7 6H4v1a3 3 0 003 3m10-4h3v1a3 3 0 01-3 3"/></svg>
+    Regístrate a la predicción
   </button>
   <a class="pa-btn pa-whatsapp" id="pa-wa-link" href="#" target="_blank" rel="noopener noreferrer" style="display:none">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
@@ -203,11 +203,19 @@
 <section class="content-section" id="all-channels">
   <div class="section-header">
     <div class="section-title"><span class="dot"></span> TODOS LOS CANALES</div>
-    <span class="section-see-all">HD disponible</span>
+    <span class="section-see-all">Catálogo público</span>
+  </div>
+  <div class="channels-toolbar">
+    <div class="channel-search">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M21 21l-4.3-4.3"/></svg>
+      <input type="search" id="channel-search-input" placeholder="Buscar canal, país o idioma…" oninput="searchChannelCatalog(this.value)">
+    </div>
+    <div class="channel-filters" id="channel-filters"><!-- rendered by app.js --></div>
   </div>
   <div class="channels-grid" id="channels-grid">
     <!-- rendered by app.js -->
   </div>
+  <p class="channels-legal">Catálogo informativo de canales oficiales que transmiten el Mundial por país. TVContigo no aloja señales; la transmisión en vivo se habilita solo cuando hay un partido al aire desde una fuente disponible.</p>
 </section>
 
 <!-- ── Row: Resultados ───────────────────────────────────────────────────── -->
@@ -300,6 +308,37 @@
   </div>
 </section>
 
+<!-- ── Juego: Retos · Puntos · Recompensas (recreativo) ───────────────────── -->
+<section class="content-section" id="gamify-section">
+  <div class="section-header">
+    <div class="section-title"><span class="dot" style="background:var(--orange)"></span> JUEGO · PUNTOS Y RECOMPENSAS</div>
+    <span class="section-see-all" style="cursor:default;">Recreativo</span>
+  </div>
+  <div class="gamify-grid">
+    <div class="gamify-card">
+      <div class="gamify-card-hdr">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M13 2L4.5 13.5H11l-1 8.5L18.5 10H12z"/></svg>
+        Retos del día
+      </div>
+      <div id="challenges-list"><!-- rendered by app.js --></div>
+    </div>
+    <div class="gamify-card">
+      <div class="gamify-card-hdr">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 17l-5.3 2.6 1-5.8L3.5 9.7l5.9-.9z"/></svg>
+        Puntos de hoy
+      </div>
+      <div id="points-today"><!-- rendered by app.js --></div>
+    </div>
+    <div class="gamify-card">
+      <div class="gamify-card-hdr">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M8 21h8m-4-4v4m-5-15h10v3a5 5 0 01-10 0V6zM7 6H4v1a3 3 0 003 3m10-4h3v1a3 3 0 01-3 3"/></svg>
+        Recompensas
+      </div>
+      <div id="rewards-module"><!-- rendered by app.js --></div>
+    </div>
+  </div>
+</section>
+
 <!-- ── Ranking ────────────────────────────────────────────────────────────── -->
 <section class="content-section">
   <div class="section-header">
@@ -373,6 +412,29 @@
       <button class="vt-copy-btn" id="vt-copy-btn" onclick="copyTvLink()">Copiar enlace</button>
     </div>
     <p style="font-size:11px;color:var(--text-muted);margin-top:14px;text-align:center;line-height:1.5;">TVContigo solo muestra contenido de proveedores externos autorizados o fuentes propias. Si un canal no carga, prueba otra opción disponible.</p>
+  </div>
+</div>
+
+<!-- ── Modal: Regístrate a la predicción ────────────────────────────────────── -->
+<div class="modal-backdrop" id="prediction-modal">
+  <div class="modal" style="max-width:440px">
+    <button class="modal-close" onclick="closeModal('prediction-modal')">×</button>
+    <div class="modal-title">Regístrate a la <span>predicción</span></div>
+    <p style="font-size:13px;color:var(--text-dim);margin:-8px 0 16px;text-align:center;line-height:1.55;">
+      Participa en la quiniela mundialista antes de semifinales, acumula puntos por tus aciertos y compite por recompensas dentro de TVContigo.
+    </p>
+    <div class="pred-steps">
+      <div class="pred-step"><span class="pred-num">1</span> Regístrate con tu nombre y correo.</div>
+      <div class="pred-step"><span class="pred-num">2</span> Elige tus predicciones antes de los partidos clave.</div>
+      <div class="pred-step"><span class="pred-num">3</span> Acumula puntos conforme avanza el Mundial.</div>
+      <div class="pred-step"><span class="pred-num">4</span> Revisa tu posición en el ranking.</div>
+      <div class="pred-step"><span class="pred-num">5</span> Gana recompensas simbólicas dentro del juego.</div>
+    </div>
+    <div class="pred-actions">
+      <a class="btn btn-orange btn-full" href="cuenta.html" style="text-align:center;text-decoration:none;">Crear mi cuenta</a>
+      <button class="btn btn-ghost btn-full" onclick="predictionHowto()">Ver cómo funciona</button>
+    </div>
+    <p class="pred-note">Este sistema es únicamente recreativo y de entretenimiento. Los puntos no tienen valor monetario.</p>
   </div>
 </div>
 

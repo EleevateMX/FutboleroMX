@@ -213,3 +213,119 @@ function fmtMatchTime(iso) {
 
   return { day, time };
 }
+
+// Normaliza el estado de un partido a 'live' | 'final' | 'upcoming'
+// y decide si hay un marcador real que mostrar (nunca 0 falso para próximos).
+function matchState(m) {
+  const hasScore = m.hs != null && m.as != null;
+  if (m.status === 'live')                 return { state: 'live',     hasScore };
+  if (m.status === 'finished' && hasScore) return { state: 'final',    hasScore: true };
+  return { state: 'upcoming', hasScore: false };
+}
+
+// ── Sistema de puntos / recompensas (RECREATIVO · sin valor monetario) ──────
+const DAILY_MAX = 60;   // tope de puntos que se pueden sumar en un día
+
+const POINTS_RULES = [
+  { id:'daily-login',          label:'Inicio de sesión diario', points:5,  frequency:'daily',     icon:'login'  },
+  { id:'prediction-submitted', label:'Predicción enviada',      points:10, frequency:'per_match', icon:'check'  },
+  { id:'correct-winner',       label:'Acierto de resultado',    points:15, frequency:'per_match', icon:'target' },
+  { id:'exact-score',          label:'Marcador exacto',         points:30, frequency:'per_match', icon:'trophy' },
+  { id:'daily-streak',         label:'Racha diaria activa',     points:5,  frequency:'daily',     icon:'fire'   },
+];
+
+// Niveles de recompensa (gamificación simple, solo entretenimiento)
+const REWARD_LEVELS = [
+  { name:'Aficionado',           min:0,    max:99,       icon:'star'  },
+  { name:'Analista',             min:100,  max:249,      icon:'chart' },
+  { name:'Crack de la quiniela', min:250,  max:499,      icon:'ball'  },
+  { name:'Maestro del Mundial',  min:500,  max:999,      icon:'medal' },
+  { name:'Leyenda TVContigo',    min:1000, max:Infinity, icon:'crown' },
+];
+
+// Recompensas simbólicas (sin valor monetario)
+const REWARD_ITEMS = [
+  { label:'Insignia en el ranking',          icon:'badge'  },
+  { label:'Marco especial de perfil',        icon:'frame'  },
+  { label:'Mención en la tabla',             icon:'list'   },
+  { label:'Acceso anticipado a predicciones',icon:'unlock' },
+  { label:'Badge "Top predictor"',           icon:'trophy' },
+];
+
+// Retos del día (recreativos)
+const DAILY_CHALLENGES = [
+  { id:'enter-quiniela',   label:'Entra hoy a la quiniela',         points:5,  icon:'ticket' },
+  { id:'predict-featured', label:'Predice el partido destacado',    points:10, icon:'target' },
+  { id:'correct-winner',   label:'Acierta un ganador',              points:15, icon:'check'  },
+  { id:'share-prediction', label:'Comparte tu predicción',          points:5,  icon:'share'  },
+  { id:'keep-streak',      label:'Mantén tu racha diaria',          points:5,  icon:'fire'   },
+];
+
+// Devuelve el nivel correspondiente a un total de puntos
+function levelFor(total) {
+  return REWARD_LEVELS.find(l => total >= l.min && total <= l.max) || REWARD_LEVELS[0];
+}
+
+// ── Catálogo de canales (REFERENCIA · solo informativo) ─────────────────────
+// Lista pública de canales que transmiten el Mundial por país/idioma. NO son
+// streams: la señal en vivo real llega por live_config (auto-sync de lacancha).
+// groups: mexico | usa | espana | europa | premium | nocom | hd
+const CHANNEL_CATALOG = [
+  { name:'Telemundo',          country:'EE.UU.',  lang:'Español', groups:['usa'],                 badge:'PARTIDO' },
+  { name:'Universo',           country:'EE.UU.',  lang:'Español', groups:['usa'],                 badge:'PARTIDO' },
+  { name:'Peacock 4K',         country:'EE.UU.',  lang:'Inglés',  groups:['usa','premium','hd'],  badge:'4K' },
+  { name:'FOX',                country:'EE.UU.',  lang:'Inglés',  groups:['usa'],                 badge:'PARTIDO' },
+  { name:'FS1',                country:'EE.UU.',  lang:'Inglés',  groups:['usa'],                 badge:'PARTIDO' },
+  { name:'FS2',                country:'EE.UU.',  lang:'Inglés',  groups:['usa'],                 badge:'PARTIDO' },
+  { name:'TUDN',               country:'EE.UU./MX', lang:'Español', groups:['usa','mexico'],      badge:'PARTIDO' },
+  { name:'ViX',                country:'EE.UU./MX', lang:'Español', groups:['usa','mexico','premium'], badge:'PARTIDO' },
+  { name:'Azteca 7',           country:'México',  lang:'Español', groups:['mexico'],              badge:'GRATIS' },
+  { name:'Canal 5',            country:'México',  lang:'Español', groups:['mexico'],              badge:'GRATIS' },
+  { name:'Las Estrellas',      country:'México',  lang:'Español', groups:['mexico'],              badge:'GRATIS' },
+  { name:'Claro Sports',       country:'México',  lang:'Español', groups:['mexico','premium'],    badge:'PARTIDO' },
+  { name:'DSports',            country:'LatAm',   lang:'Español', groups:['premium'],             badge:'PARTIDO' },
+  { name:'Star+',              country:'LatAm',   lang:'Español', groups:['premium'],             badge:'PARTIDO' },
+  { name:'ESPN',               country:'LatAm/EE.UU.', lang:'Multi', groups:['usa','premium'],    badge:'PARTIDO' },
+  { name:'DAZN Spain',         country:'España',  lang:'Español', groups:['espana','premium'],    badge:'PARTIDO' },
+  { name:'beIN Sports',        country:'España',  lang:'Español', groups:['espana','premium'],    badge:'PARTIDO' },
+  { name:'ITV1',               country:'Reino Unido', lang:'Inglés', groups:['europa'],           badge:'PARTIDO' },
+  { name:'BBC One',            country:'Reino Unido', lang:'Inglés', groups:['europa'],           badge:'GRATIS' },
+  { name:'TSN',                country:'Canadá',  lang:'Inglés',  groups:['premium'],             badge:'PARTIDO' },
+  { name:'RDS',                country:'Canadá',  lang:'Francés', groups:['premium'],             badge:'PARTIDO' },
+  { name:'Das Erste',          country:'Alemania',lang:'Alemán',  groups:['europa'],              badge:'GRATIS' },
+  { name:'ZDF',                country:'Alemania',lang:'Alemán',  groups:['europa'],              badge:'GRATIS' },
+  { name:'Servus TV',          country:'Austria', lang:'Alemán',  groups:['europa'],              badge:'PARTIDO' },
+  { name:'ORF 1',              country:'Austria', lang:'Alemán',  groups:['europa'],              badge:'GRATIS' },
+  { name:'SRF',                country:'Suiza',   lang:'Alemán',  groups:['europa'],              badge:'GRATIS' },
+  { name:'RTP',                country:'Portugal',lang:'Portugués',groups:['europa'],             badge:'GRATIS' },
+  { name:'SIC',                country:'Portugal',lang:'Portugués',groups:['europa'],             badge:'PARTIDO' },
+  { name:'RAI',                country:'Italia',  lang:'Italiano', groups:['europa'],             badge:'GRATIS' },
+  { name:'Mediaset',           country:'Italia',  lang:'Italiano', groups:['europa'],             badge:'PARTIDO' },
+  { name:'TF1',                country:'Francia', lang:'Francés',  groups:['europa'],             badge:'GRATIS' },
+  { name:'M6',                 country:'Francia', lang:'Francés',  groups:['europa'],             badge:'GRATIS' },
+  { name:'Fussball.TV 1 UHD',  country:'Alemania',lang:'Alemán',  groups:['europa','hd'],        badge:'4K' },
+  { name:'Fussball.TV 1 UHD (No Commentary)', country:'Alemania', lang:'Sin relato', groups:['europa','nocom','hd'], badge:'NO ADS' },
+  { name:'FIFA+',              country:'Global',  lang:'Multi',   groups:[],                      badge:'GRATIS' },
+];
+
+// Filtros visibles para "Todos los canales"
+const CHANNEL_FILTERS = [
+  { id:'all',     label:'Todos'           },
+  { id:'mexico',  label:'México'          },
+  { id:'usa',     label:'USA'             },
+  { id:'espana',  label:'España'          },
+  { id:'europa',  label:'Europa'          },
+  { id:'premium', label:'Premium'         },
+  { id:'nocom',   label:'Sin comentarios' },
+  { id:'hd',      label:'HD / 4K'         },
+];
+
+// ── Dónde se transmite cada partido (REFERENCIA pública · sin streams) ──────
+// Estructura lista para que el admin registre fuentes oficiales/autorizadas.
+// NUNCA streams piratas, iframes protegidos, proxies ni bypass: solo listados
+// públicos, canales oficiales o embeds autorizados.
+const BROADCAST_SOURCES = [
+  // Ejemplo de formato (rellenar desde el admin con info pública verificada):
+  // { matchId:'m50', country:'México', channelName:'Canal 5 / TUDN', sourceType:'official_listing',
+  //   sourceUrl:'', embedUrl:'', isAuthorized:true, notes:'Programación pública', lastChecked:'' },
+];

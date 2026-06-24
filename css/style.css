@@ -1198,3 +1198,149 @@ body {
 /* NO ADS / HD badges en chips de canal */
 .chip-tag.tag-noads { color: var(--green); background: rgba(34,197,94,.14); }
 .chip-tag.tag-hd    { color: var(--blue);  background: rgba(14,165,233,.14); }
+
+/* SVG icon base (UI nueva, sin emojis) */
+.ic { flex-shrink: 0; vertical-align: -2px; }
+
+/* ── Badge PRÓXIMO en tarjetas de próximos partidos ───────────────────────── */
+.up-card { position: relative; }
+.up-status-badge {
+  position: absolute; top: 10px; right: 12px;
+  font-size: 9px; font-weight: 800; letter-spacing: .6px;
+  color: var(--blue); background: rgba(14,165,233,.12);
+  border: 1px solid rgba(14,165,233,.25); border-radius: 20px;
+  padding: 2px 8px;
+}
+
+/* ── "Todos los canales": toolbar de filtros + búsqueda ───────────────────── */
+.channels-toolbar { padding: 0 20px 10px; display: flex; flex-direction: column; gap: 10px; }
+.channel-search {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface-2); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 9px 12px; color: var(--text-dim);
+}
+.channel-search:focus-within { border-color: var(--blue); }
+.channel-search input {
+  flex: 1; background: none; border: none; outline: none;
+  color: var(--text); font-family: inherit; font-size: 13px;
+}
+.channel-search input::placeholder { color: var(--text-muted); }
+.channel-filters { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 2px; }
+.ch-filter {
+  flex-shrink: 0; background: var(--surface-2); border: 1.5px solid var(--border);
+  color: var(--text-dim); border-radius: 20px; padding: 6px 13px;
+  font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+  white-space: nowrap; transition: all .16s;
+}
+.ch-filter:hover { color: var(--text); border-color: var(--border-hi); }
+.ch-filter.active { color: #fff; background: var(--blue); border-color: var(--blue); }
+
+/* ── Catálogo de canales (tarjetas referencia + en vivo) ──────────────────── */
+.ch-card {
+  aspect-ratio: auto; text-align: left;
+  align-items: stretch; justify-content: flex-start; gap: 5px;
+  padding: 12px 13px;
+}
+.ch-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
+.ch-name { font-size: 13px; font-weight: 800; letter-spacing: .3px; line-height: 1.15; }
+.ch-meta { font-size: 10.5px; color: var(--text-dim); }
+.ch-badge {
+  flex-shrink: 0; font-size: 8px; font-weight: 800; letter-spacing: .4px;
+  padding: 2px 6px; border-radius: 5px; white-space: nowrap;
+}
+.ch-badge.b-partido { color: var(--orange); background: rgba(249,115,22,.14); }
+.ch-badge.b-noads   { color: var(--green);  background: rgba(34,197,94,.14); }
+.ch-badge.b-hd      { color: var(--blue);   background: rgba(14,165,233,.14); }
+.ch-badge.b-free    { color: var(--text-dim); background: rgba(255,255,255,.06); }
+.ch-status { margin-top: auto; padding-top: 4px; }
+.ch-live-tag { font-size: 9px; font-weight: 800; color: var(--red); display: inline-flex; align-items: center; gap: 4px; letter-spacing: .5px; }
+.ch-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); box-shadow: 0 0 6px var(--red); animation: rs-pulse 1.2s ease-in-out infinite; }
+.ch-ref-tag { font-size: 9px; font-weight: 700; color: var(--text-muted); letter-spacing: .5px; }
+.ch-card.ch-ref { opacity: .82; }
+.ch-card.ch-ref:hover { opacity: 1; transform: none; box-shadow: none; border-color: var(--border-hi); background: var(--surface-2); }
+.ch-card.ch-avail { border-color: rgba(239,68,68,.35); }
+.ch-card.ch-avail:hover { border-color: var(--red); box-shadow: 0 0 0 1px var(--red), 0 0 18px rgba(239,68,68,.25); }
+.ch-empty { grid-column: 1/-1; text-align: center; padding: 24px 16px; color: var(--text-dim); font-size: 13px; }
+.channels-legal { padding: 2px 20px 4px; font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+
+/* ── Juego: Retos · Puntos · Recompensas ──────────────────────────────────── */
+.gamify-grid {
+  display: grid; gap: 12px; padding: 4px 20px 8px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+}
+.gamify-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 16px; display: flex; flex-direction: column;
+}
+.gamify-card-hdr {
+  display: flex; align-items: center; gap: 8px;
+  font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: .5px;
+  color: var(--text); margin-bottom: 12px;
+}
+.gamify-card-hdr .ic, .gamify-card-hdr svg { color: var(--orange); }
+
+/* Puntos de hoy */
+.pt-rules { list-style: none; display: flex; flex-direction: column; gap: 7px; margin-bottom: 12px; }
+.pt-rule { display: flex; align-items: center; gap: 9px; font-size: 12.5px; }
+.pt-ic { color: var(--orange); display: inline-flex; }
+.pt-label { flex: 1; color: var(--text-dim); }
+.pt-pts { font-weight: 800; color: var(--green); font-size: 12px; }
+.pt-progress-wrap { border-top: 1px solid var(--border); padding-top: 12px; }
+.pt-progress-top { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; color: var(--text-dim); margin-bottom: 7px; }
+.pt-progress-top strong { color: var(--text); font-size: 14px; }
+.pt-bar { height: 9px; background: var(--surface-3); border-radius: 20px; overflow: hidden; }
+.pt-bar-fill { height: 100%; background: linear-gradient(90deg, var(--orange), #fbbf24); border-radius: 20px; transition: width .5s ease; }
+.pt-streak { margin-top: 9px; font-size: 11.5px; font-weight: 700; color: var(--orange); display: flex; align-items: center; gap: 5px; }
+.pt-locked { text-align: center; border-top: 1px solid var(--border); padding-top: 12px; }
+.pt-locked p { font-size: 12px; color: var(--text-dim); margin-bottom: 10px; line-height: 1.5; }
+
+/* Recompensas (niveles) */
+.rw-levels { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.rw-level {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 10px;
+  background: var(--surface-2); border: 1px solid var(--border); opacity: .65;
+}
+.rw-level.reached { opacity: 1; }
+.rw-level.active { border-color: var(--orange); background: rgba(249,115,22,.1); opacity: 1; }
+.rw-ic { color: var(--text-dim); display: inline-flex; flex-shrink: 0; }
+.rw-level.active .rw-ic, .rw-level.reached .rw-ic { color: var(--orange); }
+.rw-meta { flex: 1; min-width: 0; }
+.rw-name { font-size: 12.5px; font-weight: 700; color: var(--text); }
+.rw-range { font-size: 10.5px; color: var(--text-dim); }
+.rw-tag { font-size: 9px; font-weight: 800; color: #fff; background: var(--orange); padding: 2px 7px; border-radius: 20px; letter-spacing: .5px; }
+.rw-chk { color: var(--green); display: inline-flex; }
+.rw-items-title { font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 7px; }
+.rw-items { list-style: none; display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.rw-items li { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-dim); }
+.rw-items li .ic { color: var(--orange); }
+.rw-disclaimer { font-size: 10.5px; color: var(--text-muted); line-height: 1.5; display: flex; gap: 6px; align-items: flex-start; border-top: 1px solid var(--border); padding-top: 10px; }
+.rw-disclaimer .ic { color: var(--text-muted); flex-shrink: 0; margin-top: 1px; }
+
+/* Retos del día */
+.cc-row { display: flex; align-items: center; gap: 9px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.cc-row:last-of-type { border-bottom: none; }
+.cc-ic { color: var(--orange); display: inline-flex; flex-shrink: 0; }
+.cc-label { flex: 1; font-size: 12.5px; color: var(--text); }
+.cc-pts { font-size: 11.5px; font-weight: 800; color: var(--green); }
+.cc-locked { margin-top: 10px; text-align: center; display: flex; flex-direction: column; gap: 8px; align-items: center; font-size: 12px; color: var(--text-dim); }
+
+/* Badges en ranking */
+.ranking-name { display: flex; flex-direction: column; line-height: 1.2; }
+.ranking-level { font-size: 10px; color: var(--text-muted); font-weight: 600; }
+.rank-badges { display: flex; gap: 3px; flex-shrink: 0; }
+.rank-badge { display: inline-flex; }
+.rank-badge.rb-top { color: #fbbf24; }
+.rank-badge.rb-fire { color: var(--orange); }
+.rank-badge.rb-exact { color: var(--blue); }
+
+/* Modal predicción */
+.pred-steps { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.pred-step { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-dim); }
+.pred-num {
+  flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--orange); color: #fff; font-size: 12px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+.pred-actions { display: flex; flex-direction: column; gap: 8px; }
+.pred-note { margin-top: 14px; font-size: 11px; color: var(--text-muted); text-align: center; line-height: 1.5; }
