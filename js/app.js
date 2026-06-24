@@ -112,17 +112,13 @@ const _FLAGS = {
   'Bosnia':'🇧🇦',
 };
 
-// ── ¿El partido en LIVE_MATCH realmente ha comenzado? ────────────────────
-// Devuelve true sólo si kickoff ya llegó (o faltan ≤5 min).
-// Se usa en TODAS las secciones para no mostrar "EN VIVO" antes de tiempo.
+// ── ¿Hay partido realmente EN VIVO? ──────────────────────────────────────
+// La verdad la da live_config.status, que el auto-sync (auto-live) fija según
+// lacancha.tv EN TIEMPO REAL. NO suprimir por el kickoff del calendario
+// estático: sus fechas son simuladas (2026) y un partido en vivo cuyo horario
+// programado aún "no llega" se ocultaría junto con TODOS sus canales.
 function _isActuallyLive() {
-  if (!LIVE_MATCH || LIVE_MATCH.status !== 'live') return false;
-  const entry = MATCHES.find(m =>
-    m.home.name === _normName(LIVE_MATCH.home.name) &&
-    m.away.name === _normName(LIVE_MATCH.away.name)
-  );
-  if (entry && new Date(entry.kickoff).getTime() > Date.now() + 5 * 60000) return false;
-  return true;
+  return !!(LIVE_MATCH && LIVE_MATCH.status === 'live');
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
