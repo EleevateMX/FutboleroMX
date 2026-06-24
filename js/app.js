@@ -2,7 +2,7 @@
 
 // ── Auto-reset de versión ("hard reset" para todos los dispositivos) ──────
 // Esta build. Debe coincidir con version.json y el CACHE del Service Worker.
-const APP_BUILD = 'v45';
+const APP_BUILD = 'v46';
 // Si el version.json del servidor anuncia una build distinta, significa que el
 // código en ejecución está cacheado/viejo → borra TODAS las cachés, actualiza
 // el SW y recarga UNA sola vez (sessionStorage evita bucles de recarga).
@@ -683,7 +683,15 @@ function _subscribeRealtimeLive() {
         const d = payload.new;
         if (!d) return;
         if (d.status === 'live') {
-          if (LIVE_MATCH) { LIVE_MATCH.hs = d.hs; LIVE_MATCH.as = d.as_; }
+          // Transición a EN VIVO (el partido acaba de arrancar) o cambio de
+          // partido → recarga completa AL INSTANTE para mostrar el juego + sus
+          // canales sin esperar al polling de 20s. Así vamos a la par de lacancha.
+          if (!LIVE_MATCH || (d.slug && d.slug !== LIVE_MATCH.slug)) {
+            refreshLiveConfig();
+            return;
+          }
+          // Mismo partido ya en vivo → solo actualiza el marcador (ligero).
+          LIVE_MATCH.hs = d.hs; LIVE_MATCH.as = d.as_;
           const scoreEl = document.getElementById('hero-score');
           if (scoreEl) {
             const nv = `${d.hs ?? 0}-${d.as_ ?? 0}`;
