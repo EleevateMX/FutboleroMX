@@ -1,4 +1,4 @@
-const CACHE = 'tvc-v44';
+const CACHE = 'tvc-v45';
 const STATIC = [
   '/', '/index.html', '/quiniela.html', '/perfil.html', '/css/style.css',
   '/js/data.js', '/js/auth.js', '/js/app.js', '/js/quiniela.js', '/js/perfil.js', '/js/push.js',
@@ -25,10 +25,11 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-  // Never cache: embed.st, supabase, external APIs
+  // Never cache: embed.st, supabase, external APIs, y version.json (auto-reset)
   if (url.hostname.includes('embed.st') || url.hostname.includes('supabase') ||
-      url.hostname.includes('cdn.jsdelivr') || url.hostname.includes('fonts.googleapis')) {
-    e.respondWith(fetch(e.request));
+      url.hostname.includes('cdn.jsdelivr') || url.hostname.includes('fonts.googleapis') ||
+      url.pathname.endsWith('/version.json') || url.pathname.endsWith('version.json')) {
+    e.respondWith(fetch(e.request, { cache: 'no-store' }).catch(() => caches.match(e.request)));
     return;
   }
   // HTML: network first, saltando el HTTP cache del browser (evita stale en iOS PWA)

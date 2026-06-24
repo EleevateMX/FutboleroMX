@@ -1,5 +1,37 @@
 // ── TVContigo — App Logic ─────────────────────────────────────────────────
 
+// ── Auto-reset de versión ("hard reset" para todos los dispositivos) ──────
+// Esta build. Debe coincidir con version.json y el CACHE del Service Worker.
+const APP_BUILD = 'v45';
+// Si el version.json del servidor anuncia una build distinta, significa que el
+// código en ejecución está cacheado/viejo → borra TODAS las cachés, actualiza
+// el SW y recarga UNA sola vez (sessionStorage evita bucles de recarga).
+async function checkAppVersion() {
+  try {
+    const res = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) return;
+    const { build } = await res.json();
+    if (!build || build === APP_BUILD) return;
+    const flag = 'tvc_reset_' + build;
+    if (sessionStorage.getItem(flag)) return;   // ya intentamos resetear a esta build
+    sessionStorage.setItem(flag, '1');
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+    if ('serviceWorker' in navigator) {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg) { try { await reg.update(); } catch (e) {} }
+    }
+    window.location.reload();
+  } catch (e) { /* sin red: se queda con lo que tiene */ }
+}
+checkAppVersion();
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') checkAppVersion();
+});
+window.addEventListener('online', checkAppVersion);
+
 // Recarga automática cuando hay SW nuevo — dos mecanismos complementarios:
 // 1) controllerchange: SW nuevo toma control (todos los browsers)
 // 2) message SW_UPDATED: SW nuevo notifica tras limpiar caché (más agresivo en iOS)
