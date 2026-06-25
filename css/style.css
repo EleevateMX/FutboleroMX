@@ -1511,3 +1511,11 @@ body {
 .picks-text strong { color: var(--text); }
 .picks-cta { flex-shrink: 0; font-size: 12px; font-weight: 800; color: #facc15; white-space: nowrap; background: rgba(250,204,21,.14); padding: 8px 14px; border-radius: 10px; }
 @media (max-width: 520px) { .picks-cta { display: none; } }
+
+/* ── Contenedor centrado en escritorio (evita el estiramiento en pantallas anchas) ── */
+.page-shell { max-width: 1080px; margin: 0 auto; width: 100%; }
+/* En escritorio, encuadra el reproductor con esquinas suaves */
+@media (min-width: 1024px) {
+  .page-shell .hero { border-radius: 16px; overflow: hidden; margin-top: 8px; }
+  .page-shell #cancha-tv { border-radius: 16px; overflow: hidden; }
+}
