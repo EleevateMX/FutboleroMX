@@ -2,7 +2,7 @@
 
 // ── Auto-reset de versión ("hard reset" para todos los dispositivos) ──────
 // Esta build. Debe coincidir con version.json y el CACHE del Service Worker.
-const APP_BUILD = 'v56';
+const APP_BUILD = 'v57';
 // Si el version.json del servidor anuncia una build distinta, significa que el
 // código en ejecución está cacheado/viejo → borra TODAS las cachés, actualiza
 // el SW y recarga UNA sola vez (sessionStorage evita bucles de recarga).
