@@ -1324,6 +1324,19 @@ body {
 .cc-label { flex: 1; font-size: 12.5px; color: var(--text); }
 .cc-pts { font-size: 11.5px; font-weight: 800; color: var(--green); }
 .cc-locked { margin-top: 10px; text-align: center; display: flex; flex-direction: column; gap: 8px; align-items: center; font-size: 12px; color: var(--text-dim); }
+/* Recordatorio diario (opt-in push PWA + correo) */
+.cc-reminder-btn {
+  width: 100%; margin-top: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  background: rgba(14,165,233,.1); border: 1.5px solid rgba(14,165,233,.3); color: #bae6fd;
+  border-radius: 11px; padding: 11px; font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; transition: all .16s;
+}
+.cc-reminder-btn:hover { background: rgba(14,165,233,.18); border-color: var(--blue); }
+.cc-reminder-btn .ic { color: var(--blue); }
+.cc-reminder { margin-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 12px; border-radius: 11px; background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.3); font-size: 12px; font-weight: 700; color: var(--green); }
+.cc-reminder span { display: inline-flex; align-items: center; gap: 6px; }
+.cc-reminder .ic { color: var(--green); }
+.cc-rem-off { flex-shrink: 0; background: none; border: none; color: var(--text-muted); font-family: inherit; font-size: 11px; font-weight: 700; cursor: pointer; text-decoration: underline; }
+.cc-rem-off:hover { color: var(--text); }
 
 /* Badges en ranking */
 .ranking-name { display: flex; flex-direction: column; line-height: 1.2; }

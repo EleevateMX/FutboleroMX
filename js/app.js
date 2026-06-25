@@ -2,7 +2,7 @@
 
 // ── Auto-reset de versión ("hard reset" para todos los dispositivos) ──────
 // Esta build. Debe coincidir con version.json y el CACHE del Service Worker.
-const APP_BUILD = 'v55';
+const APP_BUILD = 'v56';
 // Si el version.json del servidor anuncia una build distinta, significa que el
 // código en ejecución está cacheado/viejo → borra TODAS las cachés, actualiza
 // el SW y recarga UNA sola vez (sessionStorage evita bucles de recarga).
@@ -1787,11 +1787,46 @@ function renderChallenges() {
       <span class="cc-label">${c.label}</span>
       <span class="cc-pts">+${c.points} pts</span>
     </div>`).join('');
-  el.innerHTML = rows + (Auth.isLoggedIn() ? '' : `
+  const lock = Auth.isLoggedIn() ? '' : `
     <div class="cc-locked">
       <span>Inicia sesión para completar retos.</span>
       <button class="btn btn-orange btn-sm" onclick="openModal('login-modal')">Entrar</button>
-    </div>`);
+    </div>`;
+  // Apartado: recordatorio diario (push PWA + correo si hay sesión)
+  const on = localStorage.getItem('tvc_reminders') === '1' &&
+             (typeof Notification === 'undefined' || Notification.permission === 'granted');
+  const reminder = on
+    ? `<div class="cc-reminder cc-reminder-on">
+         <span>${svgIcon('check', 14)} Recordatorio diario activado</span>
+         <button class="cc-rem-off" onclick="disableDailyReminder()">Desactivar</button>
+       </div>`
+    : `<button class="cc-reminder-btn" onclick="enableDailyReminder()">
+         ${svgIcon('bolt', 15)} 🔔 Recordarme mis retos cada día
+       </button>`;
+  el.innerHTML = rows + lock + reminder;
+}
+
+// Activa el recordatorio diario: avisos PWA (push) + correo de confirmación
+async function enableDailyReminder() {
+  if (typeof subscribePush === 'function') {
+    try { await subscribePush(); } catch (e) {}
+  }
+  const ok = (typeof Notification !== 'undefined' && Notification.permission === 'granted');
+  if (!ok) { _showToast('Activa las notificaciones para recibir el recordatorio', 'var(--red)'); return; }
+  localStorage.setItem('tvc_reminders', '1');
+  _showToast('🔔 Recordatorio diario activado — te avisaremos de tus retos', 'var(--green)');
+  // Correo de confirmación: solo con sesión y una sola vez
+  if (Auth.isLoggedIn() && !localStorage.getItem('tvc_reminder_email')) {
+    try { await sb.rpc('send_reminder_email'); localStorage.setItem('tvc_reminder_email', '1'); } catch (e) {}
+  }
+  renderChallenges();
+  trackEvent('reminder', 'on');
+}
+function disableDailyReminder() {
+  localStorage.removeItem('tvc_reminders');
+  _showToast('Recordatorio diario desactivado', 'var(--surface-3)');
+  renderChallenges();
+  trackEvent('reminder', 'off');
 }
 
 // ── Catálogo "Todos los canales": filtros + búsqueda (referencia legal) ────
