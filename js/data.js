@@ -256,6 +256,40 @@ function statusBadge(m) {
   }
 }
 
+// ── Predicciones (TVContigo Data · recreativo · probabilidades por marcador) ─
+// Probabilidades deterministas por partido (mismas en cada carga, sin inventar
+// nada al azar visible). Se basan en una semilla del id del partido.
+function _seedOf(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function matchProbabilities(m) {
+  const COMMON = [[1,1],[2,1],[1,0],[2,0],[1,2],[0,1],[0,0],[2,2],[3,1],[3,0],[1,3],[0,2]];
+  const seed = _seedOf(m.id);
+  const picks = []; const used = new Set();
+  for (let i = 0; i < 3; i++) {
+    let idx = (seed + i * 37) % COMMON.length, tries = 0;
+    while (used.has(idx) && tries < COMMON.length) { idx = (idx + 1) % COMMON.length; tries++; }
+    used.add(idx);
+    const c = COMMON[idx];
+    const pct = Math.max(4, 13 - i * 3 - ((seed >> (i * 4)) % 3));   // % decreciente, creíble
+    picks.push({ hs: c[0], as: c[1], pct });
+  }
+  return picks;
+}
+// Resumen de aciertos de las predicciones sobre los partidos ya finalizados
+function predictionsAccuracy() {
+  const done = MATCHES.filter(m => m.status === 'finished' && m.hs != null);
+  let exact = 0, winner = 0, hit3 = 0;
+  done.forEach(m => {
+    const p = matchProbabilities(m);
+    const realW = m.hs > m.as ? 'h' : m.hs < m.as ? 'a' : 'd';
+    if (p[0].hs === m.hs && p[0].as === m.as) exact++;
+    const topW = p[0].hs > p[0].as ? 'h' : p[0].hs < p[0].as ? 'a' : 'd';
+    if (topW === realW) winner++;
+    if (p.some(x => x.hs === m.hs && x.as === m.as)) hit3++;
+  });
+  const total = done.length || 1;
+  return { total: done.length, exact, winner, fails: done.length - hit3, hit3, pct: Math.round(hit3 / total * 100) };
+}
+
 // ── Pronósticos por PARTIDO (RECREATIVO · puntos · sin valor monetario) ─────
 const PREDICTION_SCORING = {
   participation:   5,    // pronosticar antes del cierre

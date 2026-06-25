@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Predicciones — TVContigo</title>
+  <meta name="description" content="Predicciones recreativas del Mundial 2026: probabilidades por marcador basadas en datos del partido. TVContigo Data.">
+  <meta name="theme-color" content="#0ea5e9">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .pr-wrap { max-width: 720px; margin: 0 auto; padding: 16px 16px 56px; }
+    .back-link { display:inline-flex; align-items:center; gap:6px; color:var(--text-dim); text-decoration:none; font-size:13px; margin-bottom:14px; }
+    .pr-head { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .pr-title { font-family:'Bebas Neue',sans-serif; font-size:34px; letter-spacing:1px; }
+    .pr-badge { font-size:10px; font-weight:800; letter-spacing:.5px; color:var(--blue); background:rgba(14,165,233,.14); border:1px solid rgba(14,165,233,.28); padding:4px 10px; border-radius:20px; }
+    .pr-sub { font-size:12.5px; color:var(--text-dim); line-height:1.5; margin:6px 0 16px; }
+    /* Stat de aciertos */
+    .pr-stat { background:var(--surface); border:1.5px solid var(--border); border-radius:16px; padding:16px 18px; display:flex; align-items:center; gap:16px; margin-bottom:16px; flex-wrap:wrap; }
+    .pr-stat-pct { font-family:'Bebas Neue',sans-serif; font-size:42px; line-height:1; color:var(--accent,#facc15); }
+    .pr-stat-mid { flex:1; min-width:160px; }
+    .pr-stat-lbl { font-size:10px; font-weight:800; letter-spacing:1px; color:var(--text-dim); text-transform:uppercase; }
+    .pr-stat-sub { font-size:12px; color:var(--text-muted); margin-bottom:7px; }
+    .pr-bar { height:8px; background:var(--surface-3); border-radius:20px; overflow:hidden; }
+    .pr-bar-fill { height:100%; background:linear-gradient(90deg,#facc15,#22c55e); border-radius:20px; }
+    .pr-metrics { display:flex; gap:7px; flex-wrap:wrap; }
+    .pr-metric { font-size:10px; font-weight:800; letter-spacing:.5px; padding:4px 9px; border-radius:20px; }
+    .pr-metric.m-exact { color:#22c55e; background:rgba(34,197,94,.14); }
+    .pr-metric.m-win   { color:var(--blue); background:rgba(14,165,233,.14); }
+    .pr-metric.m-fail  { color:var(--text-muted); background:rgba(255,255,255,.05); }
+    /* Filtros de día */
+    .pr-filters { display:flex; gap:7px; overflow-x:auto; padding-bottom:4px; margin-bottom:16px; }
+    .pr-fchip { flex-shrink:0; background:var(--surface-2); border:1.5px solid var(--border); color:var(--text-dim); border-radius:12px; padding:8px 13px; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; text-align:center; line-height:1.3; transition:all .15s; }
+    .pr-fchip span { display:block; font-size:9.5px; font-weight:600; color:var(--text-muted); }
+    .pr-fchip:hover { color:var(--text); border-color:var(--border-hi); }
+    .pr-fchip.active { color:#fff; background:rgba(14,165,233,.16); border-color:var(--blue); }
+    .pr-fchip.active span { color:#bae6fd; }
+    /* Tarjeta de predicción */
+    .pr-card { background:var(--surface); border:1.5px solid var(--border); border-radius:16px; padding:16px; margin-bottom:12px; }
+    .pr-card-top { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+    .pr-match { font-size:14px; font-weight:800; display:flex; align-items:center; gap:8px; min-width:0; }
+    .pr-match b { color:var(--text-muted); font-weight:600; }
+    .pr-time { flex-shrink:0; font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:.5px; color:var(--text-dim); }
+    .pr-time.final { color:var(--text-muted); font-size:14px; }
+    .pr-scores { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:14px; }
+    .pr-score { background:var(--surface-2); border:1.5px solid var(--border); border-radius:11px; padding:10px 6px; text-align:center; cursor:pointer; transition:all .15s; }
+    .pr-score:hover { border-color:var(--blue); }
+    .pr-score.top { border-color:rgba(250,204,21,.4); }
+    .pr-score.hit { border-color:var(--green); background:rgba(34,197,94,.08); }
+    .pr-score-val { font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:1px; }
+    .pr-score-pct { font-size:11px; font-weight:800; color:var(--blue); margin-top:2px; }
+    .pr-score.top .pr-score-pct { color:var(--accent,#facc15); }
+    .pr-card-actions { display:flex; gap:8px; }
+    .pr-btn { flex:1; display:inline-flex; align-items:center; justify-content:center; gap:6px; border-radius:10px; padding:10px; font-family:inherit; font-size:12.5px; font-weight:700; cursor:pointer; border:none; transition:filter .15s; }
+    .pr-btn-use { background:var(--red,#ef4444); color:#fff; }
+    .pr-btn-use:hover { filter:brightness(1.1); }
+    .pr-btn-an { background:var(--surface-2); border:1px solid var(--border-hi); color:var(--text-dim); }
+    .pr-btn-an:hover { color:var(--text); }
+    .pr-analysis { display:none; margin-top:12px; padding-top:12px; border-top:1px solid var(--border); font-size:12px; color:var(--text-dim); line-height:1.6; }
+    .pr-analysis.open { display:block; }
+    .pr-legal { font-size:11px; color:var(--text-muted); text-align:center; line-height:1.6; margin-top:18px; }
+    .pr-empty { text-align:center; padding:30px 16px; color:var(--text-dim); font-size:13px; }
+  </style>
+</head>
+<body style="padding-top:0;padding-bottom:24px;">
+
+<div class="pr-wrap">
+  <a class="back-link" href="index.html">← Volver a TVContigo</a>
+
+  <div class="pr-head">
+    <h1 class="pr-title">PREDICCIONES</h1>
+    <span class="pr-badge">⚡ TVContigo Data</span>
+  </div>
+  <p class="pr-sub">Probabilidades recreativas basadas en resultados, forma reciente y datos del encuentro. Cada porcentaje se calcula con datos del torneo — las predicciones pueden fallar.</p>
+
+  <div class="pr-stat" id="pr-stat"></div>
+  <div class="pr-filters" id="pr-filters"></div>
+  <div id="pr-list"></div>
+
+  <p class="pr-legal">Las predicciones son recreativas y pueden fallar. No representan apuesta ni garantía. Los puntos no tienen valor monetario.</p>
+</div>
+
+<script src="js/data.js"></script>
+<script>
+  // ── Predicciones · TVContigo ──────────────────────────────────────────────
+  function _localDay(iso){ const d=new Date(iso); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+  function _todayDay(){ return _localDay(new Date().toISOString()); }
+  function _dayLabel(dayStr){
+    const t=_todayDay();
+    const tm=new Date(); tm.setDate(tm.getDate()+1); const tmStr=_localDay(tm.toISOString());
+    const ym=new Date(); ym.setDate(ym.getDate()-1); const ymStr=_localDay(ym.toISOString());
+    if(dayStr===t)  return {a:'Hoy',    b:''};
+    if(dayStr===tmStr) return {a:'Mañana', b:''};
+    if(dayStr===ymStr) return {a:'Ayer',   b:''};
+    const d=new Date(dayStr+'T12:00:00');
+    return { a:d.toLocaleDateString('es-MX',{weekday:'short'}), b:d.toLocaleDateString('es-MX',{day:'numeric',month:'short'}) };
+  }
+
+  let _prFilter = 'all';
+
+  function renderPredictionStats(){
+    const s = predictionsAccuracy();
+    document.getElementById('pr-stat').innerHTML = `
+      <div class="pr-stat-pct">${s.pct}%</div>
+      <div class="pr-stat-mid">
+        <div class="pr-stat-lbl">Aciertos de la predicción</div>
+        <div class="pr-stat-sub">${s.hit3} de ${s.total} partidos con el marcador entre los más probables</div>
+        <div class="pr-bar"><div class="pr-bar-fill" style="width:${s.pct}%"></div></div>
+      </div>
+      <div class="pr-metrics">
+        <span class="pr-metric m-exact">${s.exact} EXACTOS</span>
+        <span class="pr-metric m-win">${s.winner} AL GANADOR</span>
+        <span class="pr-metric m-fail">${s.fails} FALLOS</span>
+      </div>`;
+  }
+
+  function renderPredictionFilters(){
+    // Días con partidos (orden cronológico), centrados en hoy
+    const days = [...new Set(MATCHES.map(m => _localDay(m.kickoff)))].sort();
+    const chips = [{ id:'all', a:'Todos', b:'los días', n:MATCHES.length }]
+      .concat(days.map(day => {
+        const n = MATCHES.filter(m => _localDay(m.kickoff) === day).length;
+        const l = _dayLabel(day);
+        return { id:day, a:l.a, b:l.b || `${n} partidos`, n };
+      }));
+    // Filtro por defecto = hoy si tiene partidos, si no 'all'
+    const t = _todayDay();
+    if (_prFilter === 'all' && days.includes(t)) _prFilter = t;
+    document.getElementById('pr-filters').innerHTML = chips.map(c =>
+      `<button class="pr-fchip${c.id===_prFilter?' active':''}" onclick="setPrFilter('${c.id}')">${c.a}<span>${c.b}</span></button>`
+    ).join('');
+    const active = document.querySelector('.pr-fchip.active');
+    if (active) try { active.scrollIntoView({ inline:'center', block:'nearest' }); } catch(e){}
+  }
+  function setPrFilter(id){ _prFilter = id; renderPredictionFilters(); renderPredictionCards(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+  function renderPredictionCards(){
+    let list = MATCHES.slice().sort((a,b)=> new Date(a.kickoff)-new Date(b.kickoff));
+    if (_prFilter !== 'all') list = list.filter(m => _localDay(m.kickoff) === _prFilter);
+    const el = document.getElementById('pr-list');
+    if (!list.length){ el.innerHTML = `<div class="pr-empty">No hay partidos para este día.</div>`; return; }
+    el.innerHTML = list.map(m => {
+      const p = matchProbabilities(m);
+      const d = new Date(m.kickoff);
+      const time = d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',hour12:false});
+      const finished = m.status === 'finished' && m.hs != null;
+      const live = m.status === 'live';
+      const timeHtml = finished ? `<span class="pr-time final">${m.hs}-${m.as} FINAL</span>` : live ? `<span class="pr-time" style="color:var(--red)">EN VIVO</span>` : `<span class="pr-time">${time}</span>`;
+      const scores = p.map((x,i)=>{
+        const isHit = finished && x.hs===m.hs && x.as===m.as;
+        return `<div class="pr-score${i===0?' top':''}${isHit?' hit':''}" onclick="usarPrediccion('${m.id}',${x.hs},${x.as})">
+          <div class="pr-score-val">${x.hs}-${x.as}</div>
+          <div class="pr-score-pct">${x.pct}%</div>
+        </div>`;
+      }).join('');
+      const actions = finished
+        ? `<button class="pr-btn pr-btn-an" onclick="toggleAnalisis('${m.id}')">Ver análisis</button>`
+        : `<button class="pr-btn pr-btn-use" onclick="usarPrediccion('${m.id}',${p[0].hs},${p[0].as})">Usar como pronóstico</button>
+           <button class="pr-btn pr-btn-an" onclick="toggleAnalisis('${m.id}')">Ver análisis</button>`;
+      return `
+      <div class="pr-card">
+        <div class="pr-card-top">
+          <div class="pr-match">${m.home.flag} ${m.home.name} <b>vs</b> ${m.away.name} ${m.away.flag}</div>
+          ${timeHtml}
+        </div>
+        <div class="pr-scores">${scores}</div>
+        <div class="pr-card-actions">${actions}</div>
+        <div class="pr-analysis" id="an-${m.id}">
+          ${svgAnalysis(m, p)}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function svgAnalysis(m, p){
+    const fav = p[0].hs > p[0].as ? m.home.name : p[0].hs < p[0].as ? m.away.name : 'el empate';
+    return `Marcador más probable: <strong style="color:var(--text)">${m.home.name} ${p[0].hs}-${p[0].as} ${m.away.name}</strong> (${p[0].pct}%).
+      La predicción favorece <strong style="color:var(--text)">${fav}</strong> según los datos del encuentro y la forma reciente.
+      Recuerda: es una probabilidad recreativa, no una garantía.`;
+  }
+  function toggleAnalisis(id){ const a=document.getElementById('an-'+id); if(a) a.classList.toggle('open'); }
+
+  // "Usar como pronóstico": guarda el marcador como tu pick (localStorage) y
+  // ofrece ir a hacerlo oficial en la quiniela del partido.
+  function usarPrediccion(matchId, hs, as_){
+    try {
+      const all = JSON.parse(localStorage.getItem('tvc_predictions') || '{}');
+      all[matchId] = { matchId, hs, as_, submittedAt: new Date().toISOString() };
+      localStorage.setItem('tvc_predictions', JSON.stringify(all));
+    } catch(e){}
+    const m = MATCHES.find(x=>x.id===matchId);
+    const ok = confirm(`Pronóstico guardado: ${m.home.name} ${hs}-${as_} ${m.away.name}.\n\n¿Abrir la quiniela del partido para confirmarlo?`);
+    if (ok) location.href = 'index.html#pred=' + matchId;
+  }
+
+  renderPredictionStats();
+  renderPredictionFilters();
+  renderPredictionCards();
+</script>
+</body>
+</html>

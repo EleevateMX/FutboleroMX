@@ -1,6 +1,6 @@
-const CACHE = 'tvc-v53';
+const CACHE = 'tvc-v54';
 const STATIC = [
-  '/', '/index.html', '/quiniela.html', '/perfil.html', '/css/style.css',
+  '/', '/index.html', '/quiniela.html', '/perfil.html', '/predicciones.html', '/css/style.css',
   '/js/data.js', '/js/auth.js', '/js/app.js', '/js/quiniela.js', '/js/perfil.js', '/js/push.js',
   '/manifest.json', '/icons/icon.svg', '/icons/icon-192.png', '/icons/icon-512.png',
 ];
