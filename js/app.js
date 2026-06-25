@@ -2,7 +2,7 @@
 
 // ── Auto-reset de versión ("hard reset" para todos los dispositivos) ──────
 // Esta build. Debe coincidir con version.json y el CACHE del Service Worker.
-const APP_BUILD = 'v52';
+const APP_BUILD = 'v53';
 // Si el version.json del servidor anuncia una build distinta, significa que el
 // código en ejecución está cacheado/viejo → borra TODAS las cachés, actualiza
 // el SW y recarga UNA sola vez (sessionStorage evita bucles de recarga).
@@ -547,9 +547,16 @@ function handleDayChange() {
   return true;
 }
 
+// Deep-link a un pronóstico: index.html#pred=<matchId> abre su modal al cargar
+function _handlePredHash() {
+  const id = (String(location.hash || '').match(/pred=([\w-]+)/) || [])[1];
+  if (id && typeof openMatchPredictionModal === 'function') setTimeout(() => openMatchPredictionModal(id), 400);
+}
+window.addEventListener('hashchange', _handlePredHash);
+
 // Disparadores: al cargar, al volver a la pestaña/PWA, al recuperar conexión,
 // y al cambiar el día. handleDayChange() devuelve true si ya forzó el refresco.
-window.addEventListener('load',   () => { if (!handleDayChange()) refreshAppData(true); });
+window.addEventListener('load',   () => { if (!handleDayChange()) refreshAppData(true); _handlePredHash(); });
 window.addEventListener('online', () => { setRefreshStatus(null, 'Conexión recuperada…'); if (!handleDayChange()) refreshAppData(true); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && !handleDayChange()) refreshAppData(); });
 // Revisión periódica (cada 5 min): cambio de día o partido en vivo → refresca
