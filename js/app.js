@@ -2,7 +2,7 @@
 
 // ── Auto-reset de versión ("hard reset" para todos los dispositivos) ──────
 // Esta build. Debe coincidir con version.json y el CACHE del Service Worker.
-const APP_BUILD = 'v57';
+const APP_BUILD = 'v58';
 // Si el version.json del servidor anuncia una build distinta, significa que el
 // código en ejecución está cacheado/viejo → borra TODAS las cachés, actualiza
 // el SW y recarga UNA sola vez (sessionStorage evita bucles de recarga).
@@ -1652,9 +1652,12 @@ async function renderRanking() {
   } catch (e) {}
   container.innerHTML = list.map((u, i) => {
     const ini = (u.name || '?').slice(0, 2).toUpperCase();
+    // Prioridad del avatar en el ranking: foto subida → emoji elegido → iniciales
     const av = u.avatar
       ? `<div style="width:30px;height:30px;border-radius:50%;background-image:url('${u.avatar}');background-size:cover;background-position:center;flex-shrink:0;"></div>`
-      : `<div style="width:30px;height:30px;border-radius:50%;background:var(--surface-3);color:var(--text-dim);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${ini}</div>`;
+      : u.emoji
+        ? `<div style="width:30px;height:30px;border-radius:50%;background:var(--surface-3);display:flex;align-items:center;justify-content:center;font-size:17px;line-height:1;flex-shrink:0;">${esc(u.emoji)}</div>`
+        : `<div style="width:30px;height:30px;border-radius:50%;background:var(--surface-3);color:var(--text-dim);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${ini}</div>`;
     const lvl = (typeof levelFor === 'function') ? levelFor(u.pts || 0) : { name: '' };
     // Insignias pequeñas (decorativas): líder, racha y tino exacto
     const badges = [];

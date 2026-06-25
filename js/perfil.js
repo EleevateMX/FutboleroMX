@@ -114,8 +114,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const u = Auth.getUser && Auth.getUser();
     if (u && u.id) {
-      const { data } = await sb.from('profiles').select('referral_code').eq('id', u.id).single();
+      const { data } = await sb.from('profiles').select('referral_code, emoji').eq('id', u.id).single();
       _refCode = (data && data.referral_code) || '';
+      if (data && data.emoji) _saveLocal({ emoji: data.emoji });   // sincroniza emoji entre dispositivos
     }
   } catch (e) {}
   const inp = document.getElementById('avatar-input');
@@ -348,7 +349,12 @@ async function saveProfile() {
 }
 function validateUsername(u) { return /^[a-zA-Z0-9._-]{3,20}$/.test(u || ''); }
 async function useGoogleName() { const g = getProfile().googleName; if (!g) return; document.getElementById('f-name').value = g; await saveProfile(); }
-function setAvatarEmoji(e) { _saveLocal({ emoji: e }); logActivity('avatar', `Cambiaste tu avatar a ${e}.`); _showToast('Avatar actualizado', 'var(--green)'); render(); }
+function setAvatarEmoji(e) {
+  _saveLocal({ emoji: e });
+  // Guarda el emoji en Supabase para que aparezca en el ranking global
+  if (getProfile().loggedIn && typeof sb !== 'undefined') sb.rpc('set_my_emoji', { p_emoji: e }).then(() => {}, () => {});
+  logActivity('avatar', `Cambiaste tu avatar a ${e}.`); _showToast('Avatar actualizado', 'var(--green)'); render();
+}
 function setFavoriteTeam(name) { _saveLocal({ favoriteTeam: name }); if (name) logActivity('team', `Elegiste ${name} como tu selección favorita.`); _showToast(name ? `Selección: ${name}` : 'Sin selección', 'var(--blue)'); render(); }
 function setUserLanguage(lang) { _saveLocal({ language: lang }); _showToast(lang === 'es' ? 'Idioma: Español' : 'Language: English', 'var(--blue)'); render(); }
 async function onAvatarPicked(e) {
