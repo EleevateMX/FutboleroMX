@@ -38,6 +38,27 @@ function buildChannels(slug, list) {
   return sortChannels(built);
 }
 
+// Nombre de selección (ES) → parte del slug en inglés (formato de la fuente).
+// Sirve para derivar el slug de partidos SIMULTÁNEOS al destacado y poder verlos.
+const SLUG_EN = {
+  'México':'mexico','Sudáfrica':'south-africa','Corea del Sur':'south-korea','Chequia':'czechia',
+  'EE.UU.':'usa','Paraguay':'paraguay','Australia':'australia','Turquía':'turkey',
+  'Catar':'qatar','Suiza':'switzerland','Canadá':'canada','Bosnia':'bosnia',
+  'Brasil':'brazil','Marruecos':'morocco','Haití':'haiti','Escocia':'scotland',
+  'Alemania':'germany','Curazao':'curacao','Costa de Marfil':'ivory-coast','Ecuador':'ecuador',
+  'Países Bajos':'netherlands','Japón':'japan','Suecia':'sweden','Túnez':'tunisia',
+  'España':'spain','Cabo Verde':'cape-verde','Arabia Saudita':'saudi-arabia','Uruguay':'uruguay',
+  'Bélgica':'belgium','Egipto':'egypt','Irán':'iran','Nueva Zelanda':'new-zealand',
+  'Francia':'france','Senegal':'senegal','Irak':'iraq','Noruega':'norway',
+  'Argentina':'argentina','Argelia':'algeria','Austria':'austria','Jordania':'jordan',
+  'Portugal':'portugal','RD Congo':'rd-congo','Uzbekistán':'uzbekistan','Colombia':'colombia',
+  'Inglaterra':'england','Croacia':'croatia','Ghana':'ghana','Panamá':'panama',
+};
+function deriveSlug(homeName, awayName) {
+  const h = SLUG_EN[homeName], a = SLUG_EN[awayName];
+  return (h && a) ? `ppv-${h}-vs-${a}` : null;
+}
+
 // Canales reales actuales (default — se sobrescribe con Supabase live_config)
 // Números de stream (n) corresponden al slug activo en embed.st — el admin los ajusta por partido
 let CHANNELS = [

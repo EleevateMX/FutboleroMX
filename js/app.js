@@ -2,7 +2,7 @@
 
 // ── Auto-reset de versión ("hard reset" para todos los dispositivos) ──────
 // Esta build. Debe coincidir con version.json y el CACHE del Service Worker.
-const APP_BUILD = 'v48';
+const APP_BUILD = 'v49';
 // Si el version.json del servidor anuncia una build distinta, significa que el
 // código en ejecución está cacheado/viejo → borra TODAS las cachés, actualiza
 // el SW y recarga UNA sola vez (sessionStorage evita bucles de recarga).
@@ -163,6 +163,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadMatchResults(); // resultados finales desde Supabase (auto-sync cada 10 min)
   renderHero();
   renderChannelStrip();
+  renderLiveSwitcher();
   renderMatchesRow();
   renderChannelsGrid();
   renderResultsRow();
@@ -292,31 +293,111 @@ function flagFor(name) {
 }
 
 // ── Carga el partido en vivo desde Supabase (live_config) ─────────────────
-let _curSlug = null;   // slug del partido actualmente cargado (para detectar cambios)
+let _curSlug = null;          // slug del partido actualmente cargado (para detectar cambios)
+let _liveChannelDefs = [];    // defs crudas (con n) del destacado, para reusar en simultáneos
+let _simulLive = [];          // partidos SIMULTÁNEOS en vivo (misma hora que el destacado)
+let _featuredMatch = null;    // el partido destacado tal cual viene de live_config
+let _userPickedSlug = null;   // slug que el usuario eligió ver entre los simultáneos
+
 async function loadLiveConfig() {
   try {
     const { data } = await sb.from('live_config').select('*').eq('id', 1).single();
     if (data && data.status === 'live' && data.slug) {
-      if (Array.isArray(data.channels) && data.channels.length) {
-        CHANNELS = buildChannels(data.slug, data.channels);
-      }
-      LIVE_MATCH = {
+      _liveChannelDefs = Array.isArray(data.channels) ? data.channels : [];
+      const featured = {
         id: 'live', slug: data.slug,
         home: { name: data.home_name, flag: data.home_flag || flagFor(data.home_name) },
         away: { name: data.away_name, flag: data.away_flag || flagFor(data.away_name) },
         kickoff: new Date().toISOString(), status: 'live',
         hs: data.hs ?? 0, as: data.as_ ?? 0,
         venue: data.venue || '', city: data.city || '', comp: data.comp || 'En vivo',
-        defaultChannel: CHANNELS[0]?.id,
       };
+      _featuredMatch = featured;
+      _simulLive = _computeSimultaneous(featured);   // partidos a la misma hora → también en vivo
+      // Si el usuario eligió ver un simultáneo y sigue vigente, respétalo; si no, el destacado.
+      const pick = _userPickedSlug && _simulLive.find(m => m.slug === _userPickedSlug);
+      if (pick) {
+        LIVE_MATCH = pick;
+        CHANNELS   = buildChannels(pick.slug, _liveChannelDefs);
+      } else {
+        _userPickedSlug = null;
+        LIVE_MATCH = featured;
+        if (_liveChannelDefs.length) CHANNELS = buildChannels(data.slug, _liveChannelDefs);
+      }
+      LIVE_MATCH.defaultChannel = CHANNELS[0]?.id;
       _curSlug = data.slug;
       return;
     }
     // Status 'off' o sin datos → limpiar
     LIVE_MATCH = null; CHANNELS = []; _curSlug = null;
+    _liveChannelDefs = []; _simulLive = []; _featuredMatch = null; _userPickedSlug = null;
   } catch (e) {
     // Error de red: conservar estado anterior (no borrar LIVE_MATCH)
   }
+}
+
+// Partidos que arrancan a la MISMA hora que el destacado → también están en vivo.
+// (No depende del reloj del visitante: usa que el destacado YA está confirmado en vivo.)
+function _computeSimultaneous(featured) {
+  const fe = MATCHES.find(m =>
+    _normName(m.home.name) === _normName(featured.home.name) &&
+    _normName(m.away.name) === _normName(featured.away.name));
+  if (!fe) return [];
+  const kt = new Date(fe.kickoff).getTime();
+  return MATCHES
+    .filter(m => m !== fe
+      && Math.abs(new Date(m.kickoff).getTime() - kt) < 5 * 60000
+      && m.status !== 'finished')
+    .map(m => {
+      const slug = deriveSlug(m.home.name, m.away.name);
+      if (!slug) return null;
+      return {
+        id: 'live', slug, status: 'live',
+        home: { name: m.home.name, flag: m.home.flag },
+        away: { name: m.away.name, flag: m.away.flag },
+        kickoff: new Date().toISOString(),
+        hs: m.hs ?? 0, as: m.as ?? 0,
+        venue: m.venue || '', city: m.city || '', comp: m.comp || 'En vivo',
+      };
+    })
+    .filter(Boolean);
+}
+
+// ── Selector "EN VIVO AHORA" (destacado + simultáneos) ────────────────────
+function renderLiveSwitcher() {
+  const el = document.getElementById('live-switcher');
+  if (!el) return;
+  if (!_isActuallyLive() || !_simulLive.length || !_featuredMatch) {
+    el.style.display = 'none'; el.innerHTML = ''; return;
+  }
+  const all = [_featuredMatch, ..._simulLive];
+  const cur = LIVE_MATCH ? LIVE_MATCH.slug : _featuredMatch.slug;
+  el.style.display = 'flex';
+  el.innerHTML = `<span class="ls-label">${svgIcon('bolt', 13)} EN VIVO AHORA</span>` + all.map(m => `
+    <button class="ls-chip${m.slug === cur ? ' active' : ''}" onclick="selectLiveMatch('${m.slug}')">
+      <span class="ls-flags">${m.home.flag} ${m.away.flag}</span>
+      <span class="ls-teams">${m.home.name} <b>vs</b> ${m.away.name}</span>
+      <span class="ls-dot"></span>
+    </button>`).join('');
+}
+
+function selectLiveMatch(slug) {
+  if (!_featuredMatch) return;
+  const all = [_featuredMatch, ..._simulLive];
+  const m = all.find(x => x && x.slug === slug);
+  if (!m) return;
+  _userPickedSlug = (slug === _featuredMatch.slug) ? null : slug;
+  LIVE_MATCH = m;
+  CHANNELS = buildChannels(slug, _liveChannelDefs);
+  LIVE_MATCH.defaultChannel = CHANNELS[0]?.id;
+  _activeChannel = null;
+  renderHero();
+  renderChannelStrip();
+  renderChannelsGrid();
+  renderLiveSwitcher();
+  openLiveStream();
+  _showToast(`📺 ${m.home.name} vs ${m.away.name}`, 'var(--blue)');
+  trackEvent('live_switch', `${m.home.name}-${m.away.name}`);
 }
 
 // ── Resultados finales desde Supabase (overlay sobre MATCHES estático) ───
@@ -359,13 +440,13 @@ async function refreshLiveConfig() {
     renderHero();
     renderChannelStrip();
     renderChannelsGrid();
-  } else if (LIVE_MATCH && _isActuallyLive()) {
-    // Mismo partido — actualiza el marcador en el hero sin re-renderizar el stream
+  } else if (LIVE_MATCH && _isActuallyLive() && !_userPickedSlug) {
+    // Mismo partido destacado — actualiza su marcador (no si el usuario eligió un simultáneo)
     const scoreEl = document.getElementById('hero-score');
     if (scoreEl) scoreEl.textContent = `${LIVE_MATCH.hs ?? 0}-${LIVE_MATCH.as ?? 0}`;
     _updateMediaSession();
-    // Si el hero muestra el preview (no el stream), también actualiza los marcadores de las tarjetas
   }
+  renderLiveSwitcher();
   renderMatchesRow();
   renderResultsRow();
   renderStandings();
@@ -683,14 +764,21 @@ function _subscribeRealtimeLive() {
         const d = payload.new;
         if (!d) return;
         if (d.status === 'live') {
-          // Transición a EN VIVO (el partido acaba de arrancar) o cambio de
-          // partido → recarga completa AL INSTANTE para mostrar el juego + sus
-          // canales sin esperar al polling de 20s. Así se muestra al instante.
+          // Cambió el partido DESTACADO (otro juego arrancó) → recarga completa
+          // al instante para mostrarlo con sus canales y recalcular simultáneos.
+          if (d.slug && _featuredMatch && d.slug !== _featuredMatch.slug) {
+            refreshLiveConfig();
+            return;
+          }
+          // El usuario está viendo un partido SIMULTÁNEO → el marcador del
+          // destacado no afecta su hero; lo ignoramos.
+          if (_userPickedSlug) return;
+          // Transición a EN VIVO (recién arrancó) → recarga para renderizarlo.
           if (!LIVE_MATCH || (d.slug && d.slug !== LIVE_MATCH.slug)) {
             refreshLiveConfig();
             return;
           }
-          // Mismo partido ya en vivo → solo actualiza el marcador (ligero).
+          // Mismo partido destacado ya en vivo → solo actualiza el marcador (ligero).
           LIVE_MATCH.hs = d.hs; LIVE_MATCH.as = d.as_;
           const scoreEl = document.getElementById('hero-score');
           if (scoreEl) {

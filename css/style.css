@@ -1344,3 +1344,30 @@ body {
 }
 .pred-actions { display: flex; flex-direction: column; gap: 8px; }
 .pred-note { margin-top: 14px; font-size: 11px; color: var(--text-muted); text-align: center; line-height: 1.5; }
+
+/* ── Selector "EN VIVO AHORA" (destacado + partidos simultáneos) ──────────── */
+.live-switcher {
+  display: flex; align-items: center; gap: 8px; overflow-x: auto;
+  padding: 10px 20px; background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.ls-label {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 800; letter-spacing: .5px; color: var(--red); text-transform: uppercase;
+}
+.ls-label .ic { color: var(--red); }
+.ls-chip {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 7px;
+  background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 20px;
+  padding: 7px 13px; cursor: pointer; font-family: inherit; color: var(--text-dim);
+  transition: all .16s; white-space: nowrap;
+}
+.ls-chip:hover { color: var(--text); border-color: var(--border-hi); }
+.ls-chip.active { color: #fff; border-color: var(--red); background: rgba(239,68,68,.14); }
+.ls-flags { font-size: 14px; }
+.ls-teams { font-size: 12px; font-weight: 700; }
+.ls-teams b { color: var(--text-muted); font-weight: 600; margin: 0 2px; }
+.ls-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--red);
+  box-shadow: 0 0 6px var(--red); animation: rs-pulse 1.2s ease-in-out infinite;
+}
+.ls-chip:not(.active) .ls-dot { background: var(--text-muted); box-shadow: none; animation: none; }
