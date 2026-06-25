@@ -256,6 +256,23 @@ function statusBadge(m) {
   }
 }
 
+// ── Pronósticos por PARTIDO (RECREATIVO · puntos · sin valor monetario) ─────
+const PREDICTION_SCORING = {
+  participation:   5,    // pronosticar antes del cierre
+  correctWinner:  10,    // acertar ganador (o empate)
+  correctGoalDiff:15,    // acertar la diferencia de goles
+  exactScore:     30,    // marcador exacto
+};
+// Usuarios de ejemplo para "Ganadores del pronóstico" (mock · sin backend aún)
+const MOCK_PREDICTORS = [
+  { id: 'u-erik',   name: 'Erik Ayala',   avatar: '🦅' },
+  { id: 'u-daniel', name: 'Daniel',       avatar: '⚡' },
+  { id: 'u-gerar',  name: 'GerarMC',      avatar: '🔥' },
+  { id: 'u-fredel', name: 'Fredel Cañas', avatar: '🎯' },
+  { id: 'u-kevin',  name: 'Kevin Ortega', avatar: '⭐' },
+  { id: 'u-santi',  name: 'Santiago P.',  avatar: '🧤' },
+];
+
 // ── Sistema de puntos / recompensas (RECREATIVO · sin valor monetario) ──────
 const DAILY_MAX = 60;   // tope de puntos que se pueden sumar en un día
 

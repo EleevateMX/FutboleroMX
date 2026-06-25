@@ -2,7 +2,7 @@
 
 // ── Auto-reset de versión ("hard reset" para todos los dispositivos) ──────
 // Esta build. Debe coincidir con version.json y el CACHE del Service Worker.
-const APP_BUILD = 'v51';
+const APP_BUILD = 'v52';
 // Si el version.json del servidor anuncia una build distinta, significa que el
 // código en ejecución está cacheado/viejo → borra TODAS las cachés, actualiza
 // el SW y recarga UNA sola vez (sessionStorage evita bucles de recarga).
@@ -493,7 +493,7 @@ async function refreshAppData(force = false) {
   setRefreshStatus('busy', 'Actualizando partidos…');
   try {
     await refreshLiveConfig();   // recarga live_config + match_results y re-renderiza
-    // Si NO hay live, re-pinta "HOY EN LA CANCHA" (sin tocar un stream en curso)
+    // Si NO hay live, re-pinta "Partidos de hoy" (sin tocar un stream en curso)
     if (!_isActuallyLive()) renderHero();
     // Refresca también gamificación, canales y ranking al abrir/volver a la PWA
     renderChannelsGrid();
@@ -589,7 +589,7 @@ document.addEventListener('keydown', e => {
 
 // ── Estado del Home ───────────────────────────────────────────────────────
 // 'live' (player) · 'no-stream' (live sin transmisión) · 'no-live-upcoming' /
-// 'day-finished' (vista HOY EN LA CANCHA). Cuando no hay live, el player se
+// 'day-finished' (vista Partidos de hoy). Cuando no hay live, el player se
 // oculta y aparece la vista de pronóstico — nunca se queda pegado.
 function getAppViewState() {
   if (_isActuallyLive()) return CHANNELS.length ? 'live' : 'no-stream';
@@ -615,7 +615,7 @@ function renderHero() {
   const rawLive = (LIVE_MATCH && LIVE_MATCH.status === 'live') ? LIVE_MATCH : null;
   const live    = rawLive && _isActuallyLive() ? rawLive : null;
 
-  // ── Sin partido en vivo → vista "HOY EN LA CANCHA" (no dejar el player pegado)
+  // ── Sin partido en vivo → vista "Partidos de hoy" (no dejar el player pegado)
   if (!live) {
     if (hero) hero.style.display = 'none';
     if (hoy)  { hoy.style.display = 'block'; renderHoySection(); }
@@ -729,7 +729,7 @@ function renderHero() {
   }
 }
 
-// ── Vista "HOY EN LA CANCHA" (cuando NO hay partido en vivo) ───────────────
+// ── Vista "Partidos de hoy" (cuando NO hay partido en vivo) ────────────────
 function renderHoySection() {
   const el = document.getElementById('hoy-section');
   if (!el) return;
@@ -739,6 +739,11 @@ function renderHoySection() {
     .sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
   const dayDone = areTodayMatchesFinished();
   const logged  = (typeof Auth !== 'undefined' && Auth.isLoggedIn && Auth.isLoggedIn());
+
+  const title = dayDone ? 'LOS PARTIDOS DE HOY YA FINALIZARON' : 'PARTIDOS DE HOY';
+  const subtitle = dayDone
+    ? 'Consulta los ganadores y prepara tus próximos pronósticos.'
+    : 'Pronostica antes del silbatazo inicial y suma puntos en el ranking.';
 
   // Bloque destacado: el próximo grupo (1–2 partidos a la misma hora)
   let featuredHtml = '';
@@ -751,28 +756,21 @@ function renderHoySection() {
         ${svgIcon('tv', 15)} Ver los dos en pantalla dividida →
       </button>` : '';
     featuredHtml = `
-      <div class="hoy-featured-label">${isDouble ? svgIcon('tv', 13) + ' DOS PARTIDOS A LA VEZ' : svgIcon('bolt', 13) + ' PRÓXIMO PARTIDO'}</div>
+      <div class="hoy-featured-label">${isDouble ? svgIcon('tv', 13) + ' DOS PARTIDOS A LA VEZ' : svgIcon('target', 13) + ' PRÓXIMO PRONÓSTICO'}</div>
       <div class="hoy-cards${isDouble ? ' hoy-cards-2' : ''}">${featured.map(_hoyCard).join('')}</div>
       ${splitCta}`;
   }
 
-  const finishedNote = dayDone ? `
-    <div class="hoy-finished">
-      <span class="hoy-finished-icon">${svgIcon('check', 18)}</span>
-      <div><strong>Los partidos de hoy ya finalizaron.</strong>
-        <span>No hay transmisión en vivo por el momento — pronostica los próximos o revisa los resultados.</span></div>
-    </div>` : '';
-
   const ctas = logged
     ? `<a class="hoy-cta hoy-cta-primary" href="quiniela.html">${svgIcon('trophy', 15)} Ir a mi quiniela</a>
-       <a class="hoy-cta" href="quiniela.html">${svgIcon('target', 15)} Pronostica los próximos</a>`
+       <button class="hoy-cta" onclick="scrollToSection('upcoming-section')">${svgIcon('target', 15)} Partidos disponibles</button>`
     : `<a class="hoy-cta hoy-cta-primary" href="cuenta.html">${svgIcon('star', 15)} Crear mi cuenta</a>
        <a class="hoy-cta" href="cuenta.html?tab=login">${svgIcon('login', 15)} Entrar</a>`;
 
   el.innerHTML = `
-    <div class="hoy-head"><span class="hoy-hdot"></span><h2 class="hoy-title">HOY EN LA CANCHA</h2></div>
-    ${finishedNote}
-    ${featuredHtml || `<div class="hoy-empty">${svgIcon('star', 20)} Pronto más fútbol del Mundial. Revisa los próximos partidos abajo.</div>`}
+    <div class="hoy-head"><span class="hoy-hdot"></span><h2 class="hoy-title">${title}</h2></div>
+    <p class="hoy-subtitle">${subtitle}</p>
+    ${featuredHtml || `<div class="hoy-empty">${svgIcon('star', 20)} No hay partidos en vivo por ahora. Vuelve para los próximos encuentros.</div>`}
     <div class="hoy-ctas">${ctas}</div>`;
 }
 
@@ -780,6 +778,22 @@ function _hoyCard(m) {
   const ft = fmtMatchTime(m.kickoff);
   const venue = [m.venue, m.city].filter(Boolean).join(' · ');
   const sb = statusBadge(m);
+  const pst = getPredictionStatus(m);
+  const mine = getUserPredictionForMatch(m.id);
+  let actions;
+  if (pst === 'finished') {
+    actions = `<button class="hoy-btn-pred" onclick="renderResultsAndWinners('${m.id}')">${svgIcon('trophy', 14)} Ver ganadores</button>`;
+  } else if (pst === 'locked') {
+    actions = `<button class="hoy-btn-info" style="flex:1;opacity:.7;cursor:default" disabled>${svgIcon('check', 14)} Pronóstico cerrado</button>`;
+  } else if (mine) {
+    actions = `<button class="hoy-btn-pred" onclick="goPronosticar('${m.id}')">${svgIcon('target', 14)} Tu pick ${mine.hs}-${mine.as_} · Editar</button>`;
+  } else {
+    actions = `<button class="hoy-btn-pred" onclick="goPronosticar('${m.id}')">${svgIcon('target', 14)} Pronosticar</button>
+               <button class="hoy-btn-info" onclick="openMatchInfo('${m.id}')">${svgIcon('bolt', 14)} Recordar</button>`;
+  }
+  const center = (pst === 'finished')
+    ? `<div class="hoy-hh">${m.hs}-${m.as}</div><div class="hoy-dd">FINAL</div>`
+    : `<div class="hoy-hh">${ft.time}</div><div class="hoy-dd">${ft.day}</div>`;
   return `
     <div class="hoy-card">
       <div class="hoy-card-top">
@@ -788,21 +802,206 @@ function _hoyCard(m) {
       </div>
       <div class="hoy-card-main">
         <div class="hoy-team"><span class="hoy-flag">${m.home.flag}</span><span class="hoy-tname">${m.home.name}</span></div>
-        <div class="hoy-when"><div class="hoy-hh">${ft.time}</div><div class="hoy-dd">${ft.day}</div></div>
+        <div class="hoy-when">${center}</div>
         <div class="hoy-team"><span class="hoy-flag">${m.away.flag}</span><span class="hoy-tname">${m.away.name}</span></div>
       </div>
       ${venue ? `<div class="hoy-venue">📍 ${venue}</div>` : ''}
-      <div class="hoy-card-actions">
-        <button class="hoy-btn-pred" onclick="goPronosticar('${m.id}')">${svgIcon('target', 14)} Pronosticar</button>
-        <button class="hoy-btn-info" onclick="openMatchInfo('${m.id}')">${svgIcon('bolt', 14)} Recordar</button>
-      </div>
+      <div class="hoy-card-actions">${actions}</div>
     </div>`;
 }
 
-// CTA "Pronosticar / Mi quiniela": logueado → quiniela; si no → crear cuenta
+// "Pronosticar": con matchId abre el modal de pronóstico del partido (o los
+// ganadores si ya terminó). Sin matchId → a Mi quiniela (o crear cuenta).
 function goPronosticar(matchId) {
+  if (matchId) { openMatchPredictionModal(matchId); return; }
   if (typeof Auth !== 'undefined' && Auth.isLoggedIn && Auth.isLoggedIn()) location.href = 'quiniela.html';
   else location.href = 'cuenta.html';
+}
+
+// ══ Pronósticos por PARTIDO (recreativo · puntos · localStorage) ═══════════
+// Estado: 'open' (antes del inicio) · 'locked' (ya inició) · 'finished'.
+function getPredictionStatus(m) {
+  if (m.status === 'finished') return 'finished';
+  if (new Date(m.kickoff).getTime() <= Date.now()) return 'locked';
+  return 'open';
+}
+function isPredictionOpen(m) { return getPredictionStatus(m) === 'open'; }
+function _getPredictions() {
+  try { return JSON.parse(localStorage.getItem('tvc_predictions') || '{}'); } catch (e) { return {}; }
+}
+function getUserPredictionForMatch(matchId) { return _getPredictions()[matchId] || null; }
+function saveMatchPrediction(matchId, hs, as_) {
+  const all = _getPredictions();
+  all[matchId] = { matchId, hs, as_, submittedAt: new Date().toISOString() };
+  try { localStorage.setItem('tvc_predictions', JSON.stringify(all)); } catch (e) {}
+}
+
+// Puntos del pronóstico al terminar el partido (recreativos)
+function calculatePredictionPoints(pred, m) {
+  if (m.hs == null || m.as == null) return 0;
+  const S = PREDICTION_SCORING;
+  let pts = S.participation;                       // participó antes del cierre
+  const realW = m.hs > m.as ? 'h' : m.hs < m.as ? 'a' : 'd';
+  const predW = pred.hs > pred.as_ ? 'h' : pred.hs < pred.as_ ? 'a' : 'd';
+  const isDraw = realW === 'd';
+  if (predW === realW) pts += S.correctWinner;     // ganador / empate correcto
+  if (!isDraw && predW === realW && (pred.hs - pred.as_) === (m.hs - m.as)) pts += S.correctGoalDiff;
+  if (pred.hs === m.hs && pred.as_ === m.as) pts += S.exactScore;   // marcador exacto
+  return pts;
+}
+
+// Top de ganadores del partido (mock determinista + el pick real del usuario)
+function calculateMatchWinners(matchId) {
+  const m = MATCHES.find(x => x.id === matchId);
+  if (!m || m.status !== 'finished' || m.hs == null) return [];
+  const seeds = [[0, 0], [-1, 0], [0, 1], [1, 0], [-1, 1], [1, 1]];   // variaciones vs el real
+  const rows = (typeof MOCK_PREDICTORS !== 'undefined' ? MOCK_PREDICTORS : []).map((u, i) => {
+    const d = seeds[i % seeds.length];
+    const ph = Math.max(0, m.hs + d[0]), pa = Math.max(0, m.as + d[1]);
+    return { ...u, hs: ph, as_: pa, pts: calculatePredictionPoints({ hs: ph, as_: pa }, m) };
+  });
+  const mine = getUserPredictionForMatch(matchId);
+  if (mine) rows.push({ id: 'me', name: 'Tú', avatar: '🫵', isMe: true, hs: mine.hs, as_: mine.as_, pts: calculatePredictionPoints({ hs: mine.hs, as_: mine.as_ }, m) });
+  return rows.sort((a, b) => b.pts - a.pts);
+}
+
+// ── Modal de pronóstico por partido ───────────────────────────────────────
+let _predMatch = null, _predHs = 0, _predAs = 0;
+function openMatchPredictionModal(matchId) {
+  const m = MATCHES.find(x => x.id === matchId);
+  if (!m) return;
+  const st = getPredictionStatus(m);
+  if (st === 'finished') { renderResultsAndWinners(matchId); return; }
+  if (st === 'locked') {
+    const mine = getUserPredictionForMatch(matchId);
+    _showToast(mine ? `🔒 Pronóstico cerrado · Tu pick: ${mine.hs}-${mine.as_}` : '🔒 Pronóstico cerrado · No registraste pronóstico', 'var(--surface-3)');
+    return;
+  }
+  _predMatch = m;
+  const ex = getUserPredictionForMatch(matchId);
+  _predHs = ex ? ex.hs : 0;
+  _predAs = ex ? ex.as_ : 0;
+  _renderPredModal();
+  openModal('pred-match-modal');
+}
+function _predStep(side, delta) {
+  if (side === 'h') _predHs = Math.max(0, Math.min(20, _predHs + delta));
+  else _predAs = Math.max(0, Math.min(20, _predAs + delta));
+  _renderPredModalBody();
+}
+function _predQuick(kind) {
+  if (kind === 'home') { _predHs = Math.max(1, _predHs); _predAs = Math.min(_predHs - 1, _predAs); if (_predAs < 0) _predAs = 0; if (_predHs <= _predAs) { _predHs = 2; _predAs = 1; } }
+  else if (kind === 'draw') { const v = Math.max(_predHs, _predAs, 1); _predHs = v; _predAs = v; }
+  else { _predAs = Math.max(1, _predAs); if (_predAs <= _predHs) { _predHs = 1; _predAs = 2; } }
+  _renderPredModalBody();
+}
+function _renderPredModal() {
+  const card = document.getElementById('pred-modal-card');
+  if (!card || !_predMatch) return;
+  const m = _predMatch;
+  const ft = fmtMatchTime(m.kickoff);
+  card.innerHTML = `
+    <button class="modal-close" onclick="closeModal('pred-match-modal')">×</button>
+    <div class="modal-title">Haz tu <span>pronóstico</span></div>
+    <div class="pred-match-name">${m.home.flag} ${m.home.name} <b>vs</b> ${m.away.name} ${m.away.flag}</div>
+    <div class="pred-close-note">${svgIcon('check', 12)} Cierra al silbatazo inicial · ${ft.day} ${ft.time}</div>
+    <div id="pred-modal-body"></div>`;
+  _renderPredModalBody();
+}
+function _renderPredModalBody() {
+  const body = document.getElementById('pred-modal-body');
+  if (!body || !_predMatch) return;
+  const m = _predMatch;
+  const S = PREDICTION_SCORING;
+  const predW = _predHs > _predAs ? m.home.name : _predHs < _predAs ? m.away.name : 'Empate';
+  body.innerHTML = `
+    <div class="pred-score">
+      <div class="pred-side">
+        <div class="pred-flag">${m.home.flag}</div>
+        <div class="pred-sname">${m.home.name}</div>
+        <div class="pred-stepper">
+          <button onclick="_predStep('h',-1)">−</button>
+          <span class="pred-num">${_predHs}</span>
+          <button onclick="_predStep('h',1)">+</button>
+        </div>
+      </div>
+      <div class="pred-vs">-</div>
+      <div class="pred-side">
+        <div class="pred-flag">${m.away.flag}</div>
+        <div class="pred-sname">${m.away.name}</div>
+        <div class="pred-stepper">
+          <button onclick="_predStep('a',-1)">−</button>
+          <span class="pred-num">${_predAs}</span>
+          <button onclick="_predStep('a',1)">+</button>
+        </div>
+      </div>
+    </div>
+    <div class="pred-quick">
+      <button class="${predW === m.home.name ? 'on' : ''}" onclick="_predQuick('home')">Gana ${m.home.name}</button>
+      <button class="${predW === 'Empate' ? 'on' : ''}" onclick="_predQuick('draw')">Empate</button>
+      <button class="${predW === m.away.name ? 'on' : ''}" onclick="_predQuick('away')">Gana ${m.away.name}</button>
+    </div>
+    <div class="pred-preview">Tu pronóstico: <strong>${m.home.name} ${_predHs} - ${_predAs} ${m.away.name}</strong></div>
+    <div class="pred-points">
+      <div class="pred-points-title">Puntos posibles</div>
+      <ul>
+        <li><span>Participación</span><b>+${S.participation}</b></li>
+        <li><span>Ganador correcto</span><b>+${S.correctWinner}</b></li>
+        <li><span>Diferencia correcta</span><b>+${S.correctGoalDiff}</b></li>
+        <li><span>Marcador exacto</span><b>+${S.exactScore}</b></li>
+      </ul>
+    </div>
+    <button class="btn btn-orange btn-full" onclick="saveMatchPredictionFromModal()">Guardar pronóstico</button>
+    <p class="pred-disclaimer">Los puntos son recreativos y no tienen valor monetario.</p>`;
+}
+function saveMatchPredictionFromModal() {
+  if (!_predMatch) return;
+  const m = _predMatch;
+  saveMatchPrediction(m.id, _predHs, _predAs);
+  closeModal('pred-match-modal');
+  const logged = (typeof Auth !== 'undefined' && Auth.isLoggedIn && Auth.isLoggedIn());
+  _showToast(`✅ Pronóstico guardado: ${m.home.name} ${_predHs}-${_predAs} ${m.away.name}` + (logged ? '' : ' · Crea tu cuenta para competir'), 'var(--green)');
+  renderHero(); renderMatchesRow();
+  trackEvent('prediction_match', m.id);
+}
+
+// ── Modal "Resultados y ganadores" (partido finalizado) ───────────────────
+function renderResultsAndWinners(matchId) {
+  const m = MATCHES.find(x => x.id === matchId);
+  const card = document.getElementById('results-modal-card');
+  if (!m || !card) return;
+  const winners = calculateMatchWinners(matchId).slice(0, 5);
+  const mine = getUserPredictionForMatch(matchId);
+  const myPts = mine ? calculatePredictionPoints({ hs: mine.hs, as_: mine.as_ }, m) : null;
+  const medal = ['🥇', '🥈', '🥉'];
+  const exactBadge = (w) => (w.hs === m.hs && w.as_ === m.as) ? '<span class="rw-exact">Marcador exacto</span>' : '';
+  const winnersHtml = winners.length
+    ? winners.map((w, i) => `
+        <div class="rw-row${w.isMe ? ' rw-me' : ''}">
+          <span class="rw-pos">${medal[i] || (i + 1)}</span>
+          <span class="rw-av">${w.avatar || '👤'}</span>
+          <span class="rw-name">${esc(w.name)}${exactBadge(w)}</span>
+          <span class="rw-pick">${w.hs}-${w.as_}</span>
+          <span class="rw-pts">+${w.pts}</span>
+        </div>`).join('')
+    : `<div class="rw-empty">Aún no hay ganadores para este partido.</div>`;
+  card.innerHTML = `
+    <button class="modal-close" onclick="closeModal('results-modal')">×</button>
+    <div class="modal-title">Resultados y <span>ganadores</span></div>
+    <div class="rw-result">
+      <div class="rw-team">${m.home.flag} ${m.home.name}</div>
+      <div class="rw-score">${m.hs} - ${m.as}</div>
+      <div class="rw-team">${m.away.name} ${m.away.flag}</div>
+    </div>
+    <div class="rw-final-badge">FINAL · ${m.comp || 'Mundial 2026'}</div>
+    ${mine ? `<div class="rw-mine">Tu pronóstico: <strong>${mine.hs}-${mine.as_}</strong> · <span class="rw-mine-pts">+${myPts} pts</span></div>`
+           : `<div class="rw-mine rw-mine-none">No registraste pronóstico para este partido.</div>`}
+    <div class="rw-winners-title">${svgIcon('trophy', 14)} Ganadores del pronóstico</div>
+    <div class="rw-winners">${winnersHtml}</div>
+    <a class="btn btn-orange btn-full" href="quiniela.html" style="text-align:center;text-decoration:none;margin-top:6px;">Ver ranking completo</a>
+    <p class="pred-disclaimer">Los puntos son recreativos y no tienen valor monetario.</p>`;
+  openModal('results-modal');
+  trackEvent('results_winners', matchId);
 }
 
 // ── Abre el stream (lazy — solo cuando el usuario hace clic) ──────────────
@@ -1140,7 +1339,7 @@ function renderMatchesRow() {
       const venue  = [m.venue, m.city].filter(Boolean).join(' · ');
       const click  = isLive
         ? `openLiveStream()`
-        : `scrollToSection('standings-section')`;
+        : `renderResultsAndWinners('${m.id}')`;
       return `
       <div class="ri-card${isLive ? ' ri-live' : ''}" onclick="${click}">
         <div class="ri-teams">
@@ -1185,7 +1384,7 @@ function renderMatchesRow() {
             ${venue ? `<div class="up-venue">${venue}</div>` : ''}
           </div>
         </div>
-        <button class="up-btn" onclick="openMatchInfo('${m.id}'); event.stopPropagation()">PRONOSTICAR</button>
+        <button class="up-btn" onclick="goPronosticar('${m.id}'); event.stopPropagation()">PRONOSTICAR</button>
       </div>`;
     }).join('') : '<p class="no-data">No hay partidos próximos</p>';
   }

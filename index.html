@@ -103,7 +103,7 @@
   </div>
 </section>
 
-<!-- HOY EN LA CANCHA — aparece cuando NO hay partido en vivo (rendered by app.js) -->
+<!-- PARTIDOS DE HOY — aparece cuando NO hay partido en vivo (rendered by app.js) -->
 <section class="hoy-section" id="hoy-section" style="display:none"></section>
 
 <!-- ── Multi Vista — Varios canales a la vez ─────────────────────────────── -->
@@ -283,16 +283,16 @@
   </div>
 </section>
 
-<!-- ── Quiniela Mundialista (pozo en dinero) ──────────────────────────────── -->
+<!-- ── Mi quiniela — pronósticos por puntos (recreativo) ──────────────────── -->
 <section class="content-section" id="quiniela-section">
   <div style="padding: 0 20px;">
     <a href="quiniela.html" style="text-decoration:none;display:block;">
       <div style="background:linear-gradient(135deg,#0d1f3d,#1a1330);border:1.5px solid rgba(249,115,22,.35);border-radius:16px;padding:20px;position:relative;overflow:hidden;">
-        <div style="position:absolute;right:-8px;bottom:-16px;font-size:96px;opacity:.08;">🏆</div>
-        <div style="font-size:11px;font-weight:800;letter-spacing:1px;color:var(--orange);">QUINIELA MUNDIALISTA · POZO EN DINERO</div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;margin:4px 0;">Predice al campeón y gana el pozo</div>
-        <div style="font-size:13px;color:var(--text-dim);">Acierta el campeón del Mundial 2026 y reparte el bote entre los ganadores.</div>
-        <div style="display:inline-block;margin-top:12px;background:var(--orange);color:#fff;font-weight:700;font-size:13px;padding:8px 18px;border-radius:8px;">Participar →</div>
+        <div style="position:absolute;right:-8px;bottom:-16px;font-size:96px;opacity:.08;">🎯</div>
+        <div style="font-size:11px;font-weight:800;letter-spacing:1px;color:var(--orange);">MI QUINIELA · PRONÓSTICOS POR PUNTOS</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;margin:4px 0;">Predice cada partido y sube en el ranking</div>
+        <div style="font-size:13px;color:var(--text-dim);">Acierta los marcadores, gana puntos por tus aciertos y compite con la comunidad. Puntos recreativos, sin valor monetario.</div>
+        <div style="display:inline-block;margin-top:12px;background:var(--orange);color:#fff;font-weight:700;font-size:13px;padding:8px 18px;border-radius:8px;">Pronosticar →</div>
       </div>
     </a>
   </div>
@@ -442,6 +442,16 @@
     </div>
     <p class="pred-note">Este sistema es únicamente recreativo y de entretenimiento. Los puntos no tienen valor monetario.</p>
   </div>
+</div>
+
+<!-- ── Modal: Pronóstico por partido (rendered by app.js) ───────────────────── -->
+<div class="modal-backdrop" id="pred-match-modal">
+  <div class="modal" style="max-width:420px" id="pred-modal-card"></div>
+</div>
+
+<!-- ── Modal: Resultados y ganadores (rendered by app.js) ───────────────────── -->
+<div class="modal-backdrop" id="results-modal">
+  <div class="modal" style="max-width:440px" id="results-modal-card"></div>
 </div>
 
 <!-- Ad Bar -->
