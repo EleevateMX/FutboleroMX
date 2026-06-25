@@ -2,7 +2,7 @@
 
 // ── Auto-reset de versión ("hard reset" para todos los dispositivos) ──────
 // Esta build. Debe coincidir con version.json y el CACHE del Service Worker.
-const APP_BUILD = 'v50';
+const APP_BUILD = 'v51';
 // Si el version.json del servidor anuncia una build distinta, significa que el
 // código en ejecución está cacheado/viejo → borra TODAS las cachés, actualiza
 // el SW y recarga UNA sola vez (sessionStorage evita bucles de recarga).
@@ -493,6 +493,8 @@ async function refreshAppData(force = false) {
   setRefreshStatus('busy', 'Actualizando partidos…');
   try {
     await refreshLiveConfig();   // recarga live_config + match_results y re-renderiza
+    // Si NO hay live, re-pinta "HOY EN LA CANCHA" (sin tocar un stream en curso)
+    if (!_isActuallyLive()) renderHero();
     // Refresca también gamificación, canales y ranking al abrir/volver a la PWA
     renderChannelsGrid();
     renderRanking();
@@ -585,35 +587,54 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop.open').forEach(m => m.classList.remove('open'));
 });
 
+// ── Estado del Home ───────────────────────────────────────────────────────
+// 'live' (player) · 'no-stream' (live sin transmisión) · 'no-live-upcoming' /
+// 'day-finished' (vista HOY EN LA CANCHA). Cuando no hay live, el player se
+// oculta y aparece la vista de pronóstico — nunca se queda pegado.
+function getAppViewState() {
+  if (_isActuallyLive()) return CHANNELS.length ? 'live' : 'no-stream';
+  const now = Date.now();
+  const hasUpcoming = MATCHES.some(m => m.status === 'scheduled' && new Date(m.kickoff).getTime() > now);
+  if (areTodayMatchesFinished()) return 'day-finished';
+  return hasUpcoming ? 'no-live-upcoming' : 'day-finished';
+}
+
+// Muestra/oculta los elementos del reproductor (botones, aviso, hint)
+function _togglePlayerChrome(show) {
+  ['player-actions', 'play-hint'].forEach(id => {
+    const e = document.getElementById(id); if (e) e.style.display = show ? '' : 'none';
+  });
+  const cw = document.querySelector('.channel-warning');
+  if (cw) cw.style.display = show ? '' : 'none';
+}
+
 // ── Hero ──────────────────────────────────────────────────────────────────
 function renderHero() {
   const hero = document.getElementById('hero-section');
-  const now = Date.now();
-
+  const hoy  = document.getElementById('hoy-section');
   const rawLive = (LIVE_MATCH && LIVE_MATCH.status === 'live') ? LIVE_MATCH : null;
   const live    = rawLive && _isActuallyLive() ? rawLive : null;
 
-  const recent = (!live && RECENT_RESULT) ? RECENT_RESULT : null;
-  const next   = MATCHES.filter(m => m.status === 'scheduled' && new Date(m.kickoff).getTime() > now)
-                   .sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff))[0];
-  const match  = live || recent || next;
-
-  if (!match) {
-    hero.innerHTML = `
-      <div class="hero-no-live">
-        <div class="big-icon">📺</div>
-        <h2>Sin partidos ahora</h2>
-        <p>Próximamente más fútbol en vivo</p>
-      </div>`;
+  // ── Sin partido en vivo → vista "HOY EN LA CANCHA" (no dejar el player pegado)
+  if (!live) {
+    if (hero) hero.style.display = 'none';
+    if (hoy)  { hoy.style.display = 'block'; renderHoySection(); }
+    _togglePlayerChrome(false);
     renderIframeNotice(false);
     showMatchTabs(false);
+    if (_scorePoll) { clearInterval(_scorePoll); _scorePoll = null; }
     return;
   }
 
-  const isLive   = match.status === 'live';
-  const isRecent = !isLive && match === recent;
+  // ── Hay partido en vivo → player ──────────────────────────────────────────
+  if (hero) hero.style.display = '';
+  if (hoy)  hoy.style.display = 'none';
+  _togglePlayerChrome(true);
+
+  const match    = live;
+  const isLive   = true, isRecent = false;
   const hasChannels = CHANNELS.length > 0;
-  if (isLive && hasChannels) {
+  if (hasChannels) {
     _activeChannel = CHANNELS.find(c => c.id === match.defaultChannel) || CHANNELS[0];
   }
 
@@ -640,8 +661,10 @@ function renderHero() {
         </div>
         <div class="hmp-venue">📍 ${venueLine}</div>
         <div class="hmp-actions">
-          <button class="hmp-btn-watch" onclick="openLiveStream()">▶ Ver en vivo</button>
-          <button class="hmp-btn-quiniela" onclick="location.href='quiniela.html'">🏆 La quiniela</button>
+          ${hasChannels
+            ? `<button class="hmp-btn-watch" onclick="openLiveStream()">▶ Ver en vivo</button>`
+            : `<button class="hmp-btn-watch" style="background:var(--surface-3);color:var(--text-dim);" onclick="_showToast('Transmisión no disponible por el momento. Consulta canales oficiales o vuelve más tarde.','var(--surface-3)')">Transmisión no disponible</button>`}
+          <button class="hmp-btn-quiniela" onclick="goPronosticar()">🏆 La quiniela</button>
         </div>
       </div>`;
     renderIframeNotice(false);
@@ -704,6 +727,82 @@ function renderHero() {
     renderIframeNotice(false);
     showMatchTabs(false);
   }
+}
+
+// ── Vista "HOY EN LA CANCHA" (cuando NO hay partido en vivo) ───────────────
+function renderHoySection() {
+  const el = document.getElementById('hoy-section');
+  if (!el) return;
+  const now = Date.now();
+  const upcoming = MATCHES
+    .filter(m => (m.status === 'scheduled' || m.status === 'postponed') && new Date(m.kickoff).getTime() > now)
+    .sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
+  const dayDone = areTodayMatchesFinished();
+  const logged  = (typeof Auth !== 'undefined' && Auth.isLoggedIn && Auth.isLoggedIn());
+
+  // Bloque destacado: el próximo grupo (1–2 partidos a la misma hora)
+  let featuredHtml = '';
+  if (upcoming.length) {
+    const nextKt = new Date(upcoming[0].kickoff).getTime();
+    const featured = upcoming.filter(m => Math.abs(new Date(m.kickoff).getTime() - nextKt) < 5 * 60000).slice(0, 2);
+    const isDouble = featured.length >= 2;
+    const splitCta = isDouble ? `
+      <button class="hoy-split-cta" onclick="_showToast('La pantalla dividida se activa cuando los dos partidos estén EN VIVO ⚽','var(--blue)')">
+        ${svgIcon('tv', 15)} Ver los dos en pantalla dividida →
+      </button>` : '';
+    featuredHtml = `
+      <div class="hoy-featured-label">${isDouble ? svgIcon('tv', 13) + ' DOS PARTIDOS A LA VEZ' : svgIcon('bolt', 13) + ' PRÓXIMO PARTIDO'}</div>
+      <div class="hoy-cards${isDouble ? ' hoy-cards-2' : ''}">${featured.map(_hoyCard).join('')}</div>
+      ${splitCta}`;
+  }
+
+  const finishedNote = dayDone ? `
+    <div class="hoy-finished">
+      <span class="hoy-finished-icon">${svgIcon('check', 18)}</span>
+      <div><strong>Los partidos de hoy ya finalizaron.</strong>
+        <span>No hay transmisión en vivo por el momento — pronostica los próximos o revisa los resultados.</span></div>
+    </div>` : '';
+
+  const ctas = logged
+    ? `<a class="hoy-cta hoy-cta-primary" href="quiniela.html">${svgIcon('trophy', 15)} Ir a mi quiniela</a>
+       <a class="hoy-cta" href="quiniela.html">${svgIcon('target', 15)} Pronostica los próximos</a>`
+    : `<a class="hoy-cta hoy-cta-primary" href="cuenta.html">${svgIcon('star', 15)} Crear mi cuenta</a>
+       <a class="hoy-cta" href="cuenta.html?tab=login">${svgIcon('login', 15)} Entrar</a>`;
+
+  el.innerHTML = `
+    <div class="hoy-head"><span class="hoy-hdot"></span><h2 class="hoy-title">HOY EN LA CANCHA</h2></div>
+    ${finishedNote}
+    ${featuredHtml || `<div class="hoy-empty">${svgIcon('star', 20)} Pronto más fútbol del Mundial. Revisa los próximos partidos abajo.</div>`}
+    <div class="hoy-ctas">${ctas}</div>`;
+}
+
+function _hoyCard(m) {
+  const ft = fmtMatchTime(m.kickoff);
+  const venue = [m.venue, m.city].filter(Boolean).join(' · ');
+  const sb = statusBadge(m);
+  return `
+    <div class="hoy-card">
+      <div class="hoy-card-top">
+        <span class="hoy-phase">${m.comp || 'Mundial 2026'}</span>
+        <span class="hoy-badge ${sb.cls}">${sb.text}</span>
+      </div>
+      <div class="hoy-card-main">
+        <div class="hoy-team"><span class="hoy-flag">${m.home.flag}</span><span class="hoy-tname">${m.home.name}</span></div>
+        <div class="hoy-when"><div class="hoy-hh">${ft.time}</div><div class="hoy-dd">${ft.day}</div></div>
+        <div class="hoy-team"><span class="hoy-flag">${m.away.flag}</span><span class="hoy-tname">${m.away.name}</span></div>
+      </div>
+      ${venue ? `<div class="hoy-venue">📍 ${venue}</div>` : ''}
+      <div class="hoy-card-actions">
+        <button class="hoy-btn-pred" onclick="goPronosticar('${m.id}')">${svgIcon('target', 14)} Pronosticar</button>
+        <button class="hoy-btn-info" onclick="openMatchInfo('${m.id}')">${svgIcon('bolt', 14)} Recordar</button>
+      </div>
+    </div>`;
+}
+
+// CTA "Pronosticar / Mi quiniela": logueado → quiniela; si no → crear cuenta
+function goPronosticar(matchId) {
+  if (typeof Auth !== 'undefined' && Auth.isLoggedIn && Auth.isLoggedIn()) location.href = 'quiniela.html';
+  else location.href = 'cuenta.html';
 }
 
 // ── Abre el stream (lazy — solo cuando el usuario hace clic) ──────────────

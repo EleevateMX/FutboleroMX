@@ -1375,3 +1375,74 @@ body {
 /* Badges de estado de partido (próximo / pospuesto / cancelado) */
 .up-status-badge.sb-postponed { color: #fbbf24; background: rgba(251,191,36,.12); border-color: rgba(251,191,36,.3); }
 .up-status-badge.sb-cancelled { color: var(--red); background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.3); }
+
+/* ── HOY EN LA CANCHA (vista sin partido en vivo) ─────────────────────────── */
+.hoy-section { padding: 18px 20px 6px; }
+.hoy-head { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; }
+.hoy-hdot { width: 9px; height: 9px; border-radius: 50%; background: var(--red); box-shadow: 0 0 8px var(--red); }
+.hoy-title { font-family: 'Bebas Neue', sans-serif; font-size: 27px; letter-spacing: 1px; }
+.hoy-finished {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; padding: 13px 16px;
+}
+.hoy-finished-icon { color: var(--green); flex-shrink: 0; display: inline-flex; }
+.hoy-finished strong { display: block; font-size: 14px; }
+.hoy-finished span { font-size: 12.5px; color: var(--text-dim); line-height: 1.4; }
+.hoy-featured-label {
+  font-size: 11px; font-weight: 800; letter-spacing: 1px; color: var(--orange);
+  margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+}
+.hoy-featured-label .ic { color: var(--orange); }
+.hoy-cards { display: grid; gap: 12px; grid-template-columns: 1fr; }
+.hoy-cards-2 { grid-template-columns: 1fr 1fr; }
+.hoy-card { background: var(--surface); border: 1.5px solid var(--border-hi); border-radius: 16px; padding: 14px 16px; }
+.hoy-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; }
+.hoy-phase { font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: .5px; }
+.hoy-badge { flex-shrink: 0; font-size: 9px; font-weight: 800; padding: 2px 8px; border-radius: 20px; letter-spacing: .5px; }
+.hoy-badge.sb-upcoming  { color: var(--blue);  background: rgba(14,165,233,.12); }
+.hoy-badge.sb-live      { color: var(--red);   background: rgba(239,68,68,.14); }
+.hoy-badge.sb-final     { color: var(--text-dim); background: rgba(255,255,255,.06); }
+.hoy-badge.sb-postponed { color: #fbbf24; background: rgba(251,191,36,.12); }
+.hoy-badge.sb-cancelled { color: var(--red); background: rgba(239,68,68,.12); }
+.hoy-card-main { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+.hoy-team { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; min-width: 0; }
+.hoy-flag { font-size: 32px; line-height: 1; }
+.hoy-tname { font-size: 12px; font-weight: 700; }
+.hoy-when { text-align: center; }
+.hoy-hh { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 1px; }
+.hoy-dd { font-size: 10px; color: var(--text-dim); text-transform: uppercase; }
+.hoy-venue { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 10px; }
+.hoy-card-actions { display: flex; gap: 8px; margin-top: 12px; }
+.hoy-btn-pred {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  background: var(--red); color: #fff; border: none; border-radius: 10px; padding: 9px;
+  font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; transition: filter .16s;
+}
+.hoy-btn-pred:hover { filter: brightness(1.1); }
+.hoy-btn-pred .ic { color: #fff; }
+.hoy-btn-info {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface-2); border: 1px solid var(--border-hi); color: var(--text-dim);
+  border-radius: 10px; padding: 9px 12px; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+}
+.hoy-btn-info:hover { color: var(--text); }
+.hoy-split-cta {
+  width: 100%; margin-top: 12px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background: linear-gradient(135deg, var(--red), #f43f5e); color: #fff; border: none; border-radius: 12px;
+  padding: 13px; font-family: inherit; font-size: 14px; font-weight: 800; cursor: pointer; transition: filter .16s;
+}
+.hoy-split-cta:hover { filter: brightness(1.08); }
+.hoy-split-cta .ic { color: #fff; }
+.hoy-ctas { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+.hoy-cta {
+  flex: 1; min-width: 150px; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  background: var(--surface-2); border: 1.5px solid var(--border-hi); color: var(--text);
+  border-radius: 11px; padding: 11px; font-size: 13px; font-weight: 700; text-decoration: none; transition: all .16s;
+}
+.hoy-cta:hover { border-color: var(--blue); }
+.hoy-cta .ic { color: var(--text-dim); }
+.hoy-cta-primary { background: var(--orange); border-color: var(--orange); color: #fff; }
+.hoy-cta-primary .ic { color: #fff; }
+.hoy-cta-primary:hover { background: var(--orange-dim); border-color: var(--orange-dim); }
+.hoy-empty { text-align: center; padding: 28px 16px; color: var(--text-dim); font-size: 13px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+@media (max-width: 560px) { .hoy-cards-2 { grid-template-columns: 1fr; } }
