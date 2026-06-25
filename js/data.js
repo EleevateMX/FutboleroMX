@@ -235,13 +235,25 @@ function fmtMatchTime(iso) {
   return { day, time };
 }
 
-// Normaliza el estado de un partido a 'live' | 'final' | 'upcoming'
-// y decide si hay un marcador real que mostrar (nunca 0 falso para próximos).
+// Normaliza el estado de un partido a 'live' | 'final' | 'upcoming' |
+// 'postponed' | 'cancelled' y decide si hay marcador real (nunca 0 falso).
 function matchState(m) {
   const hasScore = m.hs != null && m.as != null;
-  if (m.status === 'live')                 return { state: 'live',     hasScore };
-  if (m.status === 'finished' && hasScore) return { state: 'final',    hasScore: true };
+  if (m.status === 'postponed')                       return { state: 'postponed', hasScore: false };
+  if (m.status === 'cancelled' || m.status === 'canceled') return { state: 'cancelled', hasScore: false };
+  if (m.status === 'live')                            return { state: 'live',     hasScore };
+  if (m.status === 'finished' && hasScore)            return { state: 'final',    hasScore: true };
   return { state: 'upcoming', hasScore: false };
+}
+// Etiqueta + clase del badge de estado (para tarjetas de partido)
+function statusBadge(m) {
+  switch (matchState(m).state) {
+    case 'live':      return { text: '● EN VIVO', cls: 'sb-live' };
+    case 'final':     return { text: 'FINAL',     cls: 'sb-final' };
+    case 'postponed': return { text: 'POSPUESTO', cls: 'sb-postponed' };
+    case 'cancelled': return { text: 'CANCELADO', cls: 'sb-cancelled' };
+    default:          return { text: 'PRÓXIMO',   cls: 'sb-upcoming' };
+  }
 }
 
 // ── Sistema de puntos / recompensas (RECREATIVO · sin valor monetario) ──────

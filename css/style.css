@@ -1371,3 +1371,7 @@ body {
   box-shadow: 0 0 6px var(--red); animation: rs-pulse 1.2s ease-in-out infinite;
 }
 .ls-chip:not(.active) .ls-dot { background: var(--text-muted); box-shadow: none; animation: none; }
+
+/* Badges de estado de partido (próximo / pospuesto / cancelado) */
+.up-status-badge.sb-postponed { color: #fbbf24; background: rgba(251,191,36,.12); border-color: rgba(251,191,36,.3); }
+.up-status-badge.sb-cancelled { color: var(--red); background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.3); }

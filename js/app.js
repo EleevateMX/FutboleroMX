@@ -2,7 +2,7 @@
 
 // ── Auto-reset de versión ("hard reset" para todos los dispositivos) ──────
 // Esta build. Debe coincidir con version.json y el CACHE del Service Worker.
-const APP_BUILD = 'v49';
+const APP_BUILD = 'v50';
 // Si el version.json del servidor anuncia una build distinta, significa que el
 // código en ejecución está cacheado/viejo → borra TODAS las cachés, actualiza
 // el SW y recarga UNA sola vez (sessionStorage evita bucles de recarga).
@@ -513,10 +513,45 @@ async function refreshAppData(force = false) {
 // Refresca el texto relativo ("hace 2 min") cada 15s
 setInterval(updateLastRefreshLabel, 15000);
 
-// Disparadores: al cargar, al volver a la pestaña/PWA, y al recuperar conexión
-window.addEventListener('load',   () => refreshAppData(true));
-window.addEventListener('online', () => { setRefreshStatus(null, 'Conexión recuperada…'); refreshAppData(true); });
-document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshAppData(); });
+// ── Cambio de día: evita que la PWA se quede pegada con los partidos de ayer ──
+function _todayStr(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+// Fecha LOCAL (no UTC) de un kickoff ISO → para agrupar "los partidos de hoy"
+function _localDateOf(iso) { return _todayStr(new Date(iso)); }
+// Partidos cuya fecha local es hoy
+function getTodayMatches() { return MATCHES.filter(m => _localDateOf(m.kickoff) === _todayStr()); }
+// ¿Ya terminaron TODOS los partidos de hoy?
+function areTodayMatchesFinished() {
+  const today = getTodayMatches();
+  return today.length > 0 && today.every(m => m.status === 'finished');
+}
+// Reinicia el estado diario (puntos del día y retos), conservando total y racha
+function _resetDailyState() {
+  try { const p = getUserPoints(); p.today = 0; _saveUserPoints(p); } catch (e) {}
+  try { localStorage.removeItem('tvc_challenges_done'); } catch (e) {}
+}
+// Detecta el cambio de día. Si cambió (y no es la primera visita): limpia el
+// estado diario y FUERZA un refresco completo. Devuelve true si forzó refresco.
+function handleDayChange() {
+  const today = _todayStr();
+  const saved = localStorage.getItem('tvc_last_day');
+  if (saved === today) return false;
+  localStorage.setItem('tvc_last_day', today);
+  if (saved === null) return false;      // primera visita → el 'load' ya refresca
+  _resetDailyState();
+  setRefreshStatus(null, 'Nuevo día — actualizando partidos…');
+  refreshAppData(true);
+  return true;
+}
+
+// Disparadores: al cargar, al volver a la pestaña/PWA, al recuperar conexión,
+// y al cambiar el día. handleDayChange() devuelve true si ya forzó el refresco.
+window.addEventListener('load',   () => { if (!handleDayChange()) refreshAppData(true); });
+window.addEventListener('online', () => { setRefreshStatus(null, 'Conexión recuperada…'); if (!handleDayChange()) refreshAppData(true); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && !handleDayChange()) refreshAppData(); });
+// Revisión periódica (cada 5 min): cambio de día o partido en vivo → refresca
+setInterval(() => { if (!handleDayChange() && _isActuallyLive()) refreshAppData(true); }, 5 * 60 * 1000);
 
 // ── Ver en tu TV · Apóyanos · copiar enlace ────────────────────────────────
 function copyTvLink() {
@@ -559,7 +594,8 @@ function renderHero() {
   const live    = rawLive && _isActuallyLive() ? rawLive : null;
 
   const recent = (!live && RECENT_RESULT) ? RECENT_RESULT : null;
-  const next   = MATCHES.filter(m => m.status === 'scheduled' && new Date(m.kickoff).getTime() > now)[0];
+  const next   = MATCHES.filter(m => m.status === 'scheduled' && new Date(m.kickoff).getTime() > now)
+                   .sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff))[0];
   const match  = live || recent || next;
 
   if (!match) {
@@ -996,7 +1032,8 @@ function renderMatchesRow() {
   const recentEl = document.getElementById('recent-results');
   if (recentEl) {
     const liveM = _isActuallyLive() ? LIVE_MATCH : null;
-    const done  = MATCHES.filter(m => m.status === 'finished' && m.hs != null).slice(-4).reverse();
+    const done  = MATCHES.filter(m => m.status === 'finished' && m.hs != null)
+                    .sort((a, b) => new Date(b.kickoff) - new Date(a.kickoff)).slice(0, 4);
     const list  = liveM ? [liveM, ...done].slice(0, 4) : done;
 
     recentEl.innerHTML = list.length ? list.map(m => {
@@ -1027,14 +1064,17 @@ function renderMatchesRow() {
   // ── Próximos Partidos ─────────────────────────────────────────────────
   const upcomingEl = document.getElementById('upcoming-matches');
   if (upcomingEl) {
-    const list = MATCHES.filter(m => m.status === 'scheduled' && new Date(m.kickoff).getTime() > now).slice(0, 6);
+    const list = MATCHES.filter(m => (m.status === 'scheduled' || m.status === 'postponed')
+                   && new Date(m.kickoff).getTime() > now)
+                   .sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff)).slice(0, 6);
 
     upcomingEl.innerHTML = list.length ? list.map(m => {
       const ft    = fmtMatchTime(m.kickoff);
       const venue = [m.venue, m.city].filter(Boolean).join(' · ');
+      const sb    = statusBadge(m);
       return `
       <div class="up-card">
-        <div class="up-status-badge">PRÓXIMO</div>
+        <div class="up-status-badge ${sb.cls}">${sb.text}</div>
         <div class="up-main">
           <div class="up-teams">
             <div class="up-team"><span class="up-flag">${m.home.flag}</span><span class="up-name">${m.home.name}</span></div>
