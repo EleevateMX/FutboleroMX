@@ -2,7 +2,7 @@
 
 // ── Auto-reset de versión ("hard reset" para todos los dispositivos) ──────
 // Esta build. Debe coincidir con version.json y el CACHE del Service Worker.
-const APP_BUILD = 'v47';
+const APP_BUILD = 'v48';
 // Si el version.json del servidor anuncia una build distinta, significa que el
 // código en ejecución está cacheado/viejo → borra TODAS las cachés, actualiza
 // el SW y recarga UNA sola vez (sessionStorage evita bucles de recarga).
@@ -1605,7 +1605,6 @@ function _renderCanchaGrid() {
           src="${ch.url}"
           allowfullscreen
           allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-          sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-pointer-lock allow-top-navigation"
           loading="lazy"></iframe>
       </div>
       <div class="cp-num">P${i+1}</div>
