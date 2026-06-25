@@ -2,7 +2,7 @@
 
 // ── Auto-reset de versión ("hard reset" para todos los dispositivos) ──────
 // Esta build. Debe coincidir con version.json y el CACHE del Service Worker.
-const APP_BUILD = 'v46';
+const APP_BUILD = 'v47';
 // Si el version.json del servidor anuncia una build distinta, significa que el
 // código en ejecución está cacheado/viejo → borra TODAS las cachés, actualiza
 // el SW y recarga UNA sola vez (sessionStorage evita bucles de recarga).
@@ -146,7 +146,7 @@ const _FLAGS = {
 
 // ── ¿Hay partido realmente EN VIVO? ──────────────────────────────────────
 // La verdad la da live_config.status, que el auto-sync (auto-live) fija según
-// lacancha.tv EN TIEMPO REAL. NO suprimir por el kickoff del calendario
+// la fuente externa EN TIEMPO REAL. NO suprimir por el kickoff del calendario
 // estático: sus fechas son simuladas (2026) y un partido en vivo cuyo horario
 // programado aún "no llega" se ocultaría junto con TODOS sus canales.
 function _isActuallyLive() {
@@ -685,7 +685,7 @@ function _subscribeRealtimeLive() {
         if (d.status === 'live') {
           // Transición a EN VIVO (el partido acaba de arrancar) o cambio de
           // partido → recarga completa AL INSTANTE para mostrar el juego + sus
-          // canales sin esperar al polling de 20s. Así vamos a la par de lacancha.
+          // canales sin esperar al polling de 20s. Así se muestra al instante.
           if (!LIVE_MATCH || (d.slug && d.slug !== LIVE_MATCH.slug)) {
             refreshLiveConfig();
             return;
@@ -837,14 +837,14 @@ function renderIframeNotice(isLive) {
   el.style.display = isLive ? 'flex' : 'none';
 }
 
-// ── Channel Strip (selector rápido tipo lacancha) ─────────────────────────
+// ── Channel Strip (selector rápido de canales) ─────────────────────────
 function renderChannelStrip() {
   const strip = document.getElementById('channel-strip');
   if (!CHANNELS.length || !_isActuallyLive()) { strip.style.display = 'none'; return; }
   strip.style.display = 'flex';
   const canchaChip = `
     <div class="cancha-tv-chip${_canchaActive ? ' active' : ''}" onclick="openCanchaTV()">
-      <span class="chip-name">📺 CANCHA</span>
+      <span class="chip-name">📺 MULTI</span>
       <span class="chip-label">Multi-vista</span>
     </div>`;
   strip.innerHTML = canchaChip + CHANNELS.map((ch, i) => `
@@ -1529,7 +1529,7 @@ async function logout() {
   _showToast('Sesión cerrada', 'var(--text-dim)');
 }
 
-// ── Cancha TV — Multi-vista ────────────────────────────────────────────────
+// ── Multi Vista — varios canales a la vez ──────────────────────────────────
 let _canchaActive = false;
 let _canchaLayout = 2;
 const _canchaSel  = [0, 1, 2, 3]; // índice de canal por panel

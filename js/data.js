@@ -1,5 +1,5 @@
-// ── TVContigo — Data Layer (datos reales lacancha.tv · Mundial 2026) ───────
-// El partido EN VIVO y su marcador se auto-sincronizan desde lacancha.tv vía
+// ── TVContigo — Data Layer (Mundial 2026) ──────────────────────────────────
+// El partido EN VIVO y su marcador se auto-sincronizan desde la fuente externa vía
 // los cron/edge-functions (auto-live, sync-score). NO marcar a mano como
 // 'finished' el partido que sigue en vivo: crea duplicados. Editar aquí solo
 // el calendario estático (próximos) y resultados ya caídos de la señal en vivo.
@@ -81,7 +81,7 @@ let CHANNELS = [
 // Partido EN VIVO actual (se sobrescribe con Supabase live_config en runtime)
 let LIVE_MATCH = null;
 
-// Todos los partidos del Mundial 2026 (datos reales lacancha.tv)
+// Todos los partidos del Mundial 2026
 // status: 'live' | 'finished' | 'scheduled'  ·  kickoff en UTC ISO
 const MATCHES = [
   { id:'m1',  home:{name:'México',flag:'🇲🇽'}, away:{name:'Sudáfrica',flag:'🇿🇦'}, kickoff:'2026-06-11T19:00:00+00:00', status:'finished', hs:2, as:0, venue:'Estadio Azteca', city:'Ciudad de México', comp:'Jornada 1' },
@@ -175,7 +175,7 @@ const RANKING = [
   { name: 'Tigre123',    pts: 35 },
   { name: 'MundialFan',  pts: 31 },
   { name: 'GolazoTV',    pts: 28 },
-  { name: 'Cancha26',    pts: 22 },
+  { name: 'Pana26',      pts: 22 },
   { name: 'TuPlayer',    pts: 18 },
   { name: 'TVFan2026',   pts: 14 },
 ];
@@ -268,7 +268,7 @@ function levelFor(total) {
 
 // ── Catálogo de canales (REFERENCIA · solo informativo) ─────────────────────
 // Lista pública de canales que transmiten el Mundial por país/idioma. NO son
-// streams: la señal en vivo real llega por live_config (auto-sync de lacancha).
+// streams: la señal en vivo real llega por live_config (auto-sync externo).
 // groups: mexico | usa | espana | europa | premium | nocom | hd
 const CHANNEL_CATALOG = [
   { name:'Telemundo',          country:'EE.UU.',  lang:'Español', groups:['usa'],                 badge:'PARTIDO' },

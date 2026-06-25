@@ -7,7 +7,7 @@
 
 ## 1. Resumen
 
-- **Producto:** plataforma estilo Roku/Google TV para ver fútbol en vivo gratis (canales de lacancha.tv vía embed.st), con quiniela de dinero, juego amistoso gratis, ranking, muro de afición, notificaciones push y PWA instalable.
+- **Producto:** plataforma estilo Roku/Google TV para ver fútbol en vivo gratis (canales vía embed.st), con quiniela de dinero, juego amistoso gratis, ranking, muro de afición, notificaciones push y PWA instalable.
 - **Dominio:** **tvcontigo.site** (HTTPS) — Hostinger DNS → GitHub Pages.
 - **Repo:** GitHub `EleevateMX/FutboleroMX` (carpeta local `C:\Users\Edy Medina\Claude\FutboleroMX`). Branch `main`. Deploy automático a GitHub Pages al hacer push.
 - **Backend:** Supabase (proyecto **FutboleroMX**, ref `sclqzavebwinezpivmwr`, plan **Pro**).
@@ -111,7 +111,7 @@ supabase-email-templates.md  # Plantillas de correo de Supabase Auth (pegar en d
 
 | Función | Qué hace | Disparada por |
 |---------|----------|---------------|
-| `auto-live` | Lee lacancha en-vivo; pone partido + canales en vivo (o apaga). Push si es nuevo. | cron `auto-live-1min` |
+| `auto-live` | Lee la fuente en-vivo externa; pone partido + canales en vivo (o apaga). Push si es nuevo. | cron `auto-live-1min` |
 | `sync-score` | Actualiza el marcador del partido en vivo (match por nombre). | cron `sync-score-every-min` |
 | `match-reminder` | Avisa ~15 min antes de cada partido (dedupe). | cron `match-reminder-5min` |
 | `send-push` | Envía notificación a todos (usa `jsr:@negrel/webpush`, NO npm:web-push). | admin / auto-live / cron |
@@ -126,12 +126,12 @@ supabase-email-templates.md  # Plantillas de correo de Supabase Auth (pegar en d
 ## 8. Sistemas clave (cómo funcionan)
 
 ### Partido en vivo (100% automático)
-`auto-live` lee `lacancha.tv/es/en-vivo` cada minuto. Si hay slug `admin/ppv-...`:
+`auto-live` lee la fuente en-vivo externa cada minuto. Si hay slug `admin/ppv-...`:
 extrae canales reales (del array `streams`: embed_name + número), deriva los equipos **del slug** (`ppv-home-vs-away`), escribe `live_config` (status=live, canales, equipos en español) y manda push si el slug es nuevo. Si NO hay slug → `status='off'`.
 El front (`app.js loadLiveConfig`): si status≠live → sin partido, oculta canales y muestra próximos. Las banderas se resuelven con `flagFor(name)` desde MATCHES.
 
 ### Marcador en vivo
-`sync-score` cada minuto cruza `live_config` con el calendario de lacancha (mapa inglés→español) y actualiza `hs/as_`. El front hace polling de live_config cada 25s y actualiza `#hero-score` sin recargar el iframe.
+`sync-score` cada minuto cruza `live_config` con el calendario de la fuente (mapa inglés→español) y actualiza `hs/as_`. El front hace polling de live_config cada 25s y actualiza `#hero-score` sin recargar el iframe.
 
 ### Quiniela (dinero real)
 3 pools ($100/$150/$200), bote base 1000 + seed_picks (Noruega/España/México). Pago por transferencia Revolut (nacional CLABE `646990404004602396` / internacional cuenta `170002404004602394` SWIFT `REVOMXM2`) + link referido Revolut. El usuario pega su folio → queda pendiente → el admin verifica (manda correo). Puede cambiar su elección hasta que la pool siga `open`. Estructura como **concurso de pronósticos por habilidad** (mejor posición legal).
@@ -176,7 +176,7 @@ Para entrar al admin: `tvcontigo.site/admin/` → clave de operación `TVC-Quini
 6. **Sandbox de PowerShell:** da falso positivo "Remove-Item on system path '/2'" con patrones como `$x/2` o `-replace '\\"'`. Usar `dangerouslyDisableSandbox` para generación local de imágenes/scrape.
 7. **Service worker cachea el JS.** Subir `CACHE = 'tvc-vN'` en sw.js cada vez que cambie un JS, para que el dispositivo baje lo nuevo.
 8. **iOS push:** requiere PWA instalada en pantalla de inicio y abrir desde el ícono (no Safari).
-9. **Equipos del partido en vivo:** derivar del SLUG, no del JSON de lacancha (el JSON da el equipo equivocado por la estructura de la lista).
+9. **Equipos del partido en vivo:** derivar del SLUG, no del JSON de la fuente (el JSON da el equipo equivocado por la estructura de la lista).
 
 ---
 
@@ -187,7 +187,7 @@ Para entrar al admin: `tvcontigo.site/admin/` → clave de operación `TVC-Quini
 - Activar **leaked password protection** en Supabase Auth (1 toggle).
 - Llenar **GA4 / Meta Pixel / WhatsApp / Telegram** en admin cuando se tengan.
 - Las páginas `quiniela.html`/`perfil.html` también podrían registrar tráfico con `.then()` (ya lo hacen vía trackEvent en quiniela).
-- El "calendario" estático en `js/data.js` (MATCHES) se podría volver dinámico desde lacancha para que los "próximos" siempre estén exactos (hoy se filtran por fecha futura).
+- El "calendario" estático en `js/data.js` (MATCHES) se podría volver dinámico desde la fuente externa para que los "próximos" siempre estén exactos (hoy se filtran por fecha futura).
 
 ---
 

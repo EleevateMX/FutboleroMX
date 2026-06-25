@@ -209,7 +209,7 @@ body {
 .mi-live { color: var(--red, #ef4444); font-size: 14px; font-weight: 700; line-height: 1.5; }
 .match-card:not(.live) { cursor: pointer; }
 
-/* ── Iframe Notice (estilo lacancha.tv) ───────────────────────────────────── */
+/* ── Iframe Notice ────────────────────────────────────────────────────────── */
 .iframe-notice {
   display: none; align-items: flex-start; gap: 8px;
   background: rgba(249,115,22,.08);
@@ -844,7 +844,7 @@ body {
   .nav-center { display: none; }
 }
 
-/* ── Cancha TV — Multi-vista ──────────────────────────────────────────────── */
+/* ── Multi Vista (varios canales a la vez) ────────────────────────────────── */
 #cancha-tv {
   display: none;
   background: #000;
@@ -1027,7 +1027,7 @@ body {
   pointer-events: none;
 }
 
-/* Cancha TV chip en channel-strip */
+/* Multi Vista chip en channel-strip */
 .cancha-tv-chip {
   flex-shrink: 0;
   display: flex; flex-direction: column;

@@ -1,6 +1,6 @@
 # ⚽ FutboleroMX
 
-**La cancha de todos.** Sitio de fútbol en vivo con 12 emisoras gratuitas, quiniela con login, rankings y páginas legales completas. Proyecto 100% estático — HTML, CSS y JS puro, sin frameworks ni dependencias.
+**El fútbol de todos.** Sitio de fútbol en vivo con emisoras gratuitas, quiniela con login, rankings y páginas legales completas. Proyecto 100% estático — HTML, CSS y JS puro, sin frameworks ni dependencias.
 
 ## Vista previa
 
