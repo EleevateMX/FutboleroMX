@@ -2,7 +2,7 @@
 
 // ── Auto-reset de versión ("hard reset" para todos los dispositivos) ──────
 // Esta build. Debe coincidir con version.json y el CACHE del Service Worker.
-const APP_BUILD = 'v62';
+const APP_BUILD = 'v63';
 const APP_VERSION = APP_BUILD;   // alias visible (footer + consola) para diagnóstico
 console.log('[TVContigo] App started · build', APP_BUILD);
 // Si el version.json del servidor anuncia una build distinta, significa que el
@@ -375,24 +375,9 @@ async function loadLiveConfig() {
       _curSlug = data.slug;
       return;
     }
-    // live_config 'off' → ¿el calendario (tabla matches) tiene partidos EN VIVO?
-    // Si sí, los mostramos igual (sin canales de live_config → solo fuentes
-    // configuradas o placeholder). Así nunca se "pierden" partidos online.
-    const tableLive = MATCHES.filter(m => m.status === 'live');
-    if (tableLive.length) {
-      _liveChannelDefs = [];
-      const featured = _liveCardFrom(tableLive[0]);
-      _featuredMatch = featured;
-      _simulLive = _computeSimultaneous(featured);
-      const pick = _userPickedSlug && _simulLive.find(m => m.slug === _userPickedSlug);
-      LIVE_MATCH = pick || featured;
-      if (!pick) _userPickedSlug = null;
-      CHANNELS = resolveMatchStreams(LIVE_MATCH.slug, []);   // solo fuentes autorizadas configuradas
-      LIVE_MATCH.defaultChannel = CHANNELS[0]?.id;
-      _curSlug = LIVE_MATCH.slug;
-      return;
-    }
-    // Sin live en ninguna fuente → limpiar
+    // live_config 'off' → NO hay fútbol en vivo. La verdad de "¿hay live?" la da
+    // live_config (auto-live limpia con GRACE/miss_count y NO se queda pegado).
+    // No usamos matches.status='live' como disparador (podría quedar stale).
     LIVE_MATCH = null; CHANNELS = []; _curSlug = null;
     _liveChannelDefs = []; _simulLive = []; _featuredMatch = null; _userPickedSlug = null;
   } catch (e) {
