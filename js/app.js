@@ -2,7 +2,7 @@
 
 // ── Auto-reset de versión ("hard reset" para todos los dispositivos) ──────
 // Esta build. Debe coincidir con version.json y el CACHE del Service Worker.
-const APP_BUILD = 'v61';
+const APP_BUILD = 'v62';
 const APP_VERSION = APP_BUILD;   // alias visible (footer + consola) para diagnóstico
 console.log('[TVContigo] App started · build', APP_BUILD);
 // Si el version.json del servidor anuncia una build distinta, significa que el
@@ -375,7 +375,24 @@ async function loadLiveConfig() {
       _curSlug = data.slug;
       return;
     }
-    // Status 'off' o sin datos → limpiar
+    // live_config 'off' → ¿el calendario (tabla matches) tiene partidos EN VIVO?
+    // Si sí, los mostramos igual (sin canales de live_config → solo fuentes
+    // configuradas o placeholder). Así nunca se "pierden" partidos online.
+    const tableLive = MATCHES.filter(m => m.status === 'live');
+    if (tableLive.length) {
+      _liveChannelDefs = [];
+      const featured = _liveCardFrom(tableLive[0]);
+      _featuredMatch = featured;
+      _simulLive = _computeSimultaneous(featured);
+      const pick = _userPickedSlug && _simulLive.find(m => m.slug === _userPickedSlug);
+      LIVE_MATCH = pick || featured;
+      if (!pick) _userPickedSlug = null;
+      CHANNELS = resolveMatchStreams(LIVE_MATCH.slug, []);   // solo fuentes autorizadas configuradas
+      LIVE_MATCH.defaultChannel = CHANNELS[0]?.id;
+      _curSlug = LIVE_MATCH.slug;
+      return;
+    }
+    // Sin live en ninguna fuente → limpiar
     LIVE_MATCH = null; CHANNELS = []; _curSlug = null;
     _liveChannelDefs = []; _simulLive = []; _featuredMatch = null; _userPickedSlug = null;
   } catch (e) {
@@ -383,31 +400,27 @@ async function loadLiveConfig() {
   }
 }
 
-// Partidos que arrancan a la MISMA hora que el destacado → también están en vivo.
-// (No depende del reloj del visitante: usa que el destacado YA está confirmado en vivo.)
+// Slug de respaldo desde nombres (cuando deriveSlug no cubre al equipo)
+function _nameSlug(n) { return (n || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+function _liveSlugFor(home, away) { return deriveSlug(home, away) || ('live-' + _nameSlug(home) + '-vs-' + _nameSlug(away)); }
+function _liveCardFrom(m) {
+  return {
+    id: 'live', slug: _liveSlugFor(m.home.name, m.away.name), status: 'live',
+    home: { name: m.home.name, flag: m.home.flag || flagFor(m.home.name) },
+    away: { name: m.away.name, flag: m.away.flag || flagFor(m.away.name) },
+    kickoff: new Date().toISOString(), hs: m.hs ?? 0, as: m.as ?? 0,
+    venue: m.venue || '', city: m.city || '', comp: m.comp || 'En vivo',
+  };
+}
+// TODOS los partidos marcados 'live' en el calendario (tabla matches), EXCEPTO el
+// destacado. Así "EN VIVO AHORA" siempre refleja todos los partidos online ahora
+// mismo (2, 3, los que haya), con su marcador — auto-actualizado por el cron.
 function _computeSimultaneous(featured) {
-  const fe = MATCHES.find(m =>
-    _normName(m.home.name) === _normName(featured.home.name) &&
-    _normName(m.away.name) === _normName(featured.away.name));
-  if (!fe) return [];
-  const kt = new Date(fe.kickoff).getTime();
+  const fh = _normName(featured.home.name), fa = _normName(featured.away.name);
   return MATCHES
-    .filter(m => m !== fe
-      && Math.abs(new Date(m.kickoff).getTime() - kt) < 5 * 60000
-      && m.status !== 'finished')
-    .map(m => {
-      const slug = deriveSlug(m.home.name, m.away.name);
-      if (!slug) return null;
-      return {
-        id: 'live', slug, status: 'live',
-        home: { name: m.home.name, flag: m.home.flag },
-        away: { name: m.away.name, flag: m.away.flag },
-        kickoff: new Date().toISOString(),
-        hs: m.hs ?? 0, as: m.as ?? 0,
-        venue: m.venue || '', city: m.city || '', comp: m.comp || 'En vivo',
-      };
-    })
-    .filter(Boolean);
+    .filter(m => m.status === 'live')
+    .filter(m => !(_normName(m.home.name) === fh && _normName(m.away.name) === fa))
+    .map(_liveCardFrom);
 }
 
 // ── Selector "EN VIVO AHORA" (destacado + simultáneos) ────────────────────
@@ -423,7 +436,7 @@ function renderLiveSwitcher() {
   el.innerHTML = `<span class="ls-label">${svgIcon('bolt', 13)} EN VIVO AHORA</span>` + all.map(m => `
     <button class="ls-chip${m.slug === cur ? ' active' : ''}" onclick="selectLiveMatch('${m.slug}')">
       <span class="ls-flags">${m.home.flag} ${m.away.flag}</span>
-      <span class="ls-teams">${m.home.name} <b>vs</b> ${m.away.name}</span>
+      <span class="ls-teams">${m.home.name} <b>${m.hs ?? 0}-${m.as ?? 0}</b> ${m.away.name}</span>
       <span class="ls-dot"></span>
     </button>`).join('');
 }
@@ -541,6 +554,7 @@ function startLiveRefresh() {
 }
 async function refreshLiveConfig() {
   const before = _curSlug;
+  await loadMatches();        // marcadores/estados EN VIVO frescos de TODOS los partidos
   await loadLiveConfig();
   await loadMatchResults();
   if (_curSlug !== before) {
