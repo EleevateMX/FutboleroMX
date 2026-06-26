@@ -196,6 +196,13 @@ body {
   font-size: 14px; font-weight: 700; cursor: pointer;
 }
 .stream-status .ss-btn:hover { filter: brightness(1.1); }
+.stream-status .ss-alts { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; max-width: 420px; margin: 4px 0 2px; }
+.stream-status .ss-alt {
+  background: var(--surface-3, #1c2230); color: var(--text, #e7ecf3);
+  border: 1px solid var(--border-hi, #2e3b4e); border-radius: 999px;
+  padding: 7px 13px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap;
+}
+.stream-status .ss-alt:hover { border-color: var(--orange, #f97316); color: var(--orange, #f97316); }
 @media (prefers-reduced-motion: reduce) { .stream-status .ss-spinner { animation: none; } }
 
 /* ── Cuenta regresiva del partido próximo ─────────────────────────────────── */

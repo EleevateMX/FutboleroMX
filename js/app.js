@@ -2,7 +2,7 @@
 
 // ── Auto-reset de versión ("hard reset" para todos los dispositivos) ──────
 // Esta build. Debe coincidir con version.json y el CACHE del Service Worker.
-const APP_BUILD = 'v64';
+const APP_BUILD = 'v65';
 const APP_VERSION = APP_BUILD;   // alias visible (footer + consola) para diagnóstico
 console.log('[TVContigo] App started · build', APP_BUILD);
 // Si el version.json del servidor anuncia una build distinta, significa que el
@@ -432,7 +432,7 @@ function _liveCardFrom(m) {
 // 12 min (GRACE) y además aquí no mostramos un 'live' viejo aunque el cron fallara.
 function _liveTableMatches() {
   const now = Date.now();
-  return MATCHES.filter(m => m.status === 'live' && (!m._lu || (now - new Date(m._lu).getTime()) < 25 * 60000));
+  return MATCHES.filter(m => m.status === 'live' && (!m._lu || (now - new Date(m._lu).getTime()) < 30 * 60000));
 }
 // TODOS los partidos EN VIVO ahora mismo (tabla matches), EXCEPTO el destacado.
 // Así "EN VIVO AHORA" refleja los 2, 3, los que haya, con su marcador.
@@ -1427,8 +1427,15 @@ function armStreamWatchdog() {
     ss.className = 'stream-status';
     ss.innerHTML = `<div class="ss-spinner"></div><div class="ss-text">Conectando con la transmisión…</div>`;
   }
-  // 14s sin que el iframe dispare "load" = la plataforma no respondió
-  _streamWatchdog = setTimeout(() => showStreamUnavailable(), 14000);
+  // OJO: los embeds cross-origin MUCHAS veces NO disparan "load" aunque el video
+  // SÍ se esté reproduciendo. Por eso NO declaramos "no disponible" por timeout
+  // (eso cortaba transmisiones que seguían al aire). Solo ocultamos el spinner y
+  // dejamos ver la señal; el aviso real se reserva para onStreamError() (fallo
+  // explícito). Las opciones de canal quedan abajo a la mano por si hay que cambiar.
+  _streamWatchdog = setTimeout(() => {
+    const s = document.getElementById('stream-status');
+    if (s) s.classList.add('hidden');
+  }, 9000);
 }
 
 // El iframe cargó: ocultamos el aviso (no podemos saber cross-origin si el video
@@ -1446,12 +1453,18 @@ function showStreamUnavailable() {
   _clearWatchdog();
   const ss = document.getElementById('stream-status');
   if (!ss) return;
+  // Opciones alternativas a la mano (el partido suele traer ~7-12). Telemundo
+  // va de primero por chRank, así que aparece arriba.
+  const others = CHANNELS.filter(c => !_activeChannel || c.id !== _activeChannel.id).slice(0, 6);
+  const alts = others.map(c =>
+    `<button class="ss-alt" onclick="switchChannel('${c.id}')">${c.name}${c.option ? ' · ' + c.option : ''}</button>`).join('');
   ss.className = 'stream-status err';
   ss.innerHTML = `
     <div class="ss-icon">📡</div>
-    <div class="ss-title">No está disponible la plataforma de streaming</div>
-    <div class="ss-sub">Esta opción no respondió. Prueba con otra de las opciones de abajo.</div>
-    <button class="ss-btn" onclick="retryStream()">↻ Reintentar</button>`;
+    <div class="ss-title">Esta opción no respondió</div>
+    <div class="ss-sub">Prueba otra de las ${CHANNELS.length} opciones — <b>Telemundo</b> es la principal:</div>
+    ${alts ? `<div class="ss-alts">${alts}</div>` : ''}
+    <button class="ss-btn" onclick="retryStream()">↻ Reintentar esta opción</button>`;
 }
 
 function retryStream() {
