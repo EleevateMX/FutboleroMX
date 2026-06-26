@@ -2,7 +2,9 @@
 
 // ── Auto-reset de versión ("hard reset" para todos los dispositivos) ──────
 // Esta build. Debe coincidir con version.json y el CACHE del Service Worker.
-const APP_BUILD = 'v58';
+const APP_BUILD = 'v59';
+const APP_VERSION = APP_BUILD;   // alias visible (footer + consola) para diagnóstico
+console.log('[TVContigo] App started · build', APP_BUILD);
 // Si el version.json del servidor anuncia una build distinta, significa que el
 // código en ejecución está cacheado/viejo → borra TODAS las cachés, actualiza
 // el SW y recarga UNA sola vez (sessionStorage evita bucles de recarga).
@@ -12,6 +14,7 @@ async function checkAppVersion() {
     if (!res.ok) return;
     const { build } = await res.json();
     if (!build || build === APP_BUILD) return;
+    console.log('[TVContigo] Nueva versión en el servidor:', build, '≠', APP_BUILD, '→ limpiando caché y recargando');
     const flag = 'tvc_reset_' + build;
     if (sessionStorage.getItem(flag)) return;   // ya intentamos resetear a esta build
     sessionStorage.setItem(flag, '1');
@@ -47,12 +50,14 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistration().then(reg => { if (reg) reg.update(); });
   }, 5 * 60 * 1000);
   navigator.serviceWorker.addEventListener('controllerchange', () => {
+    console.log('[TVContigo] Service worker updated (controllerchange) → recargando');
     // Esperar a que la página esté lista antes de recargar (evita reload interrumpido en Android)
     if (document.readyState === 'complete') window.location.reload();
     else window.addEventListener('load', () => window.location.reload(), { once: true });
   });
   navigator.serviceWorker.addEventListener('message', e => {
     if (e.data?.type !== 'SW_UPDATED') return;
+    console.log('[TVContigo] Service worker updated (mensaje SW_UPDATED) → recargando');
     if (document.readyState === 'complete') window.location.reload();
     else window.addEventListener('load', () => window.location.reload(), { once: true });
   });
@@ -154,6 +159,8 @@ function _isActuallyLive() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  const _verEl = document.getElementById('app-version-label');
+  if (_verEl) _verEl.textContent = APP_VERSION;
   captureReferral();
   loadSiteSettings();
   await authInit();
@@ -292,6 +299,34 @@ function flagFor(name) {
   return _FLAGS[name] || _FLAGS[norm] || '🏳️';
 }
 
+// ── Resolución de fuentes de transmisión (sistema de proveedores) ─────────
+// Devuelve las fuentes utilizables para un partido, por prioridad:
+//   1) proveedores AUTORIZADOS explícitos (oficiales) → siempre se cargan, con atribución.
+//   2) canales del operador (live_config) → solo si STREAM_CONFIG.allowExternalEmbeds !== false.
+// Si no hay ninguna fuente válida, devuelve [] → la UI muestra el placeholder elegante.
+function resolveMatchStreams(slug, channelDefs) {
+  const sources = [];
+  // 1) Fuentes autorizadas explícitas (con derechos), declaradas por el operador
+  if (typeof STREAM_PROVIDERS !== 'undefined' && Array.isArray(STREAM_PROVIDERS)) {
+    STREAM_PROVIDERS
+      .filter(p => p.matchSlug === slug && p.isActive && p.isAuthorized && p.embedUrl)
+      .forEach((p, i) => sources.push({
+        id: 'auth-' + i, name: p.name || 'Fuente autorizada', option: 'AUTORIZADA',
+        url: p.embedUrl, live: true, tag: 'OFICIAL',
+        requiresAttribution: !!p.requiresAttribution, attribution: p.attribution || '',
+      }));
+  }
+  // 2) Canales del operador (embeds externos) — gateados por el interruptor global
+  const allow = (typeof STREAM_CONFIG === 'undefined') || STREAM_CONFIG.allowExternalEmbeds !== false;
+  if (allow && Array.isArray(channelDefs) && channelDefs.length) {
+    buildChannels(slug, channelDefs).forEach(ch => sources.push(ch));
+  }
+  console.log('[TVContigo] Stream provider:', sources.length, 'fuente(s) ·', slug, '· embeds externos', allow ? 'ON' : 'OFF');
+  return sources;
+}
+// Accesor público pedido por el flujo de proveedores
+function getAuthorizedStreamsForMatch(slug) { return resolveMatchStreams(slug, _liveChannelDefs); }
+
 // ── Carga el partido en vivo desde Supabase (live_config) ─────────────────
 let _curSlug = null;          // slug del partido actualmente cargado (para detectar cambios)
 let _liveChannelDefs = [];    // defs crudas (con n) del destacado, para reusar en simultáneos
@@ -318,11 +353,11 @@ async function loadLiveConfig() {
       const pick = _userPickedSlug && _simulLive.find(m => m.slug === _userPickedSlug);
       if (pick) {
         LIVE_MATCH = pick;
-        CHANNELS   = buildChannels(pick.slug, _liveChannelDefs);
+        CHANNELS   = resolveMatchStreams(pick.slug, _liveChannelDefs);
       } else {
         _userPickedSlug = null;
         LIVE_MATCH = featured;
-        if (_liveChannelDefs.length) CHANNELS = buildChannels(data.slug, _liveChannelDefs);
+        CHANNELS = resolveMatchStreams(data.slug, _liveChannelDefs);
       }
       LIVE_MATCH.defaultChannel = CHANNELS[0]?.id;
       _curSlug = data.slug;
@@ -388,7 +423,7 @@ function selectLiveMatch(slug) {
   if (!m) return;
   _userPickedSlug = (slug === _featuredMatch.slug) ? null : slug;
   LIVE_MATCH = m;
-  CHANNELS = buildChannels(slug, _liveChannelDefs);
+  CHANNELS = resolveMatchStreams(slug, _liveChannelDefs);
   LIVE_MATCH.defaultChannel = CHANNELS[0]?.id;
   _activeChannel = null;
   renderHero();
@@ -458,7 +493,8 @@ async function refreshLiveConfig() {
 let _lastRefresh   = 0;
 let _lastRefreshOk = 0;
 let _refreshing    = false;
-const REFRESH_COOLDOWN = 30000;   // máx. 1 actualización cada 30s (evita exceso)
+let _flashTimer    = null;
+const REFRESH_COOLDOWN = 15000;   // máx. 1 actualización cada 15s (evita exceso, pero refresca al volver)
 
 function setRefreshStatus(state, msg) {
   const dot   = document.getElementById('rs-dot');
@@ -475,29 +511,53 @@ function setRefreshStatus(state, msg) {
 function updateLastRefreshLabel() {
   const label = document.getElementById('refresh-label');
   if (!label || !_lastRefreshOk || _refreshing) return;
-  const secs = Math.round((Date.now() - _lastRefreshOk) / 1000);
-  let rel;
-  if (secs < 10) rel = 'hace un momento';
-  else if (secs < 60) rel = `hace ${secs} s`;
-  else if (secs < 3600) rel = `hace ${Math.floor(secs / 60)} min`;
-  else rel = new Date(_lastRefreshOk).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
-  label.textContent = `Actualizado ${rel}`;
+  const t = new Date(_lastRefreshOk).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+  label.textContent = `Actualizado · ${t}`;
 }
 
-async function refreshAppData(force = false) {
+// Muestra un mensaje contextual breve ("Datos actualizados al abrir") y luego
+// vuelve a la hora de última actualización.
+function _flashRefreshMsg(msg) {
+  if (!msg) { updateLastRefreshLabel(); return; }
+  const label = document.getElementById('refresh-label');
+  if (!label) return;
+  label.textContent = msg;
+  if (_flashTimer) clearTimeout(_flashTimer);
+  _flashTimer = setTimeout(updateLastRefreshLabel, 2800);
+}
+
+// Mensaje visible breve según el disparador del refresco.
+const _REFRESH_MSG = {
+  'window-load':      'Datos actualizados al abrir',
+  'pageshow-bfcache': 'Datos actualizados al volver',
+  'visibilitychange': 'Datos actualizados al volver',
+  'window-focus':     'Datos actualizados',
+  'online':           'Conexión recuperada · datos actualizados',
+  'day-changed':      'Nuevo día · datos actualizados',
+  'manual':           'Datos actualizados',
+};
+
+async function refreshAppData(force = false, reason = 'manual') {
   const now = Date.now();
-  if (_refreshing) return;
-  if (!force && now - _lastRefresh < REFRESH_COOLDOWN) { updateLastRefreshLabel(); return; }
+  if (_refreshing) { console.log('[TVContigo] Refresh ignorado (ya en curso):', reason); return; }
+  if (!force && now - _lastRefresh < REFRESH_COOLDOWN) {
+    console.log('[TVContigo] Refresh omitido por cooldown:', reason);
+    updateLastRefreshLabel();
+    return;
+  }
   _lastRefresh = now;
   _refreshing  = true;
-  setRefreshStatus('busy', 'Actualizando partidos…');
+  console.log('[TVContigo] Refresh triggered:', reason);
+  setRefreshStatus('busy', 'Actualizando datos…');
   try {
+    console.log('[TVContigo] Fetching fresh data… (Supabase live_config + match_results + ranking)');
     await refreshLiveConfig();   // recarga live_config + match_results y re-renderiza
     // Si NO hay live, re-pinta "Partidos de hoy" (sin tocar un stream en curso)
     if (!_isActuallyLive()) renderHero();
-    // Refresca también gamificación, canales y ranking al abrir/volver a la PWA
+    // Refresca también gamificación, canales, ranking y quiniela al abrir/volver
     renderChannelsGrid();
     renderRanking();
+    renderQuinielaSection();
     awardDailyLogin();
     renderChallenges();
     renderPointsToday();
@@ -505,10 +565,14 @@ async function refreshAppData(force = false) {
     _lastRefreshOk = Date.now();
     _refreshing = false;
     setRefreshStatus(_isActuallyLive() ? 'live' : '', null);
+    _flashRefreshMsg(_REFRESH_MSG[reason] || null);
     updateLastRefreshLabel();
+    console.log('[TVContigo] Render completed ·', _isActuallyLive() ? 'EN VIVO' : 'sin live', '· reason:', reason);
   } catch (e) {
     _refreshing = false;
-    setRefreshStatus('error', 'No se pudo actualizar · reintenta');
+    console.error('[TVContigo] Refresh failed:', reason, e);
+    // Los datos previos (Supabase en caché + calendario estático) siguen en pantalla
+    setRefreshStatus('error', 'No se pudo actualizar · usando último respaldo');
   }
 }
 
@@ -541,9 +605,10 @@ function handleDayChange() {
   if (saved === today) return false;
   localStorage.setItem('tvc_last_day', today);
   if (saved === null) return false;      // primera visita → el 'load' ya refresca
+  console.log('[TVContigo] Día cambiado:', saved, '→', today);
   _resetDailyState();
   setRefreshStatus(null, 'Nuevo día — actualizando partidos…');
-  refreshAppData(true);
+  refreshAppData(true, 'day-changed');
   return true;
 }
 
@@ -554,13 +619,55 @@ function _handlePredHash() {
 }
 window.addEventListener('hashchange', _handlePredHash);
 
-// Disparadores: al cargar, al volver a la pestaña/PWA, al recuperar conexión,
-// y al cambiar el día. handleDayChange() devuelve true si ya forzó el refresco.
-window.addEventListener('load',   () => { if (!handleDayChange()) refreshAppData(true); _handlePredHash(); });
-window.addEventListener('online', () => { setRefreshStatus(null, 'Conexión recuperada…'); if (!handleDayChange()) refreshAppData(true); });
-document.addEventListener('visibilitychange', () => { if (!document.hidden && !handleDayChange()) refreshAppData(); });
+// Disparadores: al cargar, al volver a la pestaña/PWA, al enfocar la ventana,
+// al recuperar conexión, y al cambiar el día.
+// handleDayChange() devuelve true si ya forzó el refresco.
+window.addEventListener('load',   () => { if (!handleDayChange()) refreshAppData(true, 'window-load'); _handlePredHash(); });
+window.addEventListener('online', () => { setRefreshStatus(null, 'Conexión recuperada…'); if (!handleDayChange()) refreshAppData(true, 'online'); });
+window.addEventListener('focus',  () => { if (!handleDayChange()) refreshAppData(false, 'window-focus'); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && !handleDayChange()) refreshAppData(false, 'visibilitychange'); });
+
+// BFCache (atrás/adelante): 'load' NO se dispara al restaurar la página desde la
+// caché de ida-vuelta del navegador → el usuario veía un estado CONGELADO y viejo.
+// 'pageshow' con persisted=true es la única señal fiable de ese caso: forzamos
+// refresco y revisamos versión/SW. Esta es la causa #1 de "estados anteriores".
+window.addEventListener('pageshow', (e) => {
+  if (!e.persisted) return;   // navegación normal → ya la cubre 'load'
+  console.log('[TVContigo] pageshow desde BFCache → forzando refresco + chequeo de versión');
+  checkAppVersion();
+  if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistration().then(r => { if (r) r.update(); });
+  if (!handleDayChange()) refreshAppData(true, 'pageshow-bfcache');
+});
+
 // Revisión periódica (cada 5 min): cambio de día o partido en vivo → refresca
-setInterval(() => { if (!handleDayChange() && _isActuallyLive()) refreshAppData(true); }, 5 * 60 * 1000);
+setInterval(() => { if (!handleDayChange() && _isActuallyLive()) refreshAppData(true, 'live-interval'); }, 5 * 60 * 1000);
+
+// ── Forzar actualización TOTAL (limpia TODAS las cachés + SW + recarga) ────
+// Para usuarios viejos con caché/SW pegado. Botón discreto en el footer.
+async function forceHardRefresh() {
+  try {
+    setRefreshStatus('busy', 'Limpiando caché…');
+    console.log('[TVContigo] Force hard refresh: limpiando todas las cachés y el SW');
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+    if ('serviceWorker' in navigator) {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg) {
+        try { await reg.update(); } catch (e) {}
+        if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        if (navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_DATA_CACHE' });
+      }
+    }
+    // Recarga: el SW es network-first, así que vuelve con todo fresco
+    window.location.reload();
+  } catch (e) {
+    console.error('[TVContigo] Force hard refresh falló:', e);
+    setRefreshStatus('error', 'No se pudo limpiar caché');
+  }
+}
+window.forceHardRefresh = forceHardRefresh;
 
 // ── Ver en tu TV · Apóyanos · copiar enlace ────────────────────────────────
 function copyTvLink() {
@@ -617,6 +724,7 @@ function _togglePlayerChrome(show) {
 
 // ── Hero ──────────────────────────────────────────────────────────────────
 function renderHero() {
+  console.log('[TVContigo] App state:', getAppViewState());
   const hero = document.getElementById('hero-section');
   const hoy  = document.getElementById('hoy-section');
   const rawLive = (LIVE_MATCH && LIVE_MATCH.status === 'live') ? LIVE_MATCH : null;
@@ -651,7 +759,7 @@ function renderHero() {
   if (isLive) {
     hero.innerHTML = `
       <div class="hero-match-preview">
-        <div class="hmp-badge"><span class="hmp-dot"></span> EN VIVO · ${match.comp}</div>
+        <div class="hmp-badge${hasChannels ? '' : ' hmp-badge-next'}"><span class="hmp-dot"></span> ${hasChannels ? 'EN VIVO' : 'SIN TRANSMISIÓN'} · ${match.comp}</div>
         <div class="hmp-teams">
           <div class="hmp-team">
             <div class="hmp-flag">${match.home.flag}</div>
@@ -667,12 +775,21 @@ function renderHero() {
           </div>
         </div>
         <div class="hmp-venue">📍 ${venueLine}</div>
+        ${hasChannels ? `
         <div class="hmp-actions">
-          ${hasChannels
-            ? `<button class="hmp-btn-watch" onclick="openLiveStream()">▶ Ver en vivo</button>`
-            : `<button class="hmp-btn-watch" style="background:var(--surface-3);color:var(--text-dim);" onclick="_showToast('Transmisión no disponible por el momento. Consulta canales oficiales o vuelve más tarde.','var(--surface-3)')">Transmisión no disponible</button>`}
-          <button class="hmp-btn-quiniela" onclick="goPronosticar()">🏆 La quiniela</button>
+          <button class="hmp-btn-watch" onclick="openLiveStream()">▶ Ver en vivo</button>
+          <button class="hmp-btn-quiniela" onclick="goPronosticar()">🎯 Pronosticar</button>
+        </div>` : `
+        <div style="text-align:center;margin:8px 0 2px;">
+          <div style="font-weight:700;color:var(--text);font-size:15px;">Transmisión no disponible por el momento</div>
+          <div style="color:var(--text-dim);font-size:13px;margin-top:3px;">Consulta canales oficiales o vuelve más tarde.</div>
         </div>
+        <div class="hmp-actions" style="flex-wrap:wrap;justify-content:center;">
+          <button class="hmp-btn-watch" onclick="goPronosticar()">🎯 Pronosticar partido</button>
+          <button class="hmp-btn-quiniela" onclick="scrollToSection('upcoming-section')">📅 Próximos partidos</button>
+          <button class="hmp-btn-quiniela" onclick="location.href='quiniela.html'">🏆 Mi quiniela</button>
+        </div>
+        <div style="text-align:center;color:var(--text-muted);font-size:11px;margin-top:10px;line-height:1.5;">${typeof STREAM_LEGAL_NOTICE !== 'undefined' ? STREAM_LEGAL_NOTICE : ''}</div>`}
       </div>`;
     renderIframeNotice(false);
     startLiveScorePolling();
@@ -1020,6 +1137,7 @@ function openLiveStream() {
   }
   const ch = _activeChannel || CHANNELS[0];
   const m  = LIVE_MATCH;
+  console.log('[TVContigo] Stream provider:', ch.name, ch.requiresAttribution ? '(autorizada, con atribución)' : '(canal del operador)');
   const hero = document.getElementById('hero-section');
   hero.innerHTML = `
     <iframe id="live-frame" src="${ch.url}" allowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
@@ -1035,6 +1153,7 @@ function openLiveStream() {
         <div class="hero-live-badge"><span style="width:6px;height:6px;border-radius:50%;background:#fff;display:inline-block;"></span> EN VIVO · <span id="hero-ch-name">${ch.name}</span></div>
         <div class="hero-title">${m.home.flag} ${m.home.name} <span id="hero-score">${m.hs ?? 0}-${m.as ?? 0}</span> ${m.away.name} ${m.away.flag}</div>
         <div class="hero-subtitle">📍 ${m.venue || m.comp || ''}</div>
+        ${ch.requiresAttribution && ch.attribution ? `<div class="hero-subtitle" style="font-size:11px;opacity:.85;margin-top:2px;">${ch.attribution}</div>` : ''}
       </div>
     </div>`;
   armStreamWatchdog();

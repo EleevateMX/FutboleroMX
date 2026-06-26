@@ -1,4 +1,4 @@
-const CACHE = 'tvc-v58';
+const CACHE = 'tvc-v59';
 const STATIC = [
   '/', '/index.html', '/quiniela.html', '/perfil.html', '/predicciones.html', '/css/style.css',
   '/js/data.js', '/js/auth.js', '/js/app.js', '/js/quiniela.js', '/js/perfil.js', '/js/push.js',
@@ -6,10 +6,22 @@ const STATIC = [
 ];
 
 self.addEventListener('install', e => {
+  console.log('[SW] install', CACHE);
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(STATIC)).then(() => self.skipWaiting()));
 });
 
+// Mensajes desde la app: forzar activación del SW nuevo o limpiar la caché.
+self.addEventListener('message', e => {
+  if (!e.data) return;
+  if (e.data.type === 'SKIP_WAITING') { console.log('[SW] SKIP_WAITING'); self.skipWaiting(); }
+  if (e.data.type === 'CLEAR_DATA_CACHE') {
+    console.log('[SW] CLEAR_DATA_CACHE → borrando', CACHE);
+    e.waitUntil(caches.delete(CACHE));
+  }
+});
+
 self.addEventListener('activate', e => {
+  console.log('[SW] activate', CACHE);
   e.waitUntil(
     caches.keys()
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))

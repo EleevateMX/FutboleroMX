@@ -38,6 +38,26 @@ function buildChannels(slug, list) {
   return sortChannels(built);
 }
 
+// ── Sistema de proveedores de transmisión ─────────────────────────────────
+// TVContigo NO aloja transmisiones. Solo enlaza fuentes configuradas por el
+// operador. Cada fuente declara si está autorizada y si requiere atribución.
+const STREAM_LEGAL_NOTICE = 'TVContigo no aloja transmisiones. Las fuentes externas deben ser autorizadas por sus respectivos titulares.';
+
+// Interruptor global del operador. Si se desactiva, TODO el sitio muestra el
+// placeholder elegante en vez de cargar un player (kill-switch legal rápido).
+const STREAM_CONFIG = {
+  allowExternalEmbeds: true,   // pon false para forzar "sin transmisión" en todos los partidos
+};
+
+// Proveedores AUTORIZADOS explícitos por partido (oficiales / con permiso).
+// Tienen prioridad sobre los canales genéricos y se marcan con atribución.
+// El operador agrega aquí las fuentes con derechos. Vacío por defecto.
+// Estructura: { matchSlug, name, embedUrl, isAuthorized, isActive, requiresAttribution, attribution, notes }
+const STREAM_PROVIDERS = [
+  // { matchSlug:'ppv-mexico-vs-czechia', name:'Fuente oficial', embedUrl:'https://...',
+  //   isAuthorized:true, isActive:true, requiresAttribution:true, attribution:'Transmite: Canal Oficial', notes:'' },
+];
+
 // Nombre de selección (ES) → parte del slug en inglés (formato de la fuente).
 // Sirve para derivar el slug de partidos SIMULTÁNEOS al destacado y poder verlos.
 const SLUG_EN = {
