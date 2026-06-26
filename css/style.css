@@ -1260,6 +1260,12 @@ body {
 .ch-card.ch-ref:hover { opacity: 1; transform: none; box-shadow: none; border-color: var(--border-hi); background: var(--surface-2); }
 .ch-card.ch-avail { border-color: rgba(239,68,68,.35); }
 .ch-card.ch-avail:hover { border-color: var(--red); box-shadow: 0 0 0 1px var(--red), 0 0 18px rgba(239,68,68,.25); }
+/* Estado: fuente AUTORIZADA configurada por el operador (lista para reproducir) */
+.ch-card.ch-config { border-color: rgba(34,197,94,.32); }
+.ch-card.ch-config:hover { border-color: var(--green); box-shadow: 0 0 0 1px rgba(34,197,94,.5); }
+.ch-config-tag { font-size: 9px; font-weight: 800; color: var(--green); letter-spacing: .5px; }
+.ch-badges { display: inline-flex; gap: 4px; align-items: center; flex-shrink: 0; }
+.ch-badge.ch-badge-q { color: var(--blue); background: rgba(14,165,233,.16); }
 .ch-empty { grid-column: 1/-1; text-align: center; padding: 24px 16px; color: var(--text-dim); font-size: 13px; }
 .channels-legal { padding: 2px 20px 4px; font-size: 11px; color: var(--text-muted); line-height: 1.5; }
 

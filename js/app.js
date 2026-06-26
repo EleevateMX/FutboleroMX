@@ -2,7 +2,7 @@
 
 // ── Auto-reset de versión ("hard reset" para todos los dispositivos) ──────
 // Esta build. Debe coincidir con version.json y el CACHE del Service Worker.
-const APP_BUILD = 'v60';
+const APP_BUILD = 'v61';
 const APP_VERSION = APP_BUILD;   // alias visible (footer + consola) para diagnóstico
 console.log('[TVContigo] App started · build', APP_BUILD);
 // Si el version.json del servidor anuncia una build distinta, significa que el
@@ -167,6 +167,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (Auth.isLoggedIn()) applyReferralIfAny();
   trackEvent('page', 'home');
   await loadMatches();      // calendario dinámico desde Supabase (con respaldo estático)
+  await loadStreamSources();// fuentes autorizadas configuradas por el operador
   await loadLiveConfig();   // partido en vivo desde Supabase (editable en admin)
   await loadMatchResults(); // resultados finales desde Supabase (auto-sync cada 10 min)
   renderHero();
@@ -315,6 +316,16 @@ function resolveMatchStreams(slug, channelDefs) {
         id: 'auth-' + i, name: p.name || 'Fuente autorizada', option: 'AUTORIZADA',
         url: p.embedUrl, live: true, tag: 'OFICIAL',
         requiresAttribution: !!p.requiresAttribution, attribution: p.attribution || '',
+      }));
+  }
+  // 1b) Fuentes configuradas por el operador desde el admin (Supabase stream_sources)
+  if (Array.isArray(STREAM_SOURCES_LIVE)) {
+    STREAM_SOURCES_LIVE
+      .filter(s => s.active && s.embed_url && (s.match_slug === '' || s.match_slug === slug))
+      .forEach(s => sources.push({
+        id: 'src-' + s.id, name: s.channel_name || s.channel_id, option: s.quality || 'HD',
+        url: s.embed_url, live: true, tag: s.badge || 'OFICIAL',
+        requiresAttribution: !!s.official_url, attribution: s.official_url ? ('Transmite: ' + s.official_url) : '',
       }));
   }
   // 2) Canales del operador (embeds externos) — gateados por el interruptor global
@@ -481,6 +492,24 @@ function _seedMatchesFromStatic() {
   } catch (e) {}
 }
 
+// ── Fuentes de transmisión configuradas por el operador (Supabase, global) ─
+// El admin registra aquí embeds AUTORIZADOS. Si no hay ninguno activo para un
+// partido, el player muestra el placeholder "sin fuente" (nunca pantalla negra).
+let STREAM_SOURCES_LIVE = [];
+async function loadStreamSources() {
+  try {
+    const { data } = await sb.from('stream_sources').select('*');
+    STREAM_SOURCES_LIVE = Array.isArray(data) ? data : [];
+    console.log('[TVContigo] Fuentes configuradas:', STREAM_SOURCES_LIVE.filter(s => s.active && s.embed_url).length, 'activas /', STREAM_SOURCES_LIVE.length, 'totales');
+  } catch (e) { STREAM_SOURCES_LIVE = STREAM_SOURCES_LIVE || []; }
+}
+// ¿Hay una fuente configurada+activa para este canal (global o para el partido)?
+function sourceForChannel(channelId, slug) {
+  if (!Array.isArray(STREAM_SOURCES_LIVE)) return null;
+  return STREAM_SOURCES_LIVE.find(s => s.channel_id === channelId && s.active && s.embed_url
+    && (s.match_slug === '' || s.match_slug === slug)) || null;
+}
+
 // ── Resultados finales desde Supabase (overlay sobre MATCHES estático) ───
 async function loadMatchResults() {
   try {
@@ -598,6 +627,7 @@ async function refreshAppData(force = false, reason = 'manual') {
   try {
     console.log('[TVContigo] Fetching fresh data… (Supabase matches + live_config + match_results + ranking)');
     await loadMatches();         // calendario fresco (global, auto-sincronizado)
+    await loadStreamSources();   // fuentes configuradas (global)
     await refreshLiveConfig();   // recarga live_config + match_results y re-renderiza
     // Si NO hay live, re-pinta "Partidos de hoy" (sin tocar un stream en curso)
     if (!_isActuallyLive()) renderHero();
@@ -1659,22 +1689,34 @@ function renderChannelsGrid() {
     return;
   }
 
+  const slug = (LIVE_MATCH && LIVE_MATCH.slug) || '';
   grid.innerHTML = list.map(c => {
     const liveCh = liveList.find(x => _chMatch(x.name, c.name));
+    const src    = sourceForChannel(c.id, slug);   // fuente AUTORIZADA configurada por el operador
     const avail  = !!liveCh;
-    const onclick = avail ? `switchChannel('${liveCh.id}')` : `channelUnavailable()`;
+    let stateClass, statusHtml, onclick;
+    if (avail) {                                    // transmitiendo ahora
+      stateClass = ' ch-avail';
+      statusHtml = `<span class="ch-live-tag"><span class="ch-dot"></span>EN VIVO</span>`;
+      onclick = `switchChannel('${liveCh.id}')`;
+    } else if (src) {                               // fuente configurada y activa
+      stateClass = ' ch-config';
+      statusHtml = `<span class="ch-config-tag">CONFIGURADO</span>`;
+      onclick = `channelUnavailable()`;
+    } else {                                        // catálogo sin fuente
+      stateClass = ' ch-ref';
+      statusHtml = `<span class="ch-ref-tag">SIN FUENTE</span>`;
+      onclick = `channelUnavailable()`;
+    }
+    const qBadge = (c.quality && c.quality !== 'HD') ? `<span class="ch-badge ch-badge-q">${c.quality}</span>` : '';
     return `
-    <div class="ch-card${avail ? ' ch-avail' : ' ch-ref'}" onclick="${onclick}">
+    <div class="ch-card${stateClass}" onclick="${onclick}">
       <div class="ch-card-top">
         <div class="ch-name">${c.name}</div>
-        ${c.badge ? `<span class="ch-badge ${_badgeClass(c.badge)}">${c.badge}</span>` : ''}
+        <span class="ch-badges">${qBadge}${c.badge ? `<span class="ch-badge ${_badgeClass(c.badge)}">${c.badge}</span>` : ''}</span>
       </div>
       <div class="ch-meta">${c.country} · ${c.lang}</div>
-      <div class="ch-status">
-        ${avail
-          ? `<span class="ch-live-tag"><span class="ch-dot"></span>EN VIVO</span>`
-          : `<span class="ch-ref-tag">Catálogo</span>`}
-      </div>
+      <div class="ch-status">${statusHtml}</div>
     </div>`;
   }).join('');
 }

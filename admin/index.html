@@ -223,6 +223,40 @@
       </p>
     </div>
 
+    <!-- Fuentes de transmisión (autorizadas, configuradas por el operador) -->
+    <div class="section-card">
+      <h3><span class="dot"></span> 📡 Fuentes de transmisión (En Vivo)</h3>
+      <p style="font-size:12px;color:var(--muted);margin:-4px 0 12px;">
+        Registra aquí embeds/URLs <strong>autorizados</strong>. Si un canal no tiene fuente activa,
+        el sitio muestra el placeholder “sin fuente” (nunca pantalla negra). Cambios visibles para
+        <strong>todos los usuarios</strong> (Supabase global, no local). No uses streams piratas ni iframes protegidos.
+      </p>
+      <div class="form-row">
+        <div><label>Canal</label><select id="src-channel"></select></div>
+        <div><label>Partido (slug · vacío = cualquiera)</label><input type="text" id="src-slug" placeholder="ppv-turkey-vs-usa"></div>
+      </div>
+      <div class="form-row">
+        <div><label>Calidad</label><select id="src-quality"><option>HD</option><option>4K</option><option>SD</option></select></div>
+        <div><label>Badge (opcional)</label><input type="text" id="src-badge" placeholder="PARTIDO / NO ADS / 4K"></div>
+      </div>
+      <label>URL oficial (referencia / atribución, opcional)</label>
+      <input type="text" id="src-official" placeholder="https://sitio-oficial-del-canal...">
+      <label>Embed / iframe AUTORIZADO (vacío = sin fuente → placeholder)</label>
+      <input type="text" id="src-embed" placeholder="https://...">
+      <label>Notas</label>
+      <input type="text" id="src-notes" placeholder="Fuente verificada, vigencia, etc.">
+      <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-weight:600;">
+        <input type="checkbox" id="src-active" style="width:auto;"> Activa (se carga en el player)
+      </label>
+      <button class="btn-save" onclick="saveStreamSource()">Guardar fuente</button>
+      <div class="success-msg" id="src-ok" style="display:none;">✓ Guardada — visible en el sitio al recargar</div>
+      <div class="err" id="src-err" style="display:none;"></div>
+      <div style="margin-top:16px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px;">Fuentes registradas</div>
+        <div id="src-list" style="font-size:12px;">—</div>
+      </div>
+    </div>
+
     <!-- Datos de pago globales -->
     <div class="section-card">
       <h3><span class="dot"></span> 💳 Datos de pago (Revolut)</h3>
@@ -550,7 +584,7 @@ if (sessionStorage.getItem('tvc_admin') === '1') {
 
 const TAB_RULES = [
   { tab:'Resumen',  rx:/tr[áa]fico/i },
-  { tab:'En Vivo',  rx:/en vivo/i },
+  { tab:'En Vivo',  rx:/en vivo|fuentes de transmisi/i },
   { tab:'Quiniela', rx:/quiniela|datos de pago/i },
   { tab:'Push',     rx:/push/i },
   { tab:'Anuncios', rx:/publicidad/i },
@@ -600,6 +634,8 @@ function initDashboard() {
   loadFanModeration();
   loadSettings();
   fetchUserCount();
+  fillSrcChannels();
+  loadSrcList();
 }
 
 // ── Tráfico real ──────────────────────────────────────────────────────────
@@ -1040,6 +1076,59 @@ async function fetchUserCount() {
 
 // ── Quiniela Mundialista (admin, multi-pool) ──────────────────────────────
 let _qPools = [], _qPay = {}, _qAllEntries = [], _qPoolId = null;
+
+// ── Fuentes de transmisión (stream_sources, global) ───────────────────────
+const SRC_CHANNELS = [
+  ['telemundo','Telemundo'],['universo','Universo'],['peacock-4k','Peacock 4K HEVC'],['fox','FOX'],
+  ['fox-4k','FOX 4K HEVC'],['fs1','FS1'],['fs2','FS2'],['tudn','TUDN'],['vix','ViX'],['azteca-7','Azteca 7'],
+  ['canal-5','Canal 5'],['las-estrellas','Las Estrellas'],['dsports','DSports'],['dsports-plus','DSports+'],
+  ['dazn-spain','DAZN Spain'],['bein-sports','beIN Sports'],['itv1','ITV1'],['bbc-one','BBC One'],
+  ['bbc-iplayer','BBC iPlayer'],['tsn','TSN'],['trt1','TRT 1'],['trt1-1440','TRT 1 (1440p)'],
+  ['das-erste','Das Erste'],['zdf','ZDF'],['servus-tv','Servus TV'],['orf1','ORF 1'],
+  ['fussball-uhd','Fussball.TV 1 UHD'],['fussball-nc','Fussball.TV 1 UHD (NC)'],['fifa-plus','FIFA+'],
+];
+function fillSrcChannels() {
+  const sel = document.getElementById('src-channel');
+  if (sel) sel.innerHTML = SRC_CHANNELS.map(c => `<option value="${c[0]}">${c[1]}</option>`).join('');
+}
+async function saveStreamSource() {
+  const err = document.getElementById('src-err'), ok = document.getElementById('src-ok');
+  err.style.display = 'none'; ok.style.display = 'none';
+  if (!qKey()) { err.textContent = 'Ingresa la clave de operación (sección de pago).'; err.style.display = 'block'; return; }
+  const sel = document.getElementById('src-channel');
+  const p = {
+    match_slug: document.getElementById('src-slug').value.trim(),
+    channel_id: sel.value,
+    channel_name: sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : sel.value,
+    official_url: document.getElementById('src-official').value.trim(),
+    embed_url: document.getElementById('src-embed').value.trim(),
+    quality: document.getElementById('src-quality').value,
+    badge: document.getElementById('src-badge').value.trim(),
+    active: document.getElementById('src-active').checked,
+    notes: document.getElementById('src-notes').value.trim(),
+  };
+  const { error } = await sb.rpc('qadmin_set_source', { p_key: qKey(), p });
+  if (error) { err.textContent = 'Error al guardar: ' + error.message; err.style.display = 'block'; return; }
+  ok.style.display = 'block';
+  document.getElementById('src-embed').value = ''; document.getElementById('src-notes').value = '';
+  loadSrcList();
+}
+async function loadSrcList() {
+  const el = document.getElementById('src-list'); if (!el) return;
+  try {
+    const { data } = await sb.from('stream_sources').select('*').order('updated_at', { ascending: false });
+    if (!data || !data.length) { el.innerHTML = '<span style="color:var(--muted)">Ninguna fuente registrada todavía.</span>'; return; }
+    el.innerHTML = data.map(s => `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">
+      <span>${s.active ? '🟢' : '⚫'} <strong>${s.channel_name || s.channel_id}</strong> · ${s.match_slug ? s.match_slug : 'cualquier partido'} ${s.embed_url ? '' : '<em style="color:var(--muted)">(sin embed)</em>'}</span>
+      <button onclick="delStreamSource('${s.id}')" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:2px 9px;cursor:pointer;">✕</button>
+    </div>`).join('');
+  } catch (e) { el.innerHTML = '<span style="color:var(--muted)">No se pudo cargar.</span>'; }
+}
+async function delStreamSource(id) {
+  if (!qKey()) { alert('Ingresa la clave de operación primero.'); return; }
+  await sb.rpc('qadmin_delete_source', { p_key: qKey(), p_id: id });
+  loadSrcList();
+}
 
 function qKey() { return document.getElementById('q-op-key').value.trim(); }
 function curPool() { return _qPools.find(p => p.id === _qPoolId) || {}; }
