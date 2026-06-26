@@ -2,7 +2,7 @@
 
 // ── Auto-reset de versión ("hard reset" para todos los dispositivos) ──────
 // Esta build. Debe coincidir con version.json y el CACHE del Service Worker.
-const APP_BUILD = 'v59';
+const APP_BUILD = 'v60';
 const APP_VERSION = APP_BUILD;   // alias visible (footer + consola) para diagnóstico
 console.log('[TVContigo] App started · build', APP_BUILD);
 // Si el version.json del servidor anuncia una build distinta, significa que el
@@ -166,6 +166,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await authInit();
   if (Auth.isLoggedIn()) applyReferralIfAny();
   trackEvent('page', 'home');
+  await loadMatches();      // calendario dinámico desde Supabase (con respaldo estático)
   await loadLiveConfig();   // partido en vivo desde Supabase (editable en admin)
   await loadMatchResults(); // resultados finales desde Supabase (auto-sync cada 10 min)
   renderHero();
@@ -435,6 +436,51 @@ function selectLiveMatch(slug) {
   trackEvent('live_switch', `${m.home.name}-${m.away.name}`);
 }
 
+// ── Calendario dinámico desde Supabase (tabla `matches`) ──────────────────
+// El calendario es global y editable sin re-desplegar: vive en la tabla `matches`
+// (sembrada del estático y auto-sincronizada por cron). Se lee FRESCO en cada
+// apertura/retorno. Si Supabase falla o está vacío → respaldo: el MATCHES estático
+// (y auto-siembra para la próxima vez). Así "siempre está actualizable" sin que
+// nadie tenga que estar presente cada día.
+let _matchesSeeded = false;
+async function loadMatches() {
+  try {
+    const { data } = await sb.from('matches').select('*').order('kickoff', { ascending: true });
+    if (data && data.length) {
+      const mapped = data.map(r => ({
+        id: r.id, kickoff: r.kickoff,
+        home: { name: _normName(r.home_name), flag: r.home_flag || flagFor(_normName(r.home_name)) },
+        away: { name: _normName(r.away_name), flag: r.away_flag || flagFor(_normName(r.away_name)) },
+        status: r.status || 'scheduled',
+        hs: (r.hs == null ? null : r.hs), as: (r.as_ == null ? null : r.as_),
+        venue: r.venue || '', city: r.city || '', comp: r.comp || '',
+      }));
+      MATCHES.length = 0; mapped.forEach(m => MATCHES.push(m));
+      console.log('[TVContigo] Calendario:', MATCHES.length, 'partidos desde Supabase (fresco)');
+    } else {
+      console.log('[TVContigo] Calendario vacío en Supabase → respaldo estático + auto-siembra');
+      _seedMatchesFromStatic();
+    }
+  } catch (e) {
+    console.log('[TVContigo] Calendario: sin conexión → respaldo estático');
+  }
+}
+// Siembra la tabla `matches` con el calendario estático (una sola vez, idempotente).
+function _seedMatchesFromStatic() {
+  if (_matchesSeeded) return;
+  _matchesSeeded = true;
+  try {
+    const payload = MATCHES.map((m, i) => ({
+      id: m.id, kickoff: m.kickoff, home_name: m.home.name, home_flag: m.home.flag,
+      away_name: m.away.name, away_flag: m.away.flag, status: m.status,
+      hs: m.hs, as_: m.as, venue: m.venue || '', city: m.city || '', comp: m.comp || '', sort_order: i,
+    }));
+    sb.rpc('seed_matches', { p: payload }).then(
+      ({ data }) => console.log('[TVContigo] Calendario sembrado en Supabase:', data, 'partidos'),
+      () => {});
+  } catch (e) {}
+}
+
 // ── Resultados finales desde Supabase (overlay sobre MATCHES estático) ───
 async function loadMatchResults() {
   try {
@@ -550,7 +596,8 @@ async function refreshAppData(force = false, reason = 'manual') {
   console.log('[TVContigo] Refresh triggered:', reason);
   setRefreshStatus('busy', 'Actualizando datos…');
   try {
-    console.log('[TVContigo] Fetching fresh data… (Supabase live_config + match_results + ranking)');
+    console.log('[TVContigo] Fetching fresh data… (Supabase matches + live_config + match_results + ranking)');
+    await loadMatches();         // calendario fresco (global, auto-sincronizado)
     await refreshLiveConfig();   // recarga live_config + match_results y re-renderiza
     // Si NO hay live, re-pinta "Partidos de hoy" (sin tocar un stream en curso)
     if (!_isActuallyLive()) renderHero();
