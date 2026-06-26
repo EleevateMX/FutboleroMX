@@ -2,7 +2,7 @@
 
 // ── Auto-reset de versión ("hard reset" para todos los dispositivos) ──────
 // Esta build. Debe coincidir con version.json y el CACHE del Service Worker.
-const APP_BUILD = 'v63';
+const APP_BUILD = 'v64';
 const APP_VERSION = APP_BUILD;   // alias visible (footer + consola) para diagnóstico
 console.log('[TVContigo] App started · build', APP_BUILD);
 // Si el version.json del servidor anuncia una build distinta, significa que el
@@ -375,9 +375,39 @@ async function loadLiveConfig() {
       _curSlug = data.slug;
       return;
     }
-    // live_config 'off' → NO hay fútbol en vivo. La verdad de "¿hay live?" la da
-    // live_config (auto-live limpia con GRACE/miss_count y NO se queda pegado).
-    // No usamos matches.status='live' como disparador (podría quedar stale).
+    // live_config 'off' → ¿el calendario marca partidos EN VIVO ahora? (tabla matches,
+    // ya confiable: el cron limpia 'live' stale a los 12 min + filtro de frescura <25 min).
+    // Si los hay, se MUESTRAN igual (ver el partido + su marcador); los canales salen
+    // solo de fuentes AUTORIZADAS configuradas — si no hay, placeholder "sin fuente".
+    const tableLive = _liveTableMatches();
+    if (tableLive.length) {
+      _liveChannelDefs = [];
+      let featured = null;
+      // Si live_config guardó canales (de auto-live) para uno de los partidos que
+      // AHORA están en vivo —aunque su status quedara 'off' por el gate de la API—,
+      // ese partido es REPRODUCIBLE con esos canales (Telemundo primero por chRank).
+      if (data && Array.isArray(data.channels) && data.channels.length && data.home_name) {
+        const cfgMatch = tableLive.find(m =>
+          _normName(m.home.name) === _normName(data.home_name) &&
+          _normName(m.away.name) === _normName(data.away_name));
+        if (cfgMatch) {
+          _liveChannelDefs = data.channels;
+          featured = _liveCardFrom(cfgMatch);
+          featured.slug = data.slug || featured.slug;
+        }
+      }
+      if (!featured) featured = _liveCardFrom(tableLive[0]);
+      _featuredMatch = featured;
+      _simulLive = _computeSimultaneous(featured);
+      const pick = _userPickedSlug && _simulLive.find(m => m.slug === _userPickedSlug);
+      LIVE_MATCH = pick || featured;
+      if (!pick) _userPickedSlug = null;
+      CHANNELS = resolveMatchStreams(LIVE_MATCH.slug, (LIVE_MATCH === featured) ? _liveChannelDefs : []);
+      LIVE_MATCH.defaultChannel = CHANNELS[0]?.id;
+      _curSlug = LIVE_MATCH.slug;
+      return;
+    }
+    // Sin live en ninguna fuente → limpiar (la home muestra "Partidos de hoy")
     LIVE_MATCH = null; CHANNELS = []; _curSlug = null;
     _liveChannelDefs = []; _simulLive = []; _featuredMatch = null; _userPickedSlug = null;
   } catch (e) {
@@ -397,13 +427,18 @@ function _liveCardFrom(m) {
     venue: m.venue || '', city: m.city || '', comp: m.comp || 'En vivo',
   };
 }
-// TODOS los partidos marcados 'live' en el calendario (tabla matches), EXCEPTO el
-// destacado. Así "EN VIVO AHORA" siempre refleja todos los partidos online ahora
-// mismo (2, 3, los que haya), con su marcador — auto-actualizado por el cron.
+// Un partido cuenta como EN VIVO para mostrar si la tabla lo marca 'live' Y su
+// dato es reciente (<25 min). Doble seguro anti-pegado: el cron limpia stale a los
+// 12 min (GRACE) y además aquí no mostramos un 'live' viejo aunque el cron fallara.
+function _liveTableMatches() {
+  const now = Date.now();
+  return MATCHES.filter(m => m.status === 'live' && (!m._lu || (now - new Date(m._lu).getTime()) < 25 * 60000));
+}
+// TODOS los partidos EN VIVO ahora mismo (tabla matches), EXCEPTO el destacado.
+// Así "EN VIVO AHORA" refleja los 2, 3, los que haya, con su marcador.
 function _computeSimultaneous(featured) {
   const fh = _normName(featured.home.name), fa = _normName(featured.away.name);
-  return MATCHES
-    .filter(m => m.status === 'live')
+  return _liveTableMatches()
     .filter(m => !(_normName(m.home.name) === fh && _normName(m.away.name) === fa))
     .map(_liveCardFrom);
 }
@@ -462,7 +497,7 @@ async function loadMatches() {
         away: { name: _normName(r.away_name), flag: r.away_flag || flagFor(_normName(r.away_name)) },
         status: r.status || 'scheduled',
         hs: (r.hs == null ? null : r.hs), as: (r.as_ == null ? null : r.as_),
-        venue: r.venue || '', city: r.city || '', comp: r.comp || '',
+        venue: r.venue || '', city: r.city || '', comp: r.comp || '', _lu: r.updated_at,
       }));
       MATCHES.length = 0; mapped.forEach(m => MATCHES.push(m));
       console.log('[TVContigo] Calendario:', MATCHES.length, 'partidos desde Supabase (fresco)');
