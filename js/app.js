@@ -2,7 +2,7 @@
 
 // ── Auto-reset de versión ("hard reset" para todos los dispositivos) ──────
 // Esta build. Debe coincidir con version.json y el CACHE del Service Worker.
-const APP_BUILD = 'v65';
+const APP_BUILD = 'v66';
 const APP_VERSION = APP_BUILD;   // alias visible (footer + consola) para diagnóstico
 console.log('[TVContigo] App started · build', APP_BUILD);
 // Si el version.json del servidor anuncia una build distinta, significa que el
@@ -74,7 +74,7 @@ const _EN_ES = {
   'united states':'EE.UU.','usa':'EE.UU.',
   'south korea':'Corea del Sur','ivory coast':'Costa de Marfil',
   'new zealand':'Nueva Zelanda','south africa':'Sudáfrica',
-  'cape verde':'Cabo Verde','rd congo':'RD Congo','dr congo':'RD Congo',
+  'cape verde':'Cabo Verde','cape verde islands':'Cabo Verde','rd congo':'RD Congo','dr congo':'RD Congo',
   'saudi arabia':'Arabia Saudita','netherlands':'Países Bajos',
   'germany':'Alemania','spain':'España','france':'Francia',
   'brazil':'Brasil','england':'Inglaterra','turkey':'Turquía',

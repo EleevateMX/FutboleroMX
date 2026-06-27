@@ -29,11 +29,13 @@ function sortChannels(list) {
     .map(x => x.c);
 }
 
-// Construye la lista de canales desde un slug + definición (usado por live_config)
+// Construye la lista de canales desde un slug + definición (usado por live_config).
+// Soporta el formato NUEVO de lacancha (c.url = URL completa del embed) y el viejo
+// (c.n = número en embed.st/admin/{slug}/{n}) para compatibilidad.
 function buildChannels(slug, list) {
   const built = list.map(c => ({
     id: c.id, name: c.name, option: c.option, tag: c.tag || '',
-    url: `https://embed.st/embed/admin/${slug}/${c.n}`, live: true,
+    url: c.url || `https://embed.st/embed/admin/${slug}/${c.n}`, live: true,
   }));
   return sortChannels(built);
 }
