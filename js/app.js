@@ -2,7 +2,7 @@
 
 // ── Auto-reset de versión ("hard reset" para todos los dispositivos) ──────
 // Esta build. Debe coincidir con version.json y el CACHE del Service Worker.
-const APP_BUILD = 'v67';
+const APP_BUILD = 'v68';
 const APP_VERSION = APP_BUILD;   // alias visible (footer + consola) para diagnóstico
 console.log('[TVContigo] App started · build', APP_BUILD);
 // Si el version.json del servidor anuncia una build distinta, significa que el
@@ -898,7 +898,7 @@ function renderHero() {
         <div class="hmp-venue">📍 ${venueLine}</div>
         ${hasChannels ? `
         <div class="hmp-actions">
-          <button class="hmp-btn-watch" onclick="openLiveStream()">▶ Ver en vivo</button>
+          <button class="hmp-btn-watch" onclick="openLiveStream()">▶ ${pre ? 'Ver previa de la emisión' : 'Ver en vivo'}</button>
           <button class="hmp-btn-quiniela" onclick="goPronosticar()">🎯 Pronosticar</button>
         </div>` : `
         <div style="text-align:center;margin:8px 0 2px;">
@@ -1271,7 +1271,7 @@ function openLiveStream() {
     <div class="hero-overlay"></div>
     <div class="hero-info">
       <div class="hero-meta">
-        <div class="hero-live-badge"><span style="width:6px;height:6px;border-radius:50%;background:#fff;display:inline-block;"></span> EN VIVO · <span id="hero-ch-name">${ch.name}</span></div>
+        <div class="hero-live-badge"><span style="width:6px;height:6px;border-radius:50%;background:#fff;display:inline-block;"></span> ${(LIVE_MATCH && LIVE_MATCH.pre) ? 'EN BREVE' : 'EN VIVO'} · <span id="hero-ch-name">${ch.name}</span></div>
         <div class="hero-title">${m.home.flag} ${m.home.name} <span id="hero-score">${m.hs ?? 0}-${m.as ?? 0}</span> ${m.away.name} ${m.away.flag}</div>
         <div class="hero-subtitle">📍 ${m.venue || m.comp || ''}</div>
         ${ch.requiresAttribution && ch.attribution ? `<div class="hero-subtitle" style="font-size:11px;opacity:.85;margin-top:2px;">${ch.attribution}</div>` : ''}
