@@ -2,7 +2,7 @@
 
 // ── Auto-reset de versión ("hard reset" para todos los dispositivos) ──────
 // Esta build. Debe coincidir con version.json y el CACHE del Service Worker.
-const APP_BUILD = 'v68';
+const APP_BUILD = 'v69';
 const APP_VERSION = APP_BUILD;   // alias visible (footer + consola) para diagnóstico
 console.log('[TVContigo] App started · build', APP_BUILD);
 // Si el version.json del servidor anuncia una build distinta, significa que el
@@ -599,6 +599,9 @@ async function refreshLiveConfig() {
     if (scoreEl) scoreEl.textContent = `${LIVE_MATCH.hs ?? 0}-${LIVE_MATCH.as ?? 0}`;
     _updateMediaSession();
   }
+  // Sin partido en vivo: refresca "Partidos de hoy" cada ciclo (20s) para que los
+  // partidos que van llegando aparezcan solos sin que el usuario recargue.
+  if (!_isActuallyLive()) renderHoySection();
   renderLiveSwitcher();
   renderMatchesRow();
   renderResultsRow();
@@ -1781,7 +1784,8 @@ function renderChannelsGrid() {
 // ── Results Row (partidos finalizados) ────────────────────────────────────
 function renderResultsRow() {
   const row = document.getElementById('results-row');
-  const results = MATCHES.filter(m => m.status === 'finished').reverse();
+  // Solo finalizados CON marcador (los auto-finalizados sin resultado no se muestran aquí)
+  const results = MATCHES.filter(m => m.status === 'finished' && m.hs != null && m.as != null).reverse();
   row.innerHTML = results.map(r => `
     <div class="result-card">
       <div class="rc-competition">${r.comp}</div>
