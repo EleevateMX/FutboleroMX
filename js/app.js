@@ -2,7 +2,7 @@
 
 // ── Auto-reset de versión ("hard reset" para todos los dispositivos) ──────
 // Esta build. Debe coincidir con version.json y el CACHE del Service Worker.
-const APP_BUILD = 'v66';
+const APP_BUILD = 'v67';
 const APP_VERSION = APP_BUILD;   // alias visible (footer + consola) para diagnóstico
 console.log('[TVContigo] App started · build', APP_BUILD);
 // Si el version.json del servidor anuncia una build distinta, significa que el
@@ -341,6 +341,7 @@ function getAuthorizedStreamsForMatch(slug) { return resolveMatchStreams(slug, _
 
 // ── Carga el partido en vivo desde Supabase (live_config) ─────────────────
 let _curSlug = null;          // slug del partido actualmente cargado (para detectar cambios)
+let _curPre  = false;         // ¿el destacado está en "POR COMENZAR" (pre-silbatazo)?
 let _liveChannelDefs = [];    // defs crudas (con n) del destacado, para reusar en simultáneos
 let _simulLive = [];          // partidos SIMULTÁNEOS en vivo (misma hora que el destacado)
 let _featuredMatch = null;    // el partido destacado tal cual viene de live_config
@@ -355,7 +356,7 @@ async function loadLiveConfig() {
         id: 'live', slug: data.slug,
         home: { name: data.home_name, flag: data.home_flag || flagFor(data.home_name) },
         away: { name: data.away_name, flag: data.away_flag || flagFor(data.away_name) },
-        kickoff: new Date().toISOString(), status: 'live',
+        kickoff: new Date().toISOString(), status: 'live', pre: !!data.pre,
         hs: data.hs ?? 0, as: data.as_ ?? 0,
         venue: data.venue || '', city: data.city || '', comp: data.comp || 'En vivo',
       };
@@ -574,9 +575,12 @@ function startLiveRefresh() {
 }
 async function refreshLiveConfig() {
   const before = _curSlug;
+  const beforePre = _curPre;
   await loadMatches();        // marcadores/estados EN VIVO frescos de TODOS los partidos
   await loadLiveConfig();
   await loadMatchResults();
+  _curPre = !!(LIVE_MATCH && LIVE_MATCH.pre);
+  const streaming = !!document.getElementById('live-frame');
   if (_curSlug !== before) {
     _activeChannel = null;
     if (_matchDataPoll) { clearInterval(_matchDataPoll); _matchDataPoll = null; }
@@ -584,8 +588,13 @@ async function refreshLiveConfig() {
     renderHero();
     renderChannelStrip();
     renderChannelsGrid();
-  } else if (LIVE_MATCH && _isActuallyLive() && !_userPickedSlug) {
-    // Mismo partido destacado — actualiza su marcador (no si el usuario eligió un simultáneo)
+  } else if (_curPre !== beforePre && !streaming) {
+    // Mismo partido pero pasó de "POR COMENZAR" a EN VIVO (o viceversa) y NO se está
+    // viendo el stream → re-pinta la tarjeta para actualizar el rótulo/marcador.
+    renderHero();
+    renderChannelStrip();
+  } else if (LIVE_MATCH && _isActuallyLive() && !_userPickedSlug && !_curPre) {
+    // Mismo partido destacado EN VIVO — actualiza su marcador (no en pre, no si eligió simultáneo)
     const scoreEl = document.getElementById('hero-score');
     if (scoreEl) scoreEl.textContent = `${LIVE_MATCH.hs ?? 0}-${LIVE_MATCH.as ?? 0}`;
     _updateMediaSession();
@@ -860,6 +869,7 @@ function renderHero() {
   const match    = live;
   const isLive   = true, isRecent = false;
   const hasChannels = CHANNELS.length > 0;
+  const pre = !!match.pre;   // emisión abierta ANTES del silbatazo → "EN BREVE"
   if (hasChannels) {
     _activeChannel = CHANNELS.find(c => c.id === match.defaultChannel) || CHANNELS[0];
   }
@@ -870,15 +880,15 @@ function renderHero() {
   if (isLive) {
     hero.innerHTML = `
       <div class="hero-match-preview">
-        <div class="hmp-badge${hasChannels ? '' : ' hmp-badge-next'}"><span class="hmp-dot"></span> ${hasChannels ? 'EN VIVO' : 'SIN TRANSMISIÓN'} · ${match.comp}</div>
+        <div class="hmp-badge${(hasChannels && !pre) ? '' : ' hmp-badge-next'}"><span class="hmp-dot"></span> ${!hasChannels ? 'SIN TRANSMISIÓN' : (pre ? 'POR COMENZAR' : 'EN VIVO')} · ${match.comp}</div>
         <div class="hmp-teams">
           <div class="hmp-team">
             <div class="hmp-flag">${match.home.flag}</div>
             <div class="hmp-name">${match.home.name.toUpperCase()}</div>
           </div>
           <div class="hmp-center">
-            <div class="hmp-score" id="hero-score">${match.hs ?? 0}-${match.as ?? 0}</div>
-            <div class="hmp-live-label">● EN VIVO</div>
+            <div class="hmp-score" id="hero-score">${pre ? 'vs' : `${match.hs ?? 0}-${match.as ?? 0}`}</div>
+            <div class="hmp-live-label">${pre ? '● EN BREVE' : '● EN VIVO'}</div>
           </div>
           <div class="hmp-team">
             <div class="hmp-flag">${match.away.flag}</div>
