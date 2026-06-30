@@ -2,7 +2,7 @@
 
 // ── Auto-reset de versión ("hard reset" para todos los dispositivos) ──────
 // Esta build. Debe coincidir con version.json y el CACHE del Service Worker.
-const APP_BUILD = 'v69';
+const APP_BUILD = 'v70';
 const APP_VERSION = APP_BUILD;   // alias visible (footer + consola) para diagnóstico
 console.log('[TVContigo] App started · build', APP_BUILD);
 // Si el version.json del servidor anuncia una build distinta, significa que el
@@ -177,6 +177,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderChannelsGrid();
   renderResultsRow();
   renderStandings();
+  renderBracket();
   renderTriviaRow();
   renderQuinielaSection();
   renderRanking();
@@ -606,6 +607,7 @@ async function refreshLiveConfig() {
   renderMatchesRow();
   renderResultsRow();
   renderStandings();
+  renderBracket();
 }
 
 // ── Actualización de datos al abrir / volver a la app (con cooldown) ────────
@@ -1850,6 +1852,45 @@ function renderStandings() {
       </table>
     </div>`;
   }).join('');
+}
+
+// ── Fase Final · Bracket (eliminatorias) ──────────────────────────────────
+// Lee los partidos de eliminatoria (comp = ronda, puesta por sync-calendar desde
+// el "stage" de la fuente) y los pinta como llaves por ronda. Se actualiza solo.
+const KNOCKOUT_ROUNDS = ['16avos de final', 'Octavos de final', 'Cuartos de final', 'Semifinal', '3er lugar', 'Final'];
+function renderBracket() {
+  const el = document.getElementById('bracket-section');
+  if (!el) return;
+  const ko = MATCHES.filter(m => KNOCKOUT_ROUNDS.includes(m.comp));
+  if (!ko.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = 'block';
+  const cols = KNOCKOUT_ROUNDS.map(round => {
+    const ms = ko.filter(m => m.comp === round).sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
+    if (!ms.length) return '';
+    const cards = ms.map(m => {
+      const fin  = m.status === 'finished' && m.hs != null && m.as != null;
+      const live = m.status === 'live';
+      const hWin = fin && m.hs > m.as, aWin = fin && m.as > m.hs;
+      const ft = fmtMatchTime(m.kickoff);
+      const status = live ? `<span class="bk-live">● EN VIVO</span>`
+                   : fin  ? `<span class="bk-fin">FINAL</span>`
+                          : `<span class="bk-sch">${ft.day} · ${ft.time}</span>`;
+      return `<div class="bracket-match${live ? ' bk-islive' : ''}">
+        <div class="bk-team${hWin ? ' bk-win' : ''}"><span class="bk-tn">${m.home.flag} ${m.home.name}</span><span class="bk-sc">${m.hs ?? ''}</span></div>
+        <div class="bk-team${aWin ? ' bk-win' : ''}"><span class="bk-tn">${m.away.flag} ${m.away.name}</span><span class="bk-sc">${m.as ?? ''}</span></div>
+        <div class="bk-status">${status}</div>
+      </div>`;
+    }).join('');
+    return `<div class="bracket-round"><div class="bracket-round-hdr">${round}</div>${cards}</div>`;
+  }).join('');
+  const done = ko.filter(m => m.status === 'finished').length;
+  el.innerHTML = `
+    <div class="section-header">
+      <div class="section-title"><span class="dot"></span> FASE FINAL · BRACKET</div>
+      <span class="section-see-all" style="cursor:default;">${done}/${ko.length} jugados</span>
+    </div>
+    <div class="bracket-scroll">${cols}</div>
+    <p class="bracket-legal">Llaves de eliminatoria del Mundial 2026 — se actualizan solas conforme avanzan los partidos.</p>`;
 }
 
 // ── Trivia Row ────────────────────────────────────────────────────────────

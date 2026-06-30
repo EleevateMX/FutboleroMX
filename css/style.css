@@ -808,6 +808,24 @@ body {
   max-width: 130px;
   color: var(--text);
 }
+/* ── Fase Final · Bracket ─────────────────────────────────────────────── */
+.bracket-scroll { display: flex; gap: 12px; overflow-x: auto; padding: 4px 2px 10px; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; }
+.bracket-scroll::-webkit-scrollbar { height: 6px; }
+.bracket-scroll::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 99px; }
+.bracket-round { flex: 0 0 auto; width: 232px; scroll-snap-align: start; }
+.bracket-round-hdr { font-size: 11px; font-weight: 800; letter-spacing: .6px; color: var(--orange); text-transform: uppercase; padding: 0 2px 8px; }
+.bracket-match { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 8px 10px; margin-bottom: 10px; }
+.bracket-match.bk-islive { border-color: rgba(239,68,68,.45); box-shadow: 0 0 0 1px rgba(239,68,68,.25); }
+.bk-team { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 3px 0; }
+.bk-tn { font-size: 13px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bk-sc { font-size: 14px; font-weight: 800; color: var(--text-dim); min-width: 14px; text-align: right; }
+.bk-team.bk-win .bk-tn, .bk-team.bk-win .bk-sc { color: var(--text); font-weight: 800; }
+.bk-team.bk-win .bk-tn::after { content: ' ✓'; color: var(--green); font-size: 11px; }
+.bk-status { margin-top: 5px; text-align: center; border-top: 1px solid var(--border); padding-top: 5px; }
+.bk-live { font-size: 9px; font-weight: 800; color: var(--red); letter-spacing: .5px; }
+.bk-fin { font-size: 9px; font-weight: 700; color: var(--text-muted); letter-spacing: .5px; }
+.bk-sch { font-size: 10px; color: var(--text-muted); }
+.bracket-legal { padding: 2px 4px; font-size: 11px; color: var(--text-muted); line-height: 1.5; }
 /* Hero resultado final */
 .hmp-badge-result {
   background: rgba(34,197,94,.1);
