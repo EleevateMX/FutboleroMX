@@ -2,7 +2,7 @@
 
 // ── Auto-reset de versión ("hard reset" para todos los dispositivos) ──────
 // Esta build. Debe coincidir con version.json y el CACHE del Service Worker.
-const APP_BUILD = 'v70';
+const APP_BUILD = 'v71';
 const APP_VERSION = APP_BUILD;   // alias visible (footer + consola) para diagnóstico
 console.log('[TVContigo] App started · build', APP_BUILD);
 // Si el version.json del servidor anuncia una build distinta, significa que el
@@ -352,30 +352,39 @@ async function loadLiveConfig() {
   try {
     const { data } = await sb.from('live_config').select('*').eq('id', 1).single();
     if (data && data.status === 'live' && data.slug) {
-      _liveChannelDefs = Array.isArray(data.channels) ? data.channels : [];
-      const featured = {
-        id: 'live', slug: data.slug,
-        home: { name: data.home_name, flag: data.home_flag || flagFor(data.home_name) },
-        away: { name: data.away_name, flag: data.away_flag || flagFor(data.away_name) },
-        kickoff: new Date().toISOString(), status: 'live', pre: !!data.pre,
-        hs: data.hs ?? 0, as: data.as_ ?? 0,
-        venue: data.venue || '', city: data.city || '', comp: data.comp || 'En vivo',
-      };
-      _featuredMatch = featured;
-      _simulLive = _computeSimultaneous(featured);   // partidos a la misma hora → también en vivo
-      // Si el usuario eligió ver un simultáneo y sigue vigente, respétalo; si no, el destacado.
-      const pick = _userPickedSlug && _simulLive.find(m => m.slug === _userPickedSlug);
-      if (pick) {
-        LIVE_MATCH = pick;
-        CHANNELS   = resolveMatchStreams(pick.slug, _liveChannelDefs);
-      } else {
-        _userPickedSlug = null;
-        LIVE_MATCH = featured;
-        CHANNELS = resolveMatchStreams(data.slug, _liveChannelDefs);
+      // La tabla `matches` (/calendario) es la fuente CONFIABLE de estado y marcador.
+      // auto-live puede quedar en GRACE (sin canales) y dejar live_config con pre/marcador
+      // viejos → reconciliamos. Si la tabla dice que YA terminó, no lo mostramos como live.
+      const feRow = MATCHES.find(m => _normName(m.home.name) === _normName(data.home_name) && _normName(m.away.name) === _normName(data.away_name));
+      if (!(feRow && feRow.status === 'finished')) {
+        _liveChannelDefs = Array.isArray(data.channels) ? data.channels : [];
+        const featured = {
+          id: 'live', slug: data.slug,
+          home: { name: data.home_name, flag: data.home_flag || flagFor(data.home_name) },
+          away: { name: data.away_name, flag: data.away_flag || flagFor(data.away_name) },
+          kickoff: new Date().toISOString(), status: 'live',
+          pre: feRow ? (feRow.status !== 'live') : !!data.pre,          // tabla live → EN VIVO; scheduled → EN BREVE
+          hs: (feRow && feRow.hs != null) ? feRow.hs : (data.hs ?? 0),  // marcador de la tabla (fresco)
+          as: (feRow && feRow.as != null) ? feRow.as : (data.as_ ?? 0),
+          venue: data.venue || '', city: data.city || '', comp: data.comp || 'En vivo',
+        };
+        _featuredMatch = featured;
+        _simulLive = _computeSimultaneous(featured);   // partidos a la misma hora → también en vivo
+        // Si el usuario eligió ver un simultáneo y sigue vigente, respétalo; si no, el destacado.
+        const pick = _userPickedSlug && _simulLive.find(m => m.slug === _userPickedSlug);
+        if (pick) {
+          LIVE_MATCH = pick;
+          CHANNELS   = resolveMatchStreams(pick.slug, _liveChannelDefs);
+        } else {
+          _userPickedSlug = null;
+          LIVE_MATCH = featured;
+          CHANNELS = resolveMatchStreams(data.slug, _liveChannelDefs);
+        }
+        LIVE_MATCH.defaultChannel = CHANNELS[0]?.id;
+        _curSlug = data.slug;
+        return;
       }
-      LIVE_MATCH.defaultChannel = CHANNELS[0]?.id;
-      _curSlug = data.slug;
-      return;
+      // El destacado de live_config ya terminó → cae al off-branch (revisa otros live).
     }
     // live_config 'off' → ¿el calendario marca partidos EN VIVO ahora? (tabla matches,
     // ya confiable: el cron limpia 'live' stale a los 12 min + filtro de frescura <25 min).
@@ -1297,16 +1306,22 @@ function startLiveScorePolling() {
   _scorePoll = setInterval(async () => {
     const scoreEl = document.getElementById('hero-score');
     if (!scoreEl) { clearInterval(_scorePoll); _scorePoll = null; return; }
+    if (!LIVE_MATCH || LIVE_MATCH.pre) return;   // en "EN BREVE" aún no hay marcador
     try {
-      const { data } = await sb.from('live_config').select('status, hs, as_').eq('id', 1).single();
-      if (!data || data.status !== 'live') { return; }
-      const nv = `${data.hs ?? 0}-${data.as_ ?? 0}`;
+      // Marcador del destacado desde la tabla `matches` (fuente confiable /calendario),
+      // no de live_config (que puede quedar viejo si auto-live está en GRACE).
+      const { data } = await sb.from('matches').select('home_name, away_name, hs, as_').eq('status', 'live');
+      const row = (data || []).find(r =>
+        _normName(r.home_name) === _normName(LIVE_MATCH.home.name) &&
+        _normName(r.away_name) === _normName(LIVE_MATCH.away.name));
+      if (!row || row.hs == null) return;
+      const nv = `${row.hs ?? 0}-${row.as_ ?? 0}`;
       if (scoreEl.textContent !== nv) {
         scoreEl.textContent = nv;
         scoreEl.style.transition = 'transform .25s';
         scoreEl.style.transform = 'scale(1.25)';
         setTimeout(() => { scoreEl.style.transform = 'scale(1)'; }, 250);
-        if (LIVE_MATCH) { LIVE_MATCH.hs = data.hs; LIVE_MATCH.as = data.as_; }
+        LIVE_MATCH.hs = row.hs; LIVE_MATCH.as = row.as_;
         _updateMediaSession();
       }
     } catch (e) {}
